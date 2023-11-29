@@ -33,7 +33,7 @@ jobs:
         CI: false
     - uses: ad-m/github-push-action@master
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        github_token: ${{ secrets.STAGING_TOKEN }}
         repository: dexterlabz/bridge.staging.zenon.community
         directory: build
         branch: main
