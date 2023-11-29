@@ -72,12 +72,12 @@ const constants = {
     decimals: 8,
     address: "zts1qsrxxxxxxxxxxxxxmrhjll",
   },
-  znnEthLpTokenInfo: {
+  znnEthLpsTokenInfo: {
     symbol: "ZNNETHLP",
     decimals: 18,
     address: "zts17d6yr02kh0r9qr566p7tg6",
   },
-  qsrEthLpTokenInfo: {
+  qsrEthLpsTokenInfo: {
     symbol: "QSRETHLP",
     decimals: 18,
     address: "zts1akfzw3s3h6ytwm07x9mldh",
@@ -250,12 +250,12 @@ const testConstants = {
   },
 
   // Internal tokens
-  znnEthLpTokenInfo: {
+  znnEthLpsTokenInfo: {
     symbol: "ZNNETHLP",
     decimals: 18,
     address: "zts1y54lmvqgntdpgpzlmp45cm",
   },
-  qsrEthLpTokenInfo: {
+  qsrEthLpsTokenInfo: {
     symbol: "QSRETHLP",
     decimals: 18,
     address: "zts1akfzw3s3h6ytwm07x9mldh",
@@ -370,12 +370,12 @@ const developmentConstants = {
   },
 
   // Internal tokens
-  znnEthLpTokenInfo: {
+  znnEthLpsTokenInfo: {
     symbol: "ZNNETHLP",
     decimals: 18,
     address: "zts1dt5pxzwpvp2vrl6ewd728g",
   },
-  qsrEthLpTokenInfo: {
+  qsrEthLpsTokenInfo: {
     symbol: "QSRETHLP",
     decimals: 18,
     address: "zts1akfzw3s3h6ytwm07x9mldh",
