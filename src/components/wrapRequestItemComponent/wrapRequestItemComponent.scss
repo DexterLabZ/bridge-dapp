@@ -1,0 +1,84 @@
+@import "./../../styles/variables.scss";
+
+.request-item-container {
+  display: flex;
+  position: relative;
+  background: $black;
+  border-radius: 8px;
+  transition: box-shadow 0.3s ease-out;
+
+  &:hover {
+    background: $gray;
+  }
+
+  .request-item {
+    transition: transform 0.6s ease-out;
+    position: relative;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+
+    .transaction-icon {
+      border-radius: 100%;
+      width: 30px;
+      height: 30px;
+      min-width: 30px;
+      min-height: 30px;
+      max-width: 30px;
+      max-height: 30px;
+      background: $gray;
+      padding: 0.2em;
+      display: flex;
+      justify-content: center;
+      align-content: center;
+      align-items: center;
+    }
+
+    &.active-request {
+      // border: 1px rgb(94 224 69 / 40%)  solid;
+    }
+  }
+
+  .redeem-anyway-container {
+    transition: transition 0.6s ease-out, clip-path 0s 0.4s ease-out, opacity 0.15s ease-out;
+    clip-path: inset(-50px 0px -50px -50px);
+    top: 50%;
+    padding: 30px 24px 30px 60px;
+    border-radius: 8px;
+    transform: translate(0px, -50%);
+    position: absolute;
+    right: 0;
+    pointer-events: none;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    opacity: 0;
+  }
+
+  .redeem-anyway {
+    transform: translate(150%, 0%);
+    position: relative;
+    right: 0;
+    line-height: 90%;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  &.is-redeemable-again:hover {
+    .redeem-anyway {
+      transform: translate(0%, 0%);
+      opacity: 1;
+    }
+
+    .redeem-anyway-container {
+      pointer-events: all;
+      clip-path: inset(-50px -50px -50px -50px) !important;
+      opacity: 1;
+    }
+  }
+}

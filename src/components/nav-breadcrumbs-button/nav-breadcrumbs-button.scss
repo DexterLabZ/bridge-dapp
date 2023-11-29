@@ -1,0 +1,120 @@
+@import "./../../styles/variables.scss";
+
+.nav-breadcrumbs-button-container {
+  position: relative;
+  padding-top: 0.6em;
+  padding-bottom: 0.6em;
+  padding-left: clamp(0.5em, 2vw, 2em);
+  padding-right: clamp(0.5em, 2vw, 2em);
+  color: $white;
+  font-size: 18px;
+  font-weight: 700;
+  user-select: none;
+  transition: color 0.25s ease-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+  border-radius: 8px;
+
+  text-shadow: 1px 2px 14px rgb(0 0 0 / 65%);
+
+  .nav-breadcrumbs-button {
+    cursor: pointer;
+  }
+
+  &:hover,
+  &:focus-visible {
+    outline: transparent;
+
+    .nav-breadcrumbs-button:not(.disabled) {
+      color: $primary;
+    }
+  }
+
+  &.active {
+    cursor: default;
+
+    .nav-breadcrumbs-button {
+      color: $primary;
+    }
+  }
+}
+
+.nav-breadcrumbs-container {
+  .nav-breadcrumbs-button-container {
+    text-align: left;
+    justify-content: start;
+
+    &:not(:first-of-type) {
+      &::before {
+        content: "";
+        position: absolute;
+        writing-mode: vertical-rl;
+        top: -50%;
+        left: clamp(0.5em, 2vw, 2em);
+        margin-left: -24px;
+        height: 0px;
+        transition: height 0.4s ease-in-out;
+        transform-origin: top;
+        width: 4px;
+        background: $primary-gradient;
+        box-shadow: 0px 0px 18px #00e721;
+      }
+    }
+
+    &.completed {
+      &::before {
+        color: $primary;
+        height: 100%;
+      }
+    }
+  }
+
+  .show-on-smaller-screens {
+    @media (min-width: map-get($grid-breakpoints, xl)) {
+      display: none !important;
+    }
+
+    @media (max-width: map-get($grid-breakpoints, xl)) {
+      display: block;
+    }
+  }
+
+  .show-on-bigger-screens {
+    @media (min-width: map-get($grid-breakpoints, xl)) {
+      display: block;
+    }
+
+    @media (max-width: map-get($grid-breakpoints, xl)) {
+      display: none !important;
+    }
+  }
+}
+
+.burger-menu-container {
+  .show-on-smaller-screens {
+    display: none;
+  }
+
+  .show-on-bigger-screens {
+    display: block;
+  }
+
+  .nav-breadcrumbs-button-container {
+
+    &:hover,
+    &:focus-visible {
+      .nav-breadcrumbs-button:not(.disabled) {
+        color: $black;
+      }
+    }
+
+    &.active {
+      .nav-breadcrumbs-button {
+        color: $black;
+      }
+    }
+  }
+}

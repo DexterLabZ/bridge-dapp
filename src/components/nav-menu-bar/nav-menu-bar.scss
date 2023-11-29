@@ -1,0 +1,100 @@
+@import './../../styles/variables.scss';
+
+.nav-menu-bar-container {
+  position: fixed;
+  z-index: 1;
+}
+
+
+.nav-buttons-container {
+  align-items: flex-start;
+  justify-content: center !important;
+  display: flex !important;
+  flex-direction: column;
+  gap: 1vw;
+  padding: 2vw;
+
+
+  @media (max-width: map-get($grid-breakpoints, lg)) {
+    transform: scale(0.7);
+    transform-origin: top left;
+  }
+
+  @media (max-width: map-get($grid-breakpoints, md)) {
+    display: none !important;
+  }
+}
+
+.burger-menu-container {
+  position: fixed;
+  cursor: pointer;
+  right: 1rem;
+  top: 2rem;
+  padding: 0px 2em;
+  display: flex;
+  align-items: center;
+
+  @media (min-width: map-get($grid-breakpoints, md)) {
+    display: none !important;
+  }
+}
+
+.mobile-menu {
+  transition: .3s all ease-in-out;
+  display: flex;
+  font-size: 24px;
+  flex-direction: column;
+  text-align: end;
+  z-index: -1;
+  position: fixed;
+  gap: 2em;
+  display: none;
+
+  &.visible {
+    z-index: 2;
+  }
+
+  &.active {
+    position: fixed;
+
+    .menu-toggler {
+      position: fixed;
+      top: 0px;
+      right: 0px;
+      cursor: pointer;
+      padding: 20px;
+    }
+  }
+
+  .mobile-menu-button {
+    max-width: 50vw;
+  }
+
+  &.mobile-active {
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: $primary-gradient;
+    align-content: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    display: flex;
+    align-items: center;
+
+    .menu-item {
+      color: $white;
+      display: block;
+      width: 20%;
+
+      &.active,
+      &:hover,
+      &:focus-visible {
+        color: $black !important;
+        outline: transparent;
+      }
+    }
+
+  }
+}

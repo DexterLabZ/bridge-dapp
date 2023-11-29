@@ -1,0 +1,40 @@
+@import "./../../styles/variables.scss";
+
+body {
+  background: $dark;
+  color: $white;
+}
+
+.main-layout {
+  display: flex;
+  height: 100vh;
+}
+
+.bg-shapes-container {
+  pointer-events: none;
+  user-select: none;
+  position: fixed;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+
+  .bg-shapes {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+  }
+
+  .bg-swirl {
+    position: absolute;
+    right: -10%;
+    bottom: -10%;
+    filter: blur(0.7px);
+  }
+}
+
+.responsive-container {
+  max-width: $wizard-max-width;
+  padding: 2em 0em;
+  margin: auto;
+}

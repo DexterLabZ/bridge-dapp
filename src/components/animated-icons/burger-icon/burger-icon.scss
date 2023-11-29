@@ -1,0 +1,47 @@
+.burger-icon-container {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  width: 20px;
+  height: 20px;
+  position: relative;
+  transform: scale(1.8) scaleX(-1);
+
+  #middle {
+    width: 80%;
+    right: 1px;
+  }
+
+  svg {
+    margin: 0 auto;
+    display: block;
+  }
+}
+
+.menu-icon-dash {
+  height: 1px;
+  width: 20px;
+  position: absolute;
+  transition: all 0.4s ease-in-out;
+  transform-origin: right;
+  background-color: white;
+  border-radius: 2px;
+}
+
+.burger-opened .burger-icon-container {
+  .menu-icon-dash {
+    background-color: white;
+  }
+
+  #top {
+    transform: rotate(-45deg);
+  }
+
+  #middle {
+    width: 0px;
+  }
+
+  #bottom {
+    transform: rotate(45deg);
+  }
+}

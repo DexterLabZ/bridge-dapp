@@ -1,0 +1,34 @@
+@import './../../styles/variables.scss';
+
+.network-details {
+  position: fixed;
+  z-index: 1;
+  right: 1.5rem;
+  bottom: 1.5rem;
+
+  .tooltip-text {
+    left: -50px !important;
+  }
+
+  @media (max-width: map-get($grid-breakpoints, lg)) {
+    display: none !important;
+  }
+
+  @media (max-width: map-get($grid-breakpoints, md)) {
+    display: none !important;
+  }
+
+}
+
+#momentum-info-value {
+  transition: color 0.25s ease-in-out;
+  color: $white;
+}
+
+.flash-white {
+  color: $white !important;
+}
+
+.flash-green {
+  color: $primary !important;
+}

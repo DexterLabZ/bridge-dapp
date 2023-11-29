@@ -1,0 +1,47 @@
+.close-button-icon-container {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  position: relative;
+  transform: scale(1.5);
+
+  #top {
+    transform: rotate(-45deg);
+  }
+
+  #bottom {
+    transform: rotate(45deg);
+  }
+
+  svg {
+    margin: 0 auto;
+    display: block;
+  }
+}
+
+.close-button-icon {
+  width: 24px;
+  height: 20px;
+  transition: 0.3s ease-in-out;
+}
+
+.close-button-icon-dash {
+  height: 1px;
+  width: 20px;
+  position: absolute;
+  transition: all 0.4s ease-in-out;
+  transform-origin: right;
+  background-color: white;
+  border-radius: 2px;
+}
+
+.animate-on-hover:hover .close-button-icon-container {
+
+  .close-button-icon-dash {
+    background-color: red;
+  }
+
+  .close-button-icon {
+    transform: rotate(90deg);
+  }
+}

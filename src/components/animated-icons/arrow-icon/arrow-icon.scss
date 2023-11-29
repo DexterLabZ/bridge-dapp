@@ -1,0 +1,24 @@
+.arrow-icon-container {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  width: 12px;
+  height: 20px;
+  position: relative;
+  transform: scale(1.3);
+
+  #arrow-left {
+    transition: all 0.3s ease-out;
+    margin-left: 0px;
+  }
+
+  svg {
+    margin: 0 auto;
+    display: block;
+  }
+
+}
+
+.animate-on-hover:hover .arrow-icon-container #arrow-left {
+  margin-left: -6px;
+}

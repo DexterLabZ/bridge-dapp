@@ -1,0 +1,145 @@
+@import './../../../styles/variables.scss';
+
+.text-button {
+  color: $primary;
+  display: flex;
+  cursor: pointer;
+  padding: 6px 0px;
+  z-index: 2;
+
+  &:hover {
+    color: $white;
+  }
+
+  .text-button-icon {
+    height: 24px;
+  }
+}Ø
+
+.flow-order {
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -moz-box-orient: vertical;
+  -webkit-flex-direction: column;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  /* optional */
+  -webkit-box-align: start;
+  -moz-box-align: start;
+  -ms-flex-align: start;
+  -webkit-align-items: flex-start;
+  align-items: flex-start;
+
+  .fromToken {
+    -webkit-box-ordinal-group: 2;
+    -moz-box-ordinal-group: 2;
+    -ms-flex-order: 1;
+    -webkit-order: 1;
+    order: 1;
+  }
+}
+
+.reversed-order {
+  -webkit-flex-direction: column-reverse;
+  -ms-flex-direction: column-reverse;
+  flex-direction: column-reverse;
+}
+
+.switch-direction-button-container {
+  transition: 0s all;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  .switch-direction-button {
+    height: 80px;
+    width: 80px;
+    border-radius: 100%;
+    background: $primary-gradient;
+    cursor: pointer;
+    transition: 0.3s all ease-out;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+
+    &:hover {
+      .switch-arrow {
+        transform: rotate(180deg) translate(0%, 0%) !important;
+      }
+
+      .second-switch-arrow {
+        transform: translate(0%, 0%);
+        opacity: 1;
+      }
+    }
+
+    &:active {
+      animation: rotate-arrows 0.2s forwards;
+      // transform: rotate(180deg);
+    }
+  }
+
+  @keyframes rotate-arrows {
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(180deg);
+    }
+  }
+
+  .switch-arrow {
+    transition: 0.3s all ease-out;
+    transform: translate(50%, 0%);
+    user-drag: none;
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+
+  .second-switch-arrow {
+    transition: 0.3s all ease-out;
+    transform: translate(-50%, 0%);
+    opacity: 0;
+    user-drag: none;
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+}
+
+.direction-label-container {
+  position: absolute;
+  left: 0;
+  margin-left: clamp(22px, 2vw, 32px);
+
+  .direction-label {
+    transform-origin: left;
+    transform: rotate(90deg);
+    font-size: clamp(1.6em, 5vw, 2em);
+    font-weight: 300;
+    background: $primary-gradient;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-top: -20px;
+    user-select: none;
+  }
+}
+
+.affiliate-success-card {
+  padding: 1rem 3.2rem;
+  border-radius: 8px;
+  font-weight: bolder;
+  background: $gray;
+  font-size: 1.8rem;
+}
+
+.address-field {
+  font-size: 0.85rem !important;
+}

@@ -1,0 +1,42 @@
+@import "./../../styles/variables.scss";
+
+.nav-menu-button {
+  margin: 0.3em;
+  padding-top: 0.6em;
+  padding-bottom: 0.6em;
+  padding-left: clamp(0.5em, 2vw, 2em);
+  padding-right: clamp(0.5em, 2vw, 2em);
+  color: $white;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.5s ease-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+  border-radius: 8px;
+
+  border: 1px solid rgba(0, 231, 33, 0.2);
+  backdrop-filter: blur(24px);
+  background: linear-gradient(90deg,
+      rgba(38, 38, 38, 0.3) 0%,
+      rgba(38, 38, 38, 0.3) 20%,
+      $primary-gradient-end 80%,
+      $primary-gradient-start 100%);
+  background-position-x: -10px;
+  background-size: 1500px;
+  text-shadow: 1px 2px 14px rgb(0 0 0 / 65%);
+
+  &:hover,
+  &:focus-visible {
+    outline: transparent;
+    background-position-x: -1000px;
+  }
+
+  &.active .nav-menu-button {
+    background: $black;
+  }
+}

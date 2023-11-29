@@ -1,0 +1,55 @@
+@import "./../../styles/variables.scss";
+
+.extension-item {
+  position: relative;
+  background: $black;
+  margin-top: clamp(20px, 8vw, 60px);
+  border-radius: 15px;
+  user-select: none;
+  transition: all 0.4s ease-out;
+
+  .completed {
+    transition: all 0.4s ease-out;
+  }
+
+  .step-counter {
+    color: $white;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translate(-0%, -50%);
+    border-radius: 100%;
+    font-size: clamp(2em, 8vw, 2.5em);
+    width: clamp(65px, 15vw, 100px);
+    height: clamp(65px, 15vw, 100px);
+    line-height: clamp(60px, 14vw, 90px);
+    font-weight: 700;
+    text-align: center;
+    user-select: none;
+  }
+
+  .step-counter.completed {
+    color: $primary;
+  }
+
+  .step-content {
+    padding-top: clamp(10px, 10vw, 24px);
+    padding-right: clamp(50px, 10vw, 82px);
+    padding-left: clamp(50px, 10vw, 82px);
+    padding-bottom: clamp(10px, 10vw, 24px);
+    border-radius: 15px;
+  }
+
+  .step-logo {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translate(50%, -50%);
+    height: clamp(40px, 18vw, 140px);
+  }
+
+  .extension-logo {
+    max-width: 100px;
+    max-height: 100px;
+  }
+}
