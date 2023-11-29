@@ -31,15 +31,16 @@ jobs:
     - run: npm run build-prod --if-present
       env: 
         CI: false
-    - name: Commit files
-      run: |
-        git add build/
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git commit -m "Staging build"
-    - uses: ad-m/github-push-action@master
+    - name: Deploy to staging
+      uses: JamesIves/github-pages-deploy-action@v4
       with:
-        github_token: ${{ secrets.STAGING_TOKEN }}
-        repository: DexterLabZ/bridge.staging.zenon.community
-        force_with_lease: true
-        directory: build
+        token: ${{ secrets.STAGING_TOKEN }}
+        branch: main
+        git-config-name: github-actions[bot]
+        git-config-email: github-action[bot]@users.noreply.github.com
+        repository-name: DexterLabZ/bridge.staging.zenon.community
+        commit-message: Staging release
+        clean: true
+        single-commit: true
+        force: true
+        folder: build
