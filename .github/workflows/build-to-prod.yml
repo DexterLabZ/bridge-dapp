@@ -29,6 +29,8 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: npm run build-prod --if-present
+      env: 
+        CI: false
     - uses: ad-m/github-push-action@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
