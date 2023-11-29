@@ -6,8 +6,8 @@ import MainLayout from "./layouts/mainLayout/mainLayout";
 import {store} from "./services/redux/store";
 
 function App() {
-  const disableConsoleLogs = process.env.NODE_ENV === "production";
-  // const disableConsoleLogs = false;
+  // const disableConsoleLogs = process.env.NODE_ENV === "production";
+  const disableConsoleLogs = false;
   if (disableConsoleLogs) {
     console.log = () => {};
     console.error = () => {};
