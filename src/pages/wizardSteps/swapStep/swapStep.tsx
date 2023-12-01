@@ -40,7 +40,6 @@ import "./swapStep.scss";
  */
 import { useGTMDispatch } from '@elgorditosalsero/react-gtm-hook'
 
-
 export type simpleTokenType = {
   icon: string;
   symbol: string;
@@ -109,7 +108,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
   });
 
   const [minErcAmount, setMinErcAmount] = useState("");
-  const [ercAmount, setErcAmount] = useState("");
+  const [ercAmount, setErcAmount] = useState("10.1");
   const [ercBalance, setErcBalance] = useState("");
   const [ercAddress, setErcAddress] = useState("");
   const [ercToken, setErcToken] = useState<simpleTokenType>({

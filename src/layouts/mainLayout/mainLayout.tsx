@@ -14,7 +14,22 @@ import WizardLayout from "../wizardLayout/wizardLayout";
 import swirl from "./../../assets/swirl.svg";
 import "./mainLayout.scss";
 
+/**
+ * * GTM SERVICE
+ */
+import { useSelector } from "react-redux";
+
+import { GTMProvider } from '@elgorditosalsero/react-gtm-hook'
+
 const MainLayout = () => {
+  /**
+   * * GTM SERVICE
+   * @param { id: 'GTM-ID' }
+   */
+  const globalConstants = useSelector((state: any) => state.globalConstants);
+
+  const gtmParams = { id: globalConstants.GTM_ID }
+
   useEffect(() => {
     addBeforeUnloadEvents();
     return () => {
@@ -24,25 +39,27 @@ const MainLayout = () => {
 
   return (
     <div className="main-layout">
-      <SpinnerProvider>
-        <ZenonProvider>
-          <NavBreadcrumbsMenu />
-          <div className="bg-shapes-container">
-            <img alt="bg-shapes" className="bg-shapes" src={require("./../../assets/bg-shapes.png")}></img>
-            <img alt="bg-swirl" className="bg-swirl" src={swirl}></img>
-          </div>
-          <CustomCursor></CustomCursor>
-          <div className="responsive-container">
-            <WizardLayout />
-            <ToastContainer />
-            <InfoBanner />
-            <WalletDetails />
-            <NetworkDetails />
-            <ReferralCodeInterpreter />
-          </div>
-        </ZenonProvider>
-      </SpinnerProvider>
-      <div id="spinner-root"></div>
+      <GTMProvider state={gtmParams}>
+        <SpinnerProvider>
+          <ZenonProvider>
+            <NavBreadcrumbsMenu />
+            <div className="bg-shapes-container">
+              <img alt="bg-shapes" className="bg-shapes" src={require("./../../assets/bg-shapes.png")}></img>
+              <img alt="bg-swirl" className="bg-swirl" src={swirl}></img>
+            </div>
+            <CustomCursor></CustomCursor>
+            <div className="responsive-container">
+              <WizardLayout />
+              <ToastContainer />
+              <InfoBanner />
+              <WalletDetails />
+              <NetworkDetails />
+              <ReferralCodeInterpreter />
+            </div>
+          </ZenonProvider>
+        </SpinnerProvider>
+        <div id="spinner-root"></div>
+      </GTMProvider>
     </div>
   );
 };
