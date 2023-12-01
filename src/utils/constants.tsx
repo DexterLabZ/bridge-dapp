@@ -214,6 +214,8 @@ const constants = {
       multiplierLabel: "12x",
     },
   ],
+
+  GTM_ID: 'GTM-TC768WT'
 };
 
 //

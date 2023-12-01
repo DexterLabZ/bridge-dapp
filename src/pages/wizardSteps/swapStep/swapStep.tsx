@@ -35,6 +35,12 @@ import {
 } from "../../../utils/utils";
 import "./swapStep.scss";
 
+/**
+ * * GTM SERVICE
+ */
+import {  useGTMDispatch } from '@elgorditosalsero/react-gtm-hook'
+
+
 export type simpleTokenType = {
   icon: string;
   symbol: string;
@@ -1242,6 +1248,11 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
     localStorage.setItem("wrapRequests", JSONbig.stringify(currentRequests));
   };
 
+  /**
+   * * GTM SERVICE
+   */
+  const sendDataToGTM = useGTMDispatch()
+
   const onFormSubmit = async () => {
     const showSpinner = handleSpinner(
       <>
@@ -1257,7 +1268,23 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
       } else {
         // WZNN => ZNN
         await wznnToZnn();
+
+        /**
+         * * GTM SERVICE
+         * ? Sending data to GTM
+         */
+        sendDataToGTM({
+          event: 'attribute', 
+          action: 'attribute', 
+          category: 'bridge_tokens', 
+          event_category: 'bridge_tokens', 
+          event_label: `swap_wznn_znn_${ercAmount}`, 
+          event_value: ercAmount,
+          label: `swap_wznn_znn_${ercAmount}`, 
+          value: ercAmount, 
+        })
       }
+
       showSpinner(false);
       setIsNextDisabled(false);
 

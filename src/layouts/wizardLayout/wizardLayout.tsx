@@ -21,6 +21,13 @@ import {
 } from "../../services/redux/wizardStatusSlice";
 import "./wizardLayout.scss";
 
+
+
+/**
+ * * GTM SERVICE
+ */
+import { GTMProvider } from '@elgorditosalsero/react-gtm-hook'
+
 const WizardLayout = () => {
   const wizardStatus = useSelector((state: any) => state.wizardStatus);
   const dispatch = useDispatch();
@@ -126,6 +133,14 @@ const WizardLayout = () => {
     console.log("addLiquidityStepSubmit step completed");
   };
 
+    /**
+   * * GTM SERVICE
+   * @param { id: 'GTM-ID' }
+   */
+    const globalConstants = useSelector((state: any) => state.globalConstants);
+
+    const gtmParams = { id: globalConstants.GTM_ID }
+
   return (
     <div className="wizard-container">
       <div className="container-header">
@@ -147,7 +162,9 @@ const WizardLayout = () => {
 
         {currentFlowStep === swapFlowSteps.Swap && (
           <div className="w-100">
-            <SwapStep onStepSubmit={swapInitiated} />
+            <GTMProvider state={gtmParams}>
+              <SwapStep onStepSubmit={swapInitiated} />
+            </GTMProvider>
           </div>
         )}
 
