@@ -108,7 +108,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
   });
 
   const [minErcAmount, setMinErcAmount] = useState("");
-  const [ercAmount, setErcAmount] = useState("10.1");
+  const [ercAmount, setErcAmount] = useState("");
   const [ercBalance, setErcBalance] = useState("");
   const [ercAddress, setErcAddress] = useState("");
   const [ercToken, setErcToken] = useState<simpleTokenType>({
