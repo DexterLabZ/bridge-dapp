@@ -40,7 +40,6 @@ import "./swapStep.scss";
  */
 import { useGTMDispatch } from '@elgorditosalsero/react-gtm-hook'
 
-
 export type simpleTokenType = {
   icon: string;
   symbol: string;
