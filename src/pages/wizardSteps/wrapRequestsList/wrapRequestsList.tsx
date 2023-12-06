@@ -21,7 +21,7 @@ import telegramLogo from "./../../../assets/logos/telegram.svg";
 import twitterLogo from "./../../../assets/logos/twitter.svg";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
-const WrapRequestsList = ({ onStepSubmit = () => { } }) => {
+const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
   const newSwapIcon = <img alt="" className="" height="15px" src={newSwapSvg} />;
 
   const storedRequests = useSelector((state: any) => state.requests);
@@ -246,18 +246,30 @@ const WrapRequestsList = ({ onStepSubmit = () => { } }) => {
 
   const getWrapRequestStatus = async (wrapRequest: WrapRequestItem) => {
     try {
+      console.log("getWrapRequestStatus");
       const provider = new ethers.providers.Web3Provider(window.ethereum);
+      console.log("provider", provider);
 
       const currentContractAddress = wrapRequest?.toToken?.network?.contractAddress || "";
       console.log("currentContractAddress", currentContractAddress);
 
       const contract = new ethers.Contract(currentContractAddress, globalConstants.abiContract, provider);
+      console.log("contract", contract);
+
       const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
+      console.log("signer", signer);
+
       const signedContract = contract.connect(signer);
+      console.log("signedContract", signedContract);
 
       const tokenAddress = wrapRequest.tokenAddress;
+      console.log("tokenAddress", tokenAddress);
       const amount = ethers.BigNumber.from(wrapRequest.amount).sub(ethers.BigNumber.from(wrapRequest.feeAmount || 0));
+      console.log("amount", amount);
+
       const id = wrapRequest.id;
+
+      console.log("id", "0x" + id);
 
       if (wrapRequest?.signature && wrapRequest?.signature.length > 0) {
         const signature = Buffer.from(wrapRequest.signature || "", "base64");
@@ -275,9 +287,39 @@ const WrapRequestsList = ({ onStepSubmit = () => { } }) => {
           wrapRequest.status = wrapRequestStatus.Redeemable;
         }
 
+        const redeemsInfo = await signedContract.redeemsInfo("0x" + id);
+        console.log("redeemsInfo", redeemsInfo);
+
+        const blockNumber = ethers.BigNumber.from(redeemsInfo.blockNumber);
+        console.log("blockNumber", blockNumber);
+        console.log("blockNumber.toString()", blockNumber?.toString());
+
+        if (
+          blockNumber?.toString() === "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+        ) {
+          console.log("Redeemed 2/2");
+          // Redeemed 2/2
+          wrapRequest.status = wrapRequestStatus.FinalRedeemed;
+        } else {
+          if (blockNumber.gt(0)) {
+            // Redeemed 1/2
+            console.log("Redeemed 1/2");
+            const block = await provider.getBlock(blockNumber?.toNumber());
+            console.log("Redeemed 1/2 - block", block);
+            const blockTimestamp = block.timestamp;
+            wrapRequest.timestamp = blockTimestamp;
+            wrapRequest.status = wrapRequestStatus.PartialRedeemed;
+          } else {
+            // Not redeemed
+            console.log("Not redeemed");
+            wrapRequest.status = wrapRequestStatus.Redeemable;
+          }
+        }
+
         return wrapRequest;
       }
     } catch (err: any) {
+      console.warn("err ", err);
       const readableError = JSON.stringify(err).toLowerCase();
       console.warn("readableError ", readableError);
 
@@ -333,6 +375,7 @@ const WrapRequestsList = ({ onStepSubmit = () => { } }) => {
 
   const updateRedeemDelayAndStatus = async (wrapRequest: WrapRequestItem) => {
     try {
+      console.log("updateRedeemDelayAndStatus");
       const web3Instance = new ethers.providers.Web3Provider(window.ethereum);
       const provider = web3Instance;
       const currentContractAddress = wrapRequest?.toToken?.network?.contractAddress || "";
@@ -351,6 +394,18 @@ const WrapRequestsList = ({ onStepSubmit = () => { } }) => {
 
       const estimatedBlockTimeInSeconds = await signedContract.estimatedBlockTime();
       console.log("estimatedBlockTimeInSeconds", estimatedBlockTimeInSeconds.toNumber());
+
+      // const id = wrapRequest.id;
+
+      // console.log("id", "0x" + id);
+
+      // const redeemsInfo = await signedContract.redeemsInfo("0x" + id);
+      // console.log("redeemsInfo", redeemsInfo);
+
+      // const block = await provider.getBlock(redeemsInfo.blockNumber);
+      // console.log("block", block);
+      // const blockTimestamp = block.timestamp;
+      // wrapRequest.timestamp = blockTimestamp;
 
       if (wrapRequest.transactionBlockNumber && wrapRequest.transactionHash && wrapRequest.timestamp) {
         const currentBlockNumber = await web3Instance.getBlockNumber();
@@ -425,7 +480,9 @@ const WrapRequestsList = ({ onStepSubmit = () => { } }) => {
       wrapRequest.transactionHash = redeemResponse.hash.substr(2);
       console.log("redeemResponse.hash", redeemResponse.hash);
 
-      const blockHash = (await web3Instance.getTransaction(redeemResponse.hash)).blockHash || 0;
+      const redeemTransaction = await web3Instance.getTransaction(redeemResponse.hash);
+      console.log("redeemTransaction", redeemTransaction);
+      const blockHash = redeemTransaction?.blockHash || 0;
       console.log("blockHash", blockHash);
       const block = await web3Instance.getBlock(blockHash);
       console.log("block", block);
@@ -485,8 +542,8 @@ const WrapRequestsList = ({ onStepSubmit = () => { } }) => {
         const waitingMinutes = (wrapRequest.redeemDelayInSeconds || constants.wrapRedeemDelayInSeconds) / 60;
         toast(
           "Successfully redeemed 1/2. Please wait " +
-          parseFloat(waitingMinutes + "").toFixed(0) +
-          ` minute${waitingMinutes == 1 ? "" : "s"} to fully redeem.`,
+            parseFloat(waitingMinutes + "").toFixed(0) +
+            ` minute${waitingMinutes == 1 ? "" : "s"} to fully redeem.`,
           {
             position: "bottom-center",
             autoClose: 5000,
@@ -643,47 +700,51 @@ const WrapRequestsList = ({ onStepSubmit = () => { } }) => {
       <div className="mt-4" id="requests-list-root">
         {requestItems.length > 0 && !isLoading
           ? requestItems.map((requestItem, i) => {
-            return (
-              <WrapRequestItemComponent
-                currentChainId={metamaskChainId}
-                key={"request-item-" + requestItem.id + requestItem.toAddress + i}
-                onRedeem={onItemRedeem}
-                originalRequestItem={requestItem}></WrapRequestItemComponent>
-            );
-          })
+              return (
+                <WrapRequestItemComponent
+                  currentChainId={metamaskChainId}
+                  key={"request-item-" + requestItem.id + requestItem.toAddress + i}
+                  onRedeem={onItemRedeem}
+                  originalRequestItem={requestItem}></WrapRequestItemComponent>
+              );
+            })
           : !isLoading && (
-            <div className="w-100 d-flex align-items-center flex-columns mt-5">
-              <h4 className="text-gray text-center">
-                {`You have no wrap requests yet.`}
-                <br></br>
-                <br></br>
-                {`If you've created a Wrap Request in the past 30 minutes and it's missing, it is probably still confirming on the Ethereum network or being signed by the bridge. This can sometimes take longer than 30 minutes, so please be patient or reach out on Telegram for support.`}
-              </h4>
+              <div className="w-100 d-flex align-items-center flex-columns mt-5">
+                <h4 className="text-gray text-center">
+                  {`You have no wrap requests yet.`}
+                  <br></br>
+                  <br></br>
+                  {`If you've created a Wrap Request in the past 30 minutes and it's missing, it is probably still confirming on the Ethereum network or being signed by the bridge. This can sometimes take longer than 30 minutes, so please be patient or reach out on Telegram for support.`}
+                </h4>
 
-              <div className="d-flex align-items-center justify-items-center gap-2">
-                <a href="https://twitter.com/LearnZenon" target="_blank" rel="noreferrer" className="tooltip">
-                  <img alt="twitter support" className="cursor-pointer" height={52} src={twitterLogo}></img>
-                  <span className="tooltip-text">Twitter</span>
-                </a>
-                <a href=" https://t.me/zenonnetwork" target="_blank" rel="noreferrer" className="tooltip">
-                  <img alt="telegram support" className="cursor-pointer" height={52} src={telegramLogo}></img>
-                  <span className="tooltip-text">Telegram</span>
-                </a>
-                <a href="https://forum.zenon.org" target="_blank" rel="noreferrer" className="tooltip">
-                  <img alt="forum support" className="cursor-pointer" height={52} src={forumLogo}></img>
-                  <span className="tooltip-text">Forum</span>
-                </a>
-                <a href="https://discord.com/invite/zenonnetwork" target="_blank" rel="noreferrer" className="tooltip">
-                  <img alt="discord support" className="cursor-pointer" height={52} src={discordLogo}></img>
-                  <span className="tooltip-text">Discord</span>
-                </a>
-              </div>
+                <div className="d-flex align-items-center justify-items-center gap-2">
+                  <a href="https://twitter.com/LearnZenon" target="_blank" rel="noreferrer" className="tooltip">
+                    <img alt="twitter support" className="cursor-pointer" height={52} src={twitterLogo}></img>
+                    <span className="tooltip-text">Twitter</span>
+                  </a>
+                  <a href=" https://t.me/zenonnetwork" target="_blank" rel="noreferrer" className="tooltip">
+                    <img alt="telegram support" className="cursor-pointer" height={52} src={telegramLogo}></img>
+                    <span className="tooltip-text">Telegram</span>
+                  </a>
+                  <a href="https://forum.zenon.org" target="_blank" rel="noreferrer" className="tooltip">
+                    <img alt="forum support" className="cursor-pointer" height={52} src={forumLogo}></img>
+                    <span className="tooltip-text">Forum</span>
+                  </a>
+                  <a
+                    href="https://discord.com/invite/zenonnetwork"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="tooltip">
+                    <img alt="discord support" className="cursor-pointer" height={52} src={discordLogo}></img>
+                    <span className="tooltip-text">Discord</span>
+                  </a>
+                </div>
 
-              <div className="mt-5" style={{ width: "220px" }} onClick={() => goToNewSwap()} tabIndex={0}>
-                <NavMenuButton content="Make a swap" link="" isActive={false} icon={newSwapIcon}></NavMenuButton>
+                <div className="mt-5" style={{ width: "220px" }} onClick={() => goToNewSwap()} tabIndex={0}>
+                  <NavMenuButton content="Make a swap" link="" isActive={false} icon={newSwapIcon}></NavMenuButton>
+                </div>
               </div>
-            </div>
-          )}
+            )}
       </div>
       <div className={`${maxPages > 1 ? "" : "invisible-no-interaction"}`}>
         <Paginator

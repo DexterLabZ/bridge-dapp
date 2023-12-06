@@ -46,7 +46,7 @@ import znnTokenIcon from "./../../../assets/tokens/znn.svg";
 import "./extensionConnect.scss";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
-const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFlow = false }) => {
+const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlow = false }) => {
   const zenon = Zenon.getSingleton();
 
   const [isMetamaskConnected, setIsMetamaskConnected] = useState(false);
@@ -324,9 +324,9 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
       };
 
       dispatch(storeGlobalConstants(updatedConstants));
-      
+
       console.log("updatedConstants after metamask data", updatedConstants);
-      
+
       setGlobalConstants(updatedConstants);
 
       dispatch(storeErcInfo(JSON.stringify({ address: accounts[0], balance: wznnBalance })));
@@ -370,7 +370,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
       const addressObject = Primitives.Address.parse(address);
 
       const getAccountInfoByAddress = await zenon.ledger.getAccountInfoByAddress(addressObject);
-      
+
       console.log("getAccountInfoByAddress", getAccountInfoByAddress);
 
       const plasma = await zenon.embedded.plasma.get(addressObject);
@@ -972,7 +972,11 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
                 every unwrap from wZNN to ZNN and wQSR to QSR
               </div>
             </div>
-            <img alt="step-logo" className="ml-1" style={{ maxWidth: "32px", maxHeight: "32px" }} src={twitterLogo}></img>
+            <img
+              alt="step-logo"
+              className="ml-1"
+              style={{ maxWidth: "32px", maxHeight: "32px" }}
+              src={twitterLogo}></img>
           </div>
         </a>
       )}
@@ -997,12 +1001,14 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
             <div className="d-flex gap-2 flex-wrap w-100 justify-content-center align-items-center">
               <div
                 onClick={() => connectSyrius(zenonProviderTypes.syriusExtension)}
-                className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${isSyriusConnected && zenonClient.providerType ? "disabled" : ""
-                  }
-               ${isSyriusConnected && zenonClient.providerType == zenonProviderTypes.syriusExtension
-                    ? "primary soft-disabled"
-                    : "secondary"
-                  }`}>
+                className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${
+                  isSyriusConnected && zenonClient.providerType ? "disabled" : ""
+                }
+               ${
+                 isSyriusConnected && zenonClient.providerType == zenonProviderTypes.syriusExtension
+                   ? "primary soft-disabled"
+                   : "secondary"
+               }`}>
                 <img
                   alt="step-logo"
                   className="mr-1"
@@ -1013,12 +1019,14 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
               <div className="">or</div>
               <div
                 onClick={() => connectSyrius(zenonProviderTypes.walletConnect)}
-                className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${isSyriusConnected && zenonClient.providerType ? "disabled" : ""
-                  }
-               ${isSyriusConnected && zenonClient.providerType == zenonProviderTypes.walletConnect
-                    ? "primary soft-disabled"
-                    : "secondary"
-                  }`}>
+                className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${
+                  isSyriusConnected && zenonClient.providerType ? "disabled" : ""
+                }
+               ${
+                 isSyriusConnected && zenonClient.providerType == zenonProviderTypes.walletConnect
+                   ? "primary soft-disabled"
+                   : "secondary"
+               }`}>
                 <img
                   alt="step-logo"
                   className="mr-1"
@@ -1045,8 +1053,9 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
         </div>
       </div>
       <div
-        className={`extension-item mb-5 ${!isSyriusConnected ? "disabled" : ""} ${isMetamaskConnected ? "" : "cursor-pointer dark-shadow-on-hover"
-          }`}
+        className={`extension-item mb-5 ${!isSyriusConnected ? "disabled" : ""} ${
+          isMetamaskConnected ? "" : "cursor-pointer dark-shadow-on-hover"
+        }`}
         onClick={() => {
           if (!isMetamaskConnected) {
             connectMetamask();
