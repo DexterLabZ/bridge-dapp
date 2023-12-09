@@ -581,24 +581,24 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
       },
       {
         icon: znnTokenIcon,
-        symbol: globalConstants.znnEthLpsTokenInfo.symbol,
+        symbol: globalConstants.znnEthLpTokenInfo.symbol,
         name: "ZNN - ETH LP",
-        address: globalConstants.znnEthLpsTokenInfo.address,
+        address: globalConstants.znnEthLpTokenInfo.address,
         network: internalAvailableNetworks[0],
         balance: "0",
-        decimals: globalConstants.znnEthLpsTokenInfo.decimals,
+        decimals: globalConstants.znnEthLpTokenInfo.decimals,
         isAvailable: false,
         availableSoon: false,
         isCommonToken: true,
       },
       {
         icon: qsrTokenIcon,
-        symbol: globalConstants.qsrEthLpsTokenInfo.symbol,
+        symbol: globalConstants.qsrEthLpTokenInfo.symbol,
         name: "QSR - ETH LP",
-        address: globalConstants.qsrEthLpsTokenInfo.address,
+        address: globalConstants.qsrEthLpTokenInfo.address,
         network: internalAvailableNetworks[0],
         balance: "0",
-        decimals: globalConstants.qsrEthLpsTokenInfo.decimals,
+        decimals: globalConstants.qsrEthLpTokenInfo.decimals,
         isAvailable: false,
         availableSoon: false,
         isCommonToken: true,
@@ -726,6 +726,8 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
       },
     ];
 
+    console.log("EXT_CONNECT_CONSTANTS getAllNetworks", getAllNetworks);
+    console.log("EXT_CONNECT_CONSTANTS externalAvailableNetworks", externalAvailableNetworks);
     getAllNetworks.list.forEach((network: any) => {
       let isNetworkLocallyDefined = false;
       externalAvailableNetworks = externalAvailableNetworks.map((extNetwork) => {

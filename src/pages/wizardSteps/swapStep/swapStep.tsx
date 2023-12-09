@@ -38,7 +38,7 @@ import "./swapStep.scss";
 /**
  * * GTM SERVICE
  */
-import { useGTMDispatch } from '@elgorditosalsero/react-gtm-hook'
+import { useGTMDispatch } from "@elgorditosalsero/react-gtm-hook";
 
 export type simpleTokenType = {
   icon: string;
@@ -341,8 +341,8 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
       const currentToken = ercToken.address
         ? ercToken
         : updatedConstants.externalAvailableTokens.find(
-          (tok: any) => tok.isAvailable == true && metamaskCurrentChainId === tok.network.chainId
-        );
+            (tok: any) => tok.isAvailable == true && metamaskCurrentChainId === tok.network.chainId
+          );
 
       console.log("currentToken", JSONbig.stringify(currentToken));
 
@@ -1250,7 +1250,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
   /**
    * * GTM SERVICE
    */
-  const sendDataToGTM = useGTMDispatch()
+  const sendDataToGTM = useGTMDispatch();
 
   const onFormSubmit = async () => {
     const showSpinner = handleSpinner(
@@ -1267,21 +1267,20 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
       } else {
         // WZNN => ZNN
         await wznnToZnn();
-
         /**
          * * GTM SERVICE
          * ? Sending data to GTM
          */
         sendDataToGTM({
-          event: 'attribute', 
-          action: 'attribute', 
-          category: 'bridge_tokens', 
-          event_category: 'bridge_tokens', 
-          event_label: `swap_wznn_znn_${ercAmount}`, 
+          event: "attribute",
+          action: "attribute",
+          category: "bridge_tokens",
+          event_category: "bridge_tokens",
+          event_label: `swap_wznn_znn_${ercAmount}`,
           event_value: ercAmount,
-          label: `swap_wznn_znn_${ercAmount}`, 
-          value: ercAmount, 
-        })
+          label: `swap_wznn_znn_${ercAmount}`,
+          value: ercAmount,
+        });
       }
 
       showSpinner(false);
@@ -1344,8 +1343,9 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
               <div className="custom-control flex-1 min-width-100">
                 <input
                   {...register("zenonAddress", { required: true })}
-                  className={`w-100 h-100 address-field custom-label ${errors.zenonAddress ? "custom-label-error" : ""
-                    }`}
+                  className={`w-100 h-100 address-field custom-label ${
+                    errors.zenonAddress ? "custom-label-error" : ""
+                  }`}
                   placeholder="Type your address"
                   value={zenonAddress}
                   onChange={(e) => {

@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import React from "react";
-import {Provider} from "react-redux";
-import {Route, Routes, BrowserRouter as Router} from "react-router-dom";
+import { Provider } from "react-redux";
+import { Route, Routes, BrowserRouter as Router } from "react-router-dom";
 import MainLayout from "./layouts/mainLayout/mainLayout";
-import {store} from "./services/redux/store";
+import { store } from "./services/redux/store";
 
 function App() {
   // const disableConsoleLogs = process.env.NODE_ENV === "production";

@@ -277,7 +277,7 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
         const newSig = signature.toString("hex");
 
         console.log("estimateGas.redeem", wrapRequest.toAddress, tokenAddress, amount, "0x" + id, "0x" + newSig);
-        await signedContract.estimateGas.redeem(wrapRequest.toAddress, tokenAddress, amount, "0x" + id, "0x" + newSig);
+        // await signedContract.estimateGas.redeem(wrapRequest.toAddress, tokenAddress, amount, "0x" + id, "0x" + newSig);
 
         if (
           wrapRequest.status == wrapRequestStatus.Signing ||
@@ -297,8 +297,8 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
         if (
           blockNumber?.toString() === "115792089237316195423570985008687907853269984665640564039457584007913129639935"
         ) {
-          console.log("Redeemed 2/2");
-          // Redeemed 2/2
+          console.log("Final redeemed");
+          // Final redeemed
           wrapRequest.status = wrapRequestStatus.FinalRedeemed;
         } else {
           if (blockNumber.gt(0)) {
@@ -308,7 +308,7 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
             console.log("Redeemed 1/2 - block", block);
             const blockTimestamp = block.timestamp;
             wrapRequest.timestamp = blockTimestamp;
-            wrapRequest.status = wrapRequestStatus.PartialRedeemed;
+            wrapRequest.status = wrapRequestStatus.WaitingDelay;
           } else {
             // Not redeemed
             console.log("Not redeemed");
@@ -393,19 +393,19 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
       console.log("redeemDelay", redeemDelay);
 
       const estimatedBlockTimeInSeconds = await signedContract.estimatedBlockTime();
-      console.log("estimatedBlockTimeInSeconds", estimatedBlockTimeInSeconds.toNumber());
+      console.log("_estimatedBlockTimeInSeconds", estimatedBlockTimeInSeconds.toNumber());
 
-      // const id = wrapRequest.id;
+      const redeemsInfo = await signedContract.redeemsInfo("0x" + wrapRequest.id);
+      console.log("_redeemsInfo", redeemsInfo);
 
-      // console.log("id", "0x" + id);
+      const blockNumber = ethers.BigNumber.from(redeemsInfo.blockNumber);
+      console.log("_blockNumber", blockNumber);
+      console.log("_blockNumber.toString()", blockNumber?.toString());
+      wrapRequest.transactionBlockNumber = blockNumber?.toNumber();
 
-      // const redeemsInfo = await signedContract.redeemsInfo("0x" + id);
-      // console.log("redeemsInfo", redeemsInfo);
-
-      // const block = await provider.getBlock(redeemsInfo.blockNumber);
-      // console.log("block", block);
-      // const blockTimestamp = block.timestamp;
-      // wrapRequest.timestamp = blockTimestamp;
+      const block = await provider.getBlock(redeemsInfo.blockNumber);
+      console.log("_block", block);
+      wrapRequest.timestamp = redeemsInfo.blockNumber;
 
       if (wrapRequest.transactionBlockNumber && wrapRequest.transactionHash && wrapRequest.timestamp) {
         const currentBlockNumber = await web3Instance.getBlockNumber();
@@ -482,13 +482,18 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
 
       const redeemTransaction = await web3Instance.getTransaction(redeemResponse.hash);
       console.log("redeemTransaction", redeemTransaction);
-      const blockHash = redeemTransaction?.blockHash || 0;
-      console.log("blockHash", blockHash);
-      const block = await web3Instance.getBlock(blockHash);
-      console.log("block", block);
-      const blockTimestamp = block.timestamp;
 
-      wrapRequest.transactionBlockNumber = block.number;
+      const blockNumber = redeemTransaction?.blockNumber;
+      let blockTimestamp = 0;
+
+      if (blockNumber) {
+        console.log("blockNumber", blockNumber);
+        const block = await web3Instance.getBlock(blockNumber);
+        console.log("block", block);
+        blockTimestamp = block.timestamp;
+
+        wrapRequest.transactionBlockNumber = block.number;
+      }
 
       console.log("Date.now()", Date.now());
 
