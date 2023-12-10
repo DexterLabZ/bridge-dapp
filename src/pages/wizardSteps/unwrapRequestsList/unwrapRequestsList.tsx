@@ -148,10 +148,10 @@ const UnwrapRequestsList = ({ onStepSubmit = () => { } }) => {
         console.log("evmTransaction", evmTransaction);
 
         const iface = new ethers.utils.Interface(globalConstants.abiContract);
+        let amountForBeingReferred = 0;
         try {
-          const amountForBeingReferred = iface.decodeFunctionData("unwrap", evmTransaction?.data)[1];
+          amountForBeingReferred = iface.decodeFunctionData("unwrap", evmTransaction?.data)[1];
         } catch(err) {
-          const amountForBeingReferred = 0;
           console.error(err);
         }
         const parsedAmount = ethers.utils.formatUnits(amountForBeingReferred, request.token?.decimals);
