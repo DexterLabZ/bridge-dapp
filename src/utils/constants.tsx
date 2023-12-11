@@ -58,7 +58,7 @@ const constants = {
   ethWqsrTokenInfo: {
     symbol: "wQSR",
     decimals: 8,
-    address: process.env.REACT_APP_PUBLIC_CONSTANTS_PROD_WQSR_ADDRESS || "0x0000000000000000000000000000000000000000",
+    address: "0x96546afe4a21515a3a30cd3fd64a70eb478dc174",
   },
 
   // Internal default tokens

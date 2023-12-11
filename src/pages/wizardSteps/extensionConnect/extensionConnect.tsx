@@ -486,15 +486,48 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
       dispatch(storeMomentumHeight(args[0].height));
     });
 
-    const internalAvailableNetworks: simpleNetworkType[] = [
-      {
-        name: "Zenon",
-        chainId: 3,
-        icon: znnNetworkIcon,
-        isAvailable: true,
-        color: "#67E646",
-      },
-    ];
+    const disconnectHandler = (args: any) => {
+      console.error("Disconnected from socket!", args);
+      toast("Disconnected from node. Please check your internet connection and refresh the page", {
+        position: "bottom-center",
+        autoClose: false,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: false,
+        draggable: true,
+        type: "error",
+        theme: "dark",
+        toastId: "disconnected",
+      });
+    };
+
+    zenon.wsClient?._wsRpc2Client.on("disconnect", disconnectHandler);
+    zenon.wsClient?._wsRpc2Client.on("close", disconnectHandler);
+    zenon.wsClient?._wsRpc2Client.on("error", disconnectHandler);
+
+    let internalAvailableNetworks: simpleNetworkType[] = [];
+
+    if (updatedConstants.isDevNet || updatedConstants.isTestNet) {
+      internalAvailableNetworks = [
+        {
+          name: "Zenon",
+          chainId: 3,
+          icon: znnNetworkIcon,
+          isAvailable: true,
+          color: "#67E646",
+        },
+      ];
+    } else {
+      internalAvailableNetworks = [
+        {
+          name: "Zenon",
+          chainId: 1,
+          icon: znnNetworkIcon,
+          isAvailable: true,
+          color: "#67E646",
+        },
+      ];
+    }
 
     // Default - mainNet
     let externalAvailableNetworks: simpleNetworkType[] = [
