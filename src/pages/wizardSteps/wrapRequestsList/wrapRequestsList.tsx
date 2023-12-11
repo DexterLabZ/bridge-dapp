@@ -316,6 +316,12 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
           }
         }
 
+        if (!wrapRequest?.redeemDelayInSeconds) {
+          console.log("redeemDelayInSeconds????", wrapRequest);
+          wrapRequest = await updateRedeemDelayAndStatus(wrapRequest);
+          console.log("redeemDelayInSeconds???? after", wrapRequest);
+        }
+
         return wrapRequest;
       }
     } catch (err: any) {
@@ -403,11 +409,13 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
       console.log("_blockNumber.toString()", blockNumber?.toString());
       wrapRequest.transactionBlockNumber = blockNumber?.toNumber();
 
-      const block = await provider.getBlock(redeemsInfo.blockNumber);
+      const block = await provider.getBlock(blockNumber?.toNumber());
       console.log("_block", block);
-      wrapRequest.timestamp = redeemsInfo.blockNumber;
+      wrapRequest.timestamp = block.timestamp;
 
-      if (wrapRequest.transactionBlockNumber && wrapRequest.transactionHash && wrapRequest.timestamp) {
+      console.log("wrapRequest before updating redeemDelayInSeconds", wrapRequest);
+
+      if (wrapRequest.transactionBlockNumber && wrapRequest.id && wrapRequest.timestamp) {
         const currentBlockNumber = await web3Instance.getBlockNumber();
         const elapsedBlocks = currentBlockNumber - wrapRequest.transactionBlockNumber;
         console.log("elapsedBlocks", elapsedBlocks);
@@ -428,6 +436,8 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
           wrapRequest.redeemDelayInSeconds = (wrapRequest.redeemDelayInSeconds || 0) + refreshInterval / 1000;
         }
       }
+
+      console.log("wrapRequest after updating redeemDelayInSeconds", wrapRequest);
 
       return wrapRequest;
     } catch (err) {

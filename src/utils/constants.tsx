@@ -347,6 +347,7 @@ const testConstants = {
       multiplierLabel: "1.6x",
     },
   ],
+  GTM_ID: "GTM-XXXXXX",
 };
 
 //
@@ -479,6 +480,7 @@ const developmentConstants = {
       multiplierLabel: "1.6x",
     },
   ],
+  GTM_ID: "GTM-XXXXXX",
 };
 
 let exportedConstants = constants;
