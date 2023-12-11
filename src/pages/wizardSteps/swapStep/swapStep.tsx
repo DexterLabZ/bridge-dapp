@@ -150,7 +150,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
 
   useEffect(() => {
     const runAsyncTasks = async () => {
-      console.log("swapStep globalConstants", globalConstants);
+      console.log("swapStep globalConstants", Object.freeze(Object.assign(globalConstants, {})));
       let metamaskCurrentChainId: number;
       let defaultExternalToken: any;
       try {
@@ -158,15 +158,30 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
         metamaskCurrentChainId = (await provider.getNetwork())?.chainId;
         await validateMetamaskNetwork(provider, globalConstants.externalAvailableNetworks, metamaskCurrentChainId);
         console.log("metamaskCurrentChainId", metamaskCurrentChainId);
-        console.log("globalConstants.externalAvailableTokens", globalConstants.externalAvailableTokens);
+        // console.log(
+        //   "globalConstants.externalAvailableTokens",
+        //   Object.freeze(
+        //     Object.assign(
+        //       globalConstants.externalAvailableTokens.map((t: any) => {
+        //         return Object.freeze(Object.assign(t, {}));
+        //       }),
+        //       []
+        //     )
+        //   )
+        // );
+        console.log(
+          "JSON.stringify(globalConstants.externalAvailableTokens)",
+          JSON.stringify(globalConstants.externalAvailableTokens)
+        );
+
         defaultExternalToken = globalConstants.externalAvailableTokens.find(
           (tok: any) => tok.isAvailable && metamaskCurrentChainId === tok.network.chainId
         );
-        console.log("swapStep - defaultExternalToken", defaultExternalToken);
+        console.log("swapStep - defaultExternalToken", Object.freeze(Object.assign(defaultExternalToken, {})));
       } catch (err) {
         console.error(err);
         defaultExternalToken = globalConstants.externalAvailableTokens.find((tok: any) => tok.isAvailable);
-        console.log("swapStep - ERR - defaultExternalToken", defaultExternalToken);
+        console.log("swapStep - ERR - defaultExternalToken", Object.freeze(Object.assign(defaultExternalToken, {})));
       }
 
       const ercTok = {
@@ -175,22 +190,19 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
         ) || defaultExternalToken),
         balance: JSONbig.parse(serializedWalletInfo["ercInfo"]).balance,
       };
-      console.log("init ercToken", ercTok);
+      console.log("init ercToken", Object.freeze(Object.assign(ercTok, {})));
       setValue("ercToken", ercTok, { shouldValidate: true });
       setErcToken(ercTok);
 
-      console.log(
-        "getPairOfToken(defaultExternalToken.address, defaultExternalToken?.network?.chainId)",
-        getPairOfToken(defaultExternalToken.address, defaultExternalToken.chainIdsOfPairedTokens[0])
-      );
       console.log("defaultExternalToken", defaultExternalToken);
       console.log("JSONbig.parse(serializedWalletInfo['zenonInfo'])", JSONbig.parse(serializedWalletInfo["zenonInfo"]));
 
+      const pairOfToken = getPairOfToken(defaultExternalToken.address, defaultExternalToken.chainIdsOfPairedTokens[0]);
+      console.log("pairOfToken", Object.freeze(Object.assign(pairOfToken, {})));
+
       const internalToken = findInObject(
         JSONbig.parse(serializedWalletInfo["zenonInfo"])?.balanceInfoMap,
-        (tok: any) =>
-          tok.address ===
-          getPairOfToken(defaultExternalToken.address, defaultExternalToken.chainIdsOfPairedTokens[0]).address
+        (tok: any) => tok.address === pairOfToken.address
       );
       const znnTok = {
         ...internalToken,

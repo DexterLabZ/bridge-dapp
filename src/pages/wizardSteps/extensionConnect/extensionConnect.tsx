@@ -163,10 +163,15 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
       setSyriusAddress(zenonInfo.address);
       const zenonWalletInfo = await getBalances(zenonInfo.address);
       console.log("zenonWalletInfo", zenonWalletInfo);
+      console.log("JSON.stringify(zenonWalletInfo)", JSON.stringify(zenonWalletInfo));
 
       let updatedConstants = await updateGlobalConstantsWithBridgeInfo();
       console.log("globalConstants", updatedConstants);
-      console.log("globalConstants.internalAvailableTokens", updatedConstants.internalAvailableTokens);
+      console.log("updatedConstants.internalAvailableTokens", updatedConstants.internalAvailableTokens);
+      console.log(
+        "JSON.stringify(updatedConstants.internalAvailableTokens)",
+        JSON.stringify(updatedConstants.internalAvailableTokens)
+      );
       zenonWalletInfo.balanceInfoMap = await mapObject(
         updatedConstants.internalAvailableTokens,
         async (tok: simpleTokenType) => {
@@ -190,6 +195,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
           }
         }
       );
+      console.log("JSON.stringify(zenonWalletInfo.balanceInfoMap)", JSON.stringify(zenonWalletInfo.balanceInfoMap));
 
       updatedConstants = await updateGlobalConstantsWithLiquidityInfo(
         zenon,
@@ -476,6 +482,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
 
     const getAllNetworks = await zenon.embedded.bridge.getAllNetworks();
     console.log("getAllNetworks", getAllNetworks);
+    console.log("JSON.stringify(getAllNetworks)", JSON.stringify(getAllNetworks));
 
     const getFrontierMomentum = await zenon.ledger.getFrontierMomentum();
     console.log("getFrontierMomentum", getFrontierMomentum);
@@ -835,6 +842,8 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
           pair.tokenAddress,
           externalAvailableNetworks.find((net) => net.chainId === network.chainId) || externalAvailableNetworks[0]
         );
+
+        console.log("first_externalAvailableTokens", JSON.stringify(externalAvailableTokens));
 
         const updatedPair = {
           ...pair,
