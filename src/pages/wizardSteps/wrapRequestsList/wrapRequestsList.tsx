@@ -316,7 +316,7 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
           }
         }
 
-        if (!wrapRequest?.redeemDelayInSeconds) {
+        if (!wrapRequest?.transactionHash) {
           console.log("redeemDelayInSeconds????", wrapRequest);
           wrapRequest = await updateRedeemDelayAndStatus(wrapRequest);
           console.log("redeemDelayInSeconds???? after", wrapRequest);

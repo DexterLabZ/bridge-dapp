@@ -162,9 +162,11 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
         defaultExternalToken = globalConstants.externalAvailableTokens.find(
           (tok: any) => tok.isAvailable && metamaskCurrentChainId === tok.network.chainId
         );
+        console.log("swapStep - defaultExternalToken", defaultExternalToken);
       } catch (err) {
         console.error(err);
         defaultExternalToken = globalConstants.externalAvailableTokens.find((tok: any) => tok.isAvailable);
+        console.log("swapStep - ERR - defaultExternalToken", defaultExternalToken);
       }
 
       const ercTok = {
