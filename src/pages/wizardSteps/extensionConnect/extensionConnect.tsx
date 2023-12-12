@@ -807,7 +807,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
           tok.chainIdsOfPairedTokens.push(network.chainId);
         }
 
-        if (tok.address == tokenAddress && tok.network.chainId == network.chainId) {
+        if (tok.address.toLowerCase() == tokenAddress.toLowerCase() && tok.network.chainId == network.chainId) {
           isTokenLocallyDefined = true;
           tok.isAvailable = true;
           tok.network = networkList.find((net) => net.chainId === network.chainId);
@@ -847,9 +847,12 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
 
         const updatedPair = {
           ...pair,
-          internalToken: internalAvailableTokens.find((tok) => tok.address === pair.tokenStandard),
+          internalToken: internalAvailableTokens.find(
+            (tok) => tok.address.toLowerCase() === pair.tokenStandard.toLowerCase()
+          ),
           externalToken: externalAvailableTokens.find(
-            (tok) => tok.address === pair.tokenAddress && tok.network.chainId === network.chainId
+            (tok) =>
+              tok.address.toLowerCase() === pair.tokenAddress.toLowerCase() && tok.network.chainId === network.chainId
           ),
           wrapFeePercentage: pair.feePercentage,
           unwrapRedeemDelay: pair.redeemDelay,
