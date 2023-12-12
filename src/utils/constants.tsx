@@ -488,7 +488,8 @@ let exportedConstants = constants;
 console.log("process.env.NODE_ENV", process.env.NODE_ENV);
 console.log("process.env.REACT_APP_NETWORK_ENV", process.env.REACT_APP_NETWORK_ENV);
 
-if (process.env.REACT_APP_NETWORK_ENV === "production") exportedConstants = constants;
+if (process.env.REACT_APP_NETWORK_ENV === "production" || process.env.REACT_APP_NETWORK_ENV === "staging")
+  exportedConstants = constants;
 if (process.env.REACT_APP_NETWORK_ENV === "development") exportedConstants = developmentConstants;
 if (process.env.REACT_APP_NETWORK_ENV === "test") exportedConstants = testConstants;
 
