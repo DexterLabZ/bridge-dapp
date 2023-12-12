@@ -28,7 +28,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - run: npm ci
-    - run: npm run build-prod --if-present
+    - run: npm run build-staging --if-present
       env: 
         CI: false
     - name: Deploy to staging
