@@ -167,7 +167,9 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
       console.log("JSONbig.parse(serializedWalletInfo['zenonInfo'])", JSONbig.parse(serializedWalletInfo["zenonInfo"]));
 
       const localToken = globalConstants.liquidityInternalTokens.find(
-        (tok: any) => tok.address === getPairOfToken(defaultToken.address, defaultToken.network.chainId).address
+        (tok: any) =>
+          tok.address?.toLowerCase() ===
+          getPairOfToken(defaultToken.address, defaultToken.network.chainId).address?.toLowerCase()
       );
       const znnTok = {
         ...localToken,
@@ -439,7 +441,9 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
       console.log("ercToken.address", ercToken.address);
 
       const currentPair = globalConstants.liquidityTokenPairs.find(
-        (pair: any) => pair.internalToken.address == zenonToken.address && pair.externalToken.symbol == ercToken.symbol
+        (pair: any) =>
+          pair.internalToken.address?.toLowerCase() == zenonToken.address?.toLowerCase() &&
+          pair.externalToken.symbol == ercToken.symbol
       );
 
       console.log("currentPair", currentPair);
@@ -457,12 +461,14 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
     // ETH is the only token without address
     // TODO: Maybe find a way to create an unique identifier that doesn't rely on the absence of the address property
     if (!externalTokenAddress)
-      return globalConstants.liquidityTokenPairs.find((pair: any) => pair.internalToken.address == internalTokenAddress)
-        ?.pairParity;
+      return globalConstants.liquidityTokenPairs.find(
+        (pair: any) => pair.internalToken.address?.toLowerCase() == internalTokenAddress?.toLowerCase()
+      )?.pairParity;
 
     return globalConstants.liquidityTokenPairs.find(
       (pair: any) =>
-        pair.internalToken.address == internalTokenAddress && pair.externalToken.address == externalTokenAddress
+        pair.internalToken.address?.toLowerCase() == internalTokenAddress?.toLowerCase() &&
+        pair.externalToken.address?.toLowerCase() == externalTokenAddress?.toLowerCase()
     )?.pairParity;
   };
 
@@ -474,10 +480,13 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
     console.log("getPairOfToken - address", address);
     console.log("getPairOfToken - destinationChainId", destinationChainId);
     return (
-      globalConstants.liquidityTokenPairs.find((pair: any) => pair.internalToken.address == address)?.externalToken ||
+      globalConstants.liquidityTokenPairs.find(
+        (pair: any) => pair.internalToken.address?.toLowerCase() == address?.toLowerCase()
+      )?.externalToken ||
       globalConstants.liquidityTokenPairs.find(
         (pair: any) =>
-          pair.externalToken.address == address && pair?.externalToken?.network?.chainId == destinationChainId
+          pair.externalToken.address?.toLowerCase() == address?.toLowerCase() &&
+          pair?.externalToken?.network?.chainId == destinationChainId
       )?.internalToken
     );
   };
@@ -752,8 +761,8 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
 
         const currentPair = globalConstants.liquidityTokenPairs.find(
           (pair: any) =>
-            pair.internalToken.address == zenonToken.address &&
-            (ercToken.symbol == "ETH" || pair.externalToken.address == ercToken.address)
+            pair.internalToken.address?.toLowerCase() == zenonToken.address?.toLowerCase() &&
+            (ercToken.symbol == "ETH" || pair.externalToken.address?.toLowerCase() == ercToken.address?.toLowerCase())
         );
 
         const routerAddress = currentPair.routerContract;

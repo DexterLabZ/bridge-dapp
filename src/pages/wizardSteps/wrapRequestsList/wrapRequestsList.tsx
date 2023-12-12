@@ -171,7 +171,8 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
 
   const transformWrapRequest = async (request: { [key: string]: any }) => {
     request.toToken = globalConstants.externalAvailableTokens.find(
-      (tok: simpleTokenType) => tok.address == request.tokenAddress && tok.network.chainId == request?.chainId
+      (tok: simpleTokenType) =>
+        tok.address?.toLowerCase() == request.tokenAddress?.toLowerCase() && tok.network.chainId == request?.chainId
     );
 
     request.fromToken = {
@@ -179,7 +180,7 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
       address: request.token?.tokenStandard.toString(),
       decimals: request.token?.decimals,
       ...globalConstants.internalAvailableTokens.find(
-        (tok: simpleTokenType) => tok.address == request.token.tokenStandard
+        (tok: simpleTokenType) => tok.address?.toLowerCase() == request.token.tokenStandard?.toLowerCase()
       ),
     };
 

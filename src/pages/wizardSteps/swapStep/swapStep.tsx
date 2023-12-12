@@ -186,7 +186,9 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
 
       const ercTok = {
         ...(globalConstants.externalAvailableTokens.find(
-          (tok: any) => tok.address == ercToken.address && tok.network.chainId === metamaskCurrentChainId
+          (tok: any) =>
+            tok.address?.toLowerCase() == ercToken.address?.toLowerCase() &&
+            tok.network.chainId === metamaskCurrentChainId
         ) || defaultExternalToken),
         balance: JSONbig.parse(serializedWalletInfo["ercInfo"]).balance,
       };
@@ -202,7 +204,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
 
       const internalToken = findInObject(
         JSONbig.parse(serializedWalletInfo["zenonInfo"])?.balanceInfoMap,
-        (tok: any) => tok.address === pairOfToken.address
+        (tok: any) => tok.address?.toLowerCase() === pairOfToken.address?.toLowerCase()
       );
       const znnTok = {
         ...internalToken,
@@ -505,15 +507,18 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
       setPlasmaBalance(zenonInfo?.plasma?.currentPlasma);
 
       let tokenWithoutBalance =
-        findInObject(globalConstants.internalAvailableTokens, (tok: any) => tok.address == zenonToken.address) ||
-        globalConstants.internalAvailableTokens[0];
+        findInObject(
+          globalConstants.internalAvailableTokens,
+          (tok: any) => tok.address?.toLowerCase() == zenonToken.address?.toLowerCase()
+        ) || globalConstants.internalAvailableTokens[0];
 
       console.log("tokenWithoutBalance", tokenWithoutBalance);
 
       const tokenWithUpdatedBalance = findInObject(
         zenonInfo?.balanceInfoMap,
         (tok: any) =>
-          tok?.token?.tokenStandard == tokenWithoutBalance.address || tok?.address == tokenWithoutBalance.address
+          tok?.token?.tokenStandard == tokenWithoutBalance.address ||
+          tok?.address?.toLowerCase() == tokenWithoutBalance.address?.toLowerCase()
       );
 
       console.log("tokenWithUpdatedBalance", tokenWithUpdatedBalance);
@@ -605,7 +610,8 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
 
         const currentPair = globalConstants.tokenPairs.find(
           (pair: any) =>
-            pair.internalToken.address == zenonToken.address && pair.externalToken.address == ercToken.address
+            pair.internalToken.address?.toLowerCase() == zenonToken.address?.toLowerCase() &&
+            pair.externalToken.address?.toLowerCase() == ercToken.address?.toLowerCase()
         );
 
         console.log("currentPair", currentPair);
@@ -632,10 +638,13 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
 
   const getPairOfToken = (address: string, destinationChainId = -1) => {
     return (
-      globalConstants.tokenPairs.find((pair: any) => pair.internalToken.address == address)?.externalToken ||
+      globalConstants.tokenPairs.find(
+        (pair: any) => pair.internalToken.address?.toLowerCase() == address?.toLowerCase()
+      )?.externalToken ||
       globalConstants.tokenPairs.find(
         (pair: any) =>
-          pair.externalToken.address == address && pair?.externalToken?.network?.chainId == destinationChainId
+          pair.externalToken.address?.toLowerCase() == address?.toLowerCase() &&
+          pair?.externalToken?.network?.chainId == destinationChainId
       )?.internalToken
     );
   };
@@ -1220,7 +1229,9 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
     console.log("zenonAddress", zenonAddress);
 
     const redeemDelay = globalConstants.tokenPairs.find(
-      (pair: any) => pair.internalToken.address == zenonToken.address && pair.externalToken.address == ercToken.address
+      (pair: any) =>
+        pair.internalToken.address?.toLowerCase() == zenonToken.address?.toLowerCase() &&
+        pair.externalToken.address?.toLowerCase() == ercToken.address?.toLowerCase()
     )?.unwrapRedeemDelay;
 
     const feeAmount = ethers.utils

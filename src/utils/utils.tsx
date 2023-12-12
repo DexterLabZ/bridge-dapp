@@ -150,7 +150,7 @@ export const updateTokenPairsWithNewExternalTokens = (currentPairs: any[], newEx
       externalToken:
         newExternalTokens.find(
           (tok: any) =>
-            pair?.externalToken?.address == tok?.address &&
+            pair?.externalToken?.address?.toLowerCase() == tok?.address?.toLowerCase() &&
             pair?.externalToken?.network?.chainId == tok?.network?.chainId
         ) || pair.externalToken,
     };
@@ -164,7 +164,7 @@ export const updateTokenPairsWithNewInternalTokens = (currentPairs: any[], newIn
       internalToken:
         newInternalTokens.find(
           (tok: any) =>
-            pair?.internalToken?.address == tok?.address &&
+            pair?.internalToken?.address?.toLowerCase() == tok?.address?.toLowerCase() &&
             pair?.internalToken?.network?.chainId == tok?.network?.chainId
         ) || pair.internalToken,
     };
@@ -197,7 +197,7 @@ export const getLiquidityPairsDetails = async (liquidityTokenPairs: any[], provi
 
         const reserves = [];
 
-        if (newPair.internalToken.address == newPair.token0) {
+        if (newPair.internalToken.address?.toLowerCase() == newPair.token0?.toLowerCase()) {
           console.log("0.newPair", JSON.parse(JSON.stringify(newPair)));
 
           reserves[0] = newPair.reserves[0];
@@ -305,7 +305,9 @@ export const updateExternalLiquidityTokensBasedOnTokenPairs = (
 ) => {
   liquidityTokenPairs.map((pair: any) => {
     const tokIndex = externalLiquidityTokens.findIndex(
-      (tok: any) => tok.address == pair.externalToken.address || tok.symbol === pair.externalToken.symbol
+      (tok: any) =>
+        tok.address?.toLowerCase() == pair.externalToken.address?.toLowerCase() ||
+        tok.symbol === pair.externalToken.symbol
     );
     if (tokIndex !== -1) {
       console.log("updateExternalLiquidityTokensBasedOnTokenPairs - Found", externalLiquidityTokens[tokIndex]);
@@ -323,7 +325,9 @@ export const updateInternalLiquidityTokensBasedOnTokenPairs = (
 ) => {
   liquidityTokenPairs.map((pair: any) => {
     const tokIndex = internalLiquidityTokens.findIndex(
-      (tok: any) => tok.address == pair.internalToken.address || tok.symbol === pair.internalToken.symbol
+      (tok: any) =>
+        tok.address?.toLowerCase() == pair.internalToken.address?.toLowerCase() ||
+        tok.symbol === pair.internalToken.symbol
     );
     if (tokIndex !== -1) {
       console.log("updateInternalLiquidityTokensBasedOnTokenPairs - Found", internalLiquidityTokens[tokIndex]);
@@ -370,10 +374,7 @@ export const checkMetamaskAvailability = () => {
     // @ts-ignore
     if (!!window.chrome) {
       setTimeout(() => {
-        const newWindow = window.open(
-          constants.officialMetamaskExtensionUrl,
-          "_blank"
-        );
+        const newWindow = window.open(constants.officialMetamaskExtensionUrl, "_blank");
         if (newWindow) newWindow.opener = null;
       }, 2500);
       throw "Please install Metamask. Redirecting to extension...";
@@ -385,10 +386,7 @@ export const checkMetamaskAvailability = () => {
       // @ts-ignore
       if (!!window.chrome) {
         setTimeout(() => {
-          const newWindow = window.open(
-            constants.officialMetamaskExtensionUrl,
-            "_blank"
-          );
+          const newWindow = window.open(constants.officialMetamaskExtensionUrl, "_blank");
           if (newWindow) newWindow.opener = null;
         }, 2500);
         throw "Please install Metamask. Redirecting to extension...";
@@ -421,8 +419,9 @@ export const secondsToDuration = function (seconds: number) {
   const minutes = Math.floor(seconds / 60);
   seconds -= minutes * 60;
 
-  return `${days > 0 ? (days > 9 ? days : "0" + days) + " days" : ""} ${hours > 9 ? hours : "0" + hours}:${minutes > 9 ? minutes : "0" + minutes
-    }:${seconds > 9 ? seconds.toFixed(0) : "0" + seconds.toFixed(0)}`;
+  return `${days > 0 ? (days > 9 ? days : "0" + days) + " days" : ""} ${hours > 9 ? hours : "0" + hours}:${
+    minutes > 9 ? minutes : "0" + minutes
+  }:${seconds > 9 ? seconds.toFixed(0) : "0" + seconds.toFixed(0)}`;
 };
 
 export const hasLowPlasma = (currentPlasma: number | undefined) => {
