@@ -239,10 +239,11 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
     });
 
     if (!isActiveRequestInList && (activeRequest?.toAddress?.length || 0) > 0) {
-      mergedRequests.push(activeRequest);
+      mergedRequests.unshift(activeRequest);
     }
 
-    return mergedRequests.sort((a: WrapRequestItem, b: WrapRequestItem) => (b.timestamp || 0) - (a.timestamp || 0));
+    return mergedRequests;
+    // return mergedRequests.sort((a: WrapRequestItem, b: WrapRequestItem) => (b.timestamp || 0) - (a.timestamp || 0));
   };
 
   const getWrapRequestStatus = async (wrapRequest: WrapRequestItem) => {
