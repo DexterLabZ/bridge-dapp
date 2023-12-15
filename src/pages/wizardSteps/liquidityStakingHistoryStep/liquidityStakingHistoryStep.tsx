@@ -256,10 +256,10 @@ const LiquidityStakingHistoryStep = ({ onStepSubmit = () => {} }) => {
     console.log("uncollectedReward", uncollectedReward);
     console.log("globalConstants", globalConstants);
     const znnDecimals = globalConstants.internalAvailableTokens.find(
-      (tok: any) => tok.address?.toLowerCase() == globalConstants.znnTokenInfo?.toLowerCase()
+      (tok: any) => tok.address?.toLowerCase() == globalConstants.znnTokenInfo?.address?.toLowerCase()
     ).decimals;
     const qsrDecimals = globalConstants.internalAvailableTokens.find(
-      (tok: any) => tok.address?.toLowerCase() == globalConstants.qsrTokenInfo?.toLowerCase()
+      (tok: any) => tok.address?.toLowerCase() == globalConstants.qsrTokenInfo?.address?.toLowerCase()
     ).decimals;
 
     const znnAmount = ethers.utils.formatUnits(
