@@ -22,7 +22,7 @@ jobs:
     - name: Check Tag Name Format
       run: |
         TAG_REGEX="^v\d+\.\d+\.\d+$"
-        if [[ "${GITHUB_REF##*/}" =~ $TAG_REGEX ]] then
+        if [[ "${GITHUB_REF##*/}" =~ $TAG_REGEX ]]; then
           echo "Tag format is correct."
         else
           echo "Tag does not match the SemVer format."
