@@ -11,13 +11,22 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    if: github.ref_type == 'tag'
     strategy:
       matrix:
         node-version: [18.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
+    - name: Check Tag Name Format
+      if: github.event_name == 'create' && github.ref_type == 'tag'
+      run: |
+        TAG_REGEX="^v\d+\.\d+\.\d+$"
+        if [[ "${GITHUB_REF##*/}" =~ $TAG_REGEX ]]; then
+          echo "Tag format is correct."
+        else
+          echo "Tag does not match the SemVer format."
+          exit;
+        fi
     - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
