@@ -7,7 +7,7 @@ import constants from "./constants";
 import { mangle, unmangle } from "./mangling";
 
 export const validateMetamaskNetwork = async (
-  provider: ethers.providers.Web3Provider,
+  provider: ethers.providers.Web3Provider | ethers.providers.JsonRpcProvider,
   validNetworks: simpleNetworkType[],
   currentChainId = -1
 ) => {
@@ -105,7 +105,7 @@ export const getInternalTokensDetails = (currentInternalTokens: any, zenon: any)
 
 export const getExternalTokensDetails = async (
   currentExternalTokens: simpleTokenType[],
-  provider: ethers.providers.Web3Provider
+  provider: ethers.providers.Web3Provider | ethers.providers.JsonRpcProvider
 ) => {
   return await Promise.all(
     currentExternalTokens.map(async (tok) => {
@@ -123,17 +123,17 @@ export const getExternalTokensDetails = async (
       ) {
         console.log("newTok", JSON.parse(JSON.stringify(newTok)));
         const contract = new ethers.Contract(newTok.address, constants.wznnAbi, provider);
-        const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
-        const signedContract = contract.connect(signer);
+        // const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
+        // const signedContract = contract.connect(signer);
 
         if (!newTok.icon) {
           newTok.icon = defaultZtsIcon;
         }
 
         [newTok.decimals, newTok.symbol, newTok.name] = await Promise.all([
-          signedContract.decimals(),
-          signedContract.symbol(),
-          signedContract.name(),
+          contract.decimals(),
+          contract.symbol(),
+          contract.name(),
         ]);
 
         console.log("updatedTok", newTok);
@@ -171,7 +171,10 @@ export const updateTokenPairsWithNewInternalTokens = (currentPairs: any[], newIn
   });
 };
 
-export const getLiquidityPairsDetails = async (liquidityTokenPairs: any[], provider: ethers.providers.Web3Provider) => {
+export const getLiquidityPairsDetails = async (
+  liquidityTokenPairs: any[],
+  provider: ethers.providers.Web3Provider | ethers.providers.JsonRpcProvider
+) => {
   return await Promise.all(
     liquidityTokenPairs.map(async (pair) => {
       const newPair = {
@@ -183,14 +186,15 @@ export const getLiquidityPairsDetails = async (liquidityTokenPairs: any[], provi
       if (newPair.pairAddress && metamaskCurrentChainId === newPair.pairNetwork.chainId) {
         console.log("getLiquidityPairsDetails-newPair", JSON.parse(JSON.stringify(newPair)));
         const contract = new ethers.Contract(newPair.pairAddress, constants.pairAbi, provider);
-        const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
-        const signedContract = contract.connect(signer);
+
+        // const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
+        // const signedContract = contract.connect(signer);
 
         [newPair.token0, newPair.token1, newPair.symbol, newPair.reserves] = await Promise.all([
-          signedContract.token0(),
-          signedContract.token1(),
-          signedContract.symbol(),
-          signedContract.getReserves(),
+          contract.token0(),
+          contract.token1(),
+          contract.symbol(),
+          contract.getReserves(),
         ]);
 
         console.log("getLiquidityPairsDetails-newPair-after-calls", JSON.parse(JSON.stringify(newPair)));

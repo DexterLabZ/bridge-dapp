@@ -9,6 +9,7 @@ import ReferralCodeInterpreter from "../../components/referralCodeInterpreter/re
 import WalletDetails from "../../components/wallet-details/wallet-details";
 import { SpinnerProvider } from "../../services/hooks/spinner/spinnerContext";
 import { InternalNetworkProvider } from "../../services/hooks/internalNetwork-provider/internalNetworkContext";
+import { ExternalNetworkProvider } from "../../services/hooks/externalNetwork-provider/externalNetworkContext";
 import { addBeforeUnloadEvents, removeBeforeUnloadEvents } from "../../services/pageHandlers/pageHandlers";
 import WizardLayout from "../wizardLayout/wizardLayout";
 import swirl from "./../../assets/swirl.svg";
@@ -42,20 +43,22 @@ const MainLayout = () => {
       <GTMProvider state={gtmParams}>
         <SpinnerProvider>
           <InternalNetworkProvider>
-            <NavBreadcrumbsMenu />
-            <div className="bg-shapes-container">
-              <img alt="bg-shapes" className="bg-shapes" src={require("./../../assets/bg-shapes.png")}></img>
-              <img alt="bg-swirl" className="bg-swirl" src={swirl}></img>
-            </div>
-            <CustomCursor></CustomCursor>
-            <div className="responsive-container">
-              <WizardLayout />
-              <ToastContainer />
-              <InfoBanner />
-              <WalletDetails />
-              <NetworkDetails />
-              <ReferralCodeInterpreter />
-            </div>
+            <ExternalNetworkProvider>
+              <NavBreadcrumbsMenu />
+              <div className="bg-shapes-container">
+                <img alt="bg-shapes" className="bg-shapes" src={require("./../../assets/bg-shapes.png")}></img>
+                <img alt="bg-swirl" className="bg-swirl" src={swirl}></img>
+              </div>
+              <CustomCursor></CustomCursor>
+              <div className="responsive-container">
+                <WizardLayout />
+                <ToastContainer />
+                <InfoBanner />
+                <WalletDetails />
+                <NetworkDetails />
+                <ReferralCodeInterpreter />
+              </div>
+            </ExternalNetworkProvider>
           </InternalNetworkProvider>
         </SpinnerProvider>
         <div id="spinner-root"></div>

@@ -39,6 +39,7 @@ import "./swapStep.scss";
  * * GTM SERVICE
  */
 import { useGTMDispatch } from "@elgorditosalsero/react-gtm-hook";
+import useExternalNetwork from "../../../services/hooks/externalNetwork-provider/useExternalNetwork";
 
 export type simpleTokenType = {
   icon: string;
@@ -144,6 +145,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
   const [unwrapFeePercentage, setUnwrapFeePercentage] = useState(0);
 
   const { internalNetworkClient } = useInternalNetwork();
+  const { externalNetworkClient } = useExternalNetwork();
 
   const referralCode = useSelector((state: any) => state.referral);
 

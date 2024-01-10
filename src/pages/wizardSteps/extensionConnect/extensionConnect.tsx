@@ -8,7 +8,6 @@ import { Primitives, Zenon } from "znn-ts-sdk";
 import { AccountInfo } from "znn-ts-sdk/dist/lib/src/model/nom/account_info";
 import { Address } from "znn-ts-sdk/dist/lib/src/model/primitives/address";
 import { SpinnerContext } from "../../../services/hooks/spinner/spinnerContext";
-import useInternalNetwork from "../../../services/hooks/internalNetwork-provider/useInternalNetwork";
 import { internalNetworkProviderTypes } from "../../../services/hooks/internalNetwork-provider/internalNetworkContext";
 import { storeMomentumHeight } from "../../../services/redux/connectionSlice";
 import { storeGlobalConstants } from "../../../services/redux/globalConstantsSlice";
@@ -44,6 +43,10 @@ import wqsrTokenIcon from "./../../../assets/tokens/wqsr.svg";
 import wznnTokenIcon from "./../../../assets/tokens/wznn.svg";
 import znnTokenIcon from "./../../../assets/tokens/znn.svg";
 import "./extensionConnect.scss";
+import { externalNetworkProviderTypes } from "../../../services/hooks/externalNetwork-provider/externalNetworkContext";
+import useExternalNetwork from "../../../services/hooks/externalNetwork-provider/useExternalNetwork";
+import useInternalNetwork from "../../../services/hooks/internalNetwork-provider/useInternalNetwork";
+import { AssetData } from "../../../services/hooks/externalNetwork-provider/externalNetworkWalletConnectWrapper";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlow = false }) => {
@@ -67,6 +70,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
 
   const serializedWalletInfo = useSelector((state: any) => state.wallet);
   const { internalNetworkClient } = useInternalNetwork();
+  const { externalNetworkClient } = useExternalNetwork();
 
   const [hasParingsOrSessions, setHasParingsOrSessions] = useState(false);
 
@@ -116,7 +120,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
     }
   }, []);
 
-  const connectSyrius = async (providerType: internalNetworkProviderTypes) => {
+  const connectToInternalNetwork = async (providerType: internalNetworkProviderTypes) => {
     const showSpinner = handleSpinner(
       <>
         <div className="text-bold text-center mb-5 mt-4">Waiting approval from wallet</div>
@@ -234,108 +238,258 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
     }
   };
 
-  const connectMetamask = async () => {
+  const getMetamaskAddress = async () => {
+    const provider = await externalNetworkClient.getProvider(externalNetworkProviderTypes.metamask);
+
+    console.log("connectToExternalNetwork, globalConstants", globalConstants);
+
+    const metamaskCurrentChainId = (await provider.getNetwork())?.chainId;
+    await validateMetamaskNetwork(
+      provider,
+      [...globalConstants.externalAvailableNetworks, ...globalConstants.liquidityInternalNetworks],
+      metamaskCurrentChainId
+    );
+
+    const accounts = await provider.send("eth_requestAccounts", []);
+    console.log("accounts", accounts);
+
+    return {
+      provider: provider,
+      address: accounts[0],
+      chainId: metamaskCurrentChainId,
+    };
+  };
+
+  const onModalDismiss = (spinnerHandle: any, reason?: string) => {
+    console.log("Wallet connect modal closed", reason);
+    spinnerHandle(false);
+  };
+
+  const connectToExternalNetwork = async (providerType: externalNetworkProviderTypes) => {
     const showSpinner = handleSpinner(
       <>
-        <div className="text-bold text-center mb-5 mt-4">Waiting approval from the wallet</div>
+        <div className="text-bold text-center mb-5 mt-4">Waiting approval from wallet</div>
       </>,
       "extension-approval-spinner-root"
     );
     console.log("connecting metamask");
     try {
-      checkMetamaskAvailability();
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      let externalNetworkAddress = "";
+      let externalNetworkChainId: number;
+      let provider: any;
+      let wznnBalance = "";
+      let currentToken: any;
+      let updatedConstants: any;
 
-      console.log("connectMetamask, globalConstants", globalConstants);
+      if (providerType == externalNetworkProviderTypes.metamask) {
+        const externalNetworkDetails = await getMetamaskAddress();
+        externalNetworkAddress = externalNetworkDetails.address;
+        externalNetworkChainId = externalNetworkDetails.chainId;
+        provider = externalNetworkDetails.provider;
 
-      const metamaskCurrentChainId = (await provider.getNetwork())?.chainId;
-      await validateMetamaskNetwork(
-        provider,
-        [...globalConstants.externalAvailableNetworks, ...globalConstants.liquidityInternalNetworks],
-        metamaskCurrentChainId
-      );
+        currentToken = globalConstants.externalAvailableTokens.find(
+          (tok: any) => tok.isAvailable && externalNetworkChainId === tok.network.chainId
+        );
 
-      const accounts = await provider.send("eth_requestAccounts", []);
+        // ToDo create contract with selected external token (make wznn ABI as default but get it from internalAvTok)
+        console.log("new Contract", currentToken.address, globalConstants.wznnAbi, provider);
 
-      setMetamaskAddress(accounts[0]);
+        const contract = new ethers.Contract(currentToken.address, globalConstants.wznnAbi, provider);
+        const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
+        const signedContract = contract.connect(signer);
 
-      const currentToken = globalConstants.externalAvailableTokens.find(
-        (tok: any) => tok.isAvailable && metamaskCurrentChainId === tok.network.chainId
-      )?.address;
+        const rawWznnBalance = await signedContract.balanceOf(externalNetworkAddress);
+        wznnBalance = ethers.utils.formatUnits(rawWznnBalance, currentToken.decimals);
 
-      console.log("new Contract", currentToken, globalConstants.wznnAbi, provider);
+        setMetamaskAddress(externalNetworkAddress);
 
-      // TODO: Make sure the ABI is correct when/if adding more tokens for the bridge.
-      const contract = new ethers.Contract(currentToken, globalConstants.wznnAbi, provider);
-      const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
-      const signedContract = contract.connect(signer);
+        const updatedInternalTokens = await getInternalTokensDetails(globalConstants.internalAvailableTokens, zenon);
+        let updatedTokenPairs = updateTokenPairsWithNewInternalTokens(
+          globalConstants.tokenPairs,
+          updatedInternalTokens
+        );
+        console.log("updatedInternalTokens", updatedInternalTokens);
+        console.log("updatedTokenPairs", updatedTokenPairs);
 
-      console.log("accounts", accounts);
+        const updatedExternalTokens = await getExternalTokensDetails(globalConstants.externalAvailableTokens, provider);
+        updatedTokenPairs = updateTokenPairsWithNewExternalTokens(updatedTokenPairs, updatedExternalTokens);
+        console.log("updatedExternalTokens", updatedExternalTokens);
+        console.log("updatedTokenPairs", updatedTokenPairs);
 
-      const rawWznnBalance = await signedContract.balanceOf(accounts[0]);
-      const wznnBalance = ethers.utils.formatUnits(rawWznnBalance, currentToken.decimals);
+        const externalLiquidityTokens = await getExternalTokensDetails(
+          globalConstants.liquidityExternalTokens,
+          provider
+        );
+        let updatedLiquidityTokenPairs = updateTokenPairsWithNewExternalTokens(
+          globalConstants.liquidityTokenPairs,
+          externalLiquidityTokens
+        );
+        console.log("externalLiquidityTokens", externalLiquidityTokens);
+        console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
 
-      const updatedInternalTokens = await getInternalTokensDetails(globalConstants.internalAvailableTokens, zenon);
-      let updatedTokenPairs = updateTokenPairsWithNewInternalTokens(globalConstants.tokenPairs, updatedInternalTokens);
+        // We do this because even if it's called internal tokens, they are still erc-20 tokens
+        const internalLiquidityTokens = await getExternalTokensDetails(
+          globalConstants.liquidityInternalTokens,
+          provider
+        );
+        updatedLiquidityTokenPairs = updateTokenPairsWithNewInternalTokens(
+          globalConstants.liquidityTokenPairs,
+          internalLiquidityTokens
+        );
+        console.log("internalLiquidityTokens", internalLiquidityTokens);
+        console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
 
-      console.log("updatedInternalTokens", updatedInternalTokens);
-      console.log("updatedTokenPairs", updatedTokenPairs);
+        const liquidityTokenPairs: any = await getLiquidityPairsDetails(updatedLiquidityTokenPairs, provider);
+        console.log("getLiquidityPairsDetails", liquidityTokenPairs);
 
-      const updatedExternalTokens = await getExternalTokensDetails(globalConstants.externalAvailableTokens, provider);
-      updatedTokenPairs = updateTokenPairsWithNewExternalTokens(updatedTokenPairs, updatedExternalTokens);
+        const availableExternalLiquidityTokens = updateExternalLiquidityTokensBasedOnTokenPairs(
+          externalLiquidityTokens,
+          liquidityTokenPairs
+        );
+        const availableInternalLiquidityTokens = updateInternalLiquidityTokensBasedOnTokenPairs(
+          internalLiquidityTokens,
+          liquidityTokenPairs
+        );
 
-      console.log("updatedExternalTokens", updatedExternalTokens);
-      console.log("updatedTokenPairs", updatedTokenPairs);
+        updatedConstants = {
+          ...globalConstants,
+          internalAvailableTokens: updatedInternalTokens,
+          externalAvailableTokens: updatedExternalTokens,
+          tokenPairs: updatedTokenPairs,
+          liquidityExternalTokens: availableExternalLiquidityTokens,
+          liquidityInternalTokens: availableInternalLiquidityTokens,
+          liquidityTokenPairs: liquidityTokenPairs,
+        };
+        // await internalNetworkClient.init(externalNetworkProviderTypes.metamask);
+        // await internalNetworkClient.connectSyrius(externalNetworkProviderTypes.metamask, onModalDismiss);
+        // zenonInfo = await internalNetworkClient.getWalletInfo(externalNetworkProviderTypes.metamask);
+        // console.log("zenonInfo", zenonInfo);
+        // await internalNetworkClient.connectToNode(zenonInfo.nodeUrl);
+      } else {
+        if (providerType == externalNetworkProviderTypes.walletConnect) {
+          // ToDo: treat the case where the user closes the walletConnect Modal
+          // console.log("old provider", new ethers.providers.Web3Provider(window.ethereum));
 
-      const externalLiquidityTokens = await getExternalTokensDetails(globalConstants.liquidityExternalTokens, provider);
-      let updatedLiquidityTokenPairs = updateTokenPairsWithNewExternalTokens(
-        globalConstants.liquidityTokenPairs,
-        externalLiquidityTokens
-      );
+          // const provider = await externalNetworkClient.getProvider(providerType);
+          // console.log("WC provider", provider);
 
-      console.log("externalLiquidityTokens", externalLiquidityTokens);
-      console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
+          // const enabled = provider.enable();
+          // console.log("WC enabled", enabled);
+          // console.log("WC provider", provider);
 
-      // We do this because even if they're called internal tokens, they are still ERC-20 tokens
-      const internalLiquidityTokens = await getExternalTokensDetails(globalConstants.liquidityInternalTokens, provider);
-      updatedLiquidityTokenPairs = updateTokenPairsWithNewInternalTokens(
-        globalConstants.liquidityTokenPairs,
-        internalLiquidityTokens
-      );
+          // const connected = provider.connect();
+          // console.log("WC connected", connected);
+          // console.log("WC provider", provider);
 
-      console.log("internalLiquidityTokens", internalLiquidityTokens);
-      console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
+          console.log("externalNetworkClient", externalNetworkClient);
+          await externalNetworkClient.init(externalNetworkProviderTypes.walletConnect);
+          await externalNetworkClient.connect(externalNetworkProviderTypes.walletConnect, onModalDismiss(showSpinner));
+          console.log("externalNetworkClient - connected");
 
-      const liquidityTokenPairs: any = await getLiquidityPairsDetails(updatedLiquidityTokenPairs, provider);
+          const eipInfo = await externalNetworkClient.getWalletInfo(externalNetworkProviderTypes.walletConnect);
+          console.log("eipInfo", eipInfo);
 
-      console.log("getLiquidityPairsDetails", liquidityTokenPairs);
+          const firstAccount = Object.keys(eipInfo)[0];
+          const firstAccountAddress = firstAccount.split(":")[2];
+          const firstAccountChainId = parseInt(firstAccount.split(":")[1]);
 
-      const availableExternalLiquidityTokens = updateExternalLiquidityTokensBasedOnTokenPairs(
-        externalLiquidityTokens,
-        liquidityTokenPairs
-      );
-      const availableInternalLiquidityTokens = updateInternalLiquidityTokensBasedOnTokenPairs(
-        internalLiquidityTokens,
-        liquidityTokenPairs
-      );
+          //
+          // IMPORTANT TO DO: DELETE THIS AND USE THE PROPER CHAIN ID
+          //
+          externalNetworkChainId = firstAccountChainId;
+          // externalNetworkChainId = parseInt(firstAccount.split(":")[1]);
 
-      const updatedConstants = {
-        ...globalConstants,
-        internalAvailableTokens: updatedInternalTokens,
-        externalAvailableTokens: updatedExternalTokens,
-        tokenPairs: updatedTokenPairs,
-        liquidityExternalTokens: availableExternalLiquidityTokens,
-        liquidityInternalTokens: availableInternalLiquidityTokens,
-        liquidityTokenPairs: liquidityTokenPairs,
-      };
+          const provider = await externalNetworkClient.getProvider(
+            externalNetworkProviderTypes.walletConnect,
+            externalNetworkChainId
+          );
+          console.log("JsonRpcProvider provider", provider);
+
+          currentToken = globalConstants.externalAvailableTokens.find(
+            (tok: any) => tok.isAvailable && externalNetworkChainId === tok.network.chainId
+          );
+
+          externalNetworkAddress = firstAccountAddress;
+
+          console.log("chainId", externalNetworkChainId);
+          console.log("firstAccountAddress", firstAccountAddress);
+          console.log("currentToken", currentToken);
+
+          wznnBalance =
+            eipInfo[firstAccount].find((asset: AssetData) => {
+              return asset.symbol == currentToken.symbol;
+            }) || "0";
+
+          setMetamaskAddress(externalNetworkAddress);
+
+          const updatedInternalTokens = await getInternalTokensDetails(globalConstants.internalAvailableTokens, zenon);
+          let updatedTokenPairs = updateTokenPairsWithNewInternalTokens(
+            globalConstants.tokenPairs,
+            updatedInternalTokens
+          );
+          console.log("updatedInternalTokens", updatedInternalTokens);
+          console.log("updatedTokenPairs", updatedTokenPairs);
+
+          const updatedExternalTokens = await getExternalTokensDetails(
+            globalConstants.externalAvailableTokens,
+            provider
+          );
+          updatedTokenPairs = updateTokenPairsWithNewExternalTokens(updatedTokenPairs, updatedExternalTokens);
+          console.log("updatedExternalTokens", updatedExternalTokens);
+          console.log("updatedTokenPairs", updatedTokenPairs);
+
+          const externalLiquidityTokens = await getExternalTokensDetails(
+            globalConstants.liquidityExternalTokens,
+            provider
+          );
+          let updatedLiquidityTokenPairs = updateTokenPairsWithNewExternalTokens(
+            globalConstants.liquidityTokenPairs,
+            externalLiquidityTokens
+          );
+          console.log("externalLiquidityTokens", externalLiquidityTokens);
+          console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
+
+          // We do this because even if it's called internal tokens, they are still erc-20 tokens
+          const internalLiquidityTokens = await getExternalTokensDetails(
+            globalConstants.liquidityInternalTokens,
+            provider
+          );
+          updatedLiquidityTokenPairs = updateTokenPairsWithNewInternalTokens(
+            globalConstants.liquidityTokenPairs,
+            internalLiquidityTokens
+          );
+          console.log("internalLiquidityTokens", internalLiquidityTokens);
+          console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
+
+          const liquidityTokenPairs: any = await getLiquidityPairsDetails(updatedLiquidityTokenPairs, provider);
+          console.log("getLiquidityPairsDetails", liquidityTokenPairs);
+
+          const availableExternalLiquidityTokens = updateExternalLiquidityTokensBasedOnTokenPairs(
+            externalLiquidityTokens,
+            liquidityTokenPairs
+          );
+          const availableInternalLiquidityTokens = updateInternalLiquidityTokensBasedOnTokenPairs(
+            internalLiquidityTokens,
+            liquidityTokenPairs
+          );
+
+          updatedConstants = {
+            ...globalConstants,
+            internalAvailableTokens: updatedInternalTokens,
+            externalAvailableTokens: updatedExternalTokens,
+            tokenPairs: updatedTokenPairs,
+            liquidityExternalTokens: availableExternalLiquidityTokens,
+            liquidityInternalTokens: availableInternalLiquidityTokens,
+            liquidityTokenPairs: liquidityTokenPairs,
+          };
+        }
+      }
 
       dispatch(storeGlobalConstants(updatedConstants));
-
       console.log("updatedConstants after metamask data", updatedConstants);
-
       setGlobalConstants(updatedConstants);
 
-      dispatch(storeErcInfo(JSON.stringify({ address: accounts[0], balance: wznnBalance })));
+      dispatch(storeErcInfo(JSON.stringify({ address: externalNetworkAddress, balance: wznnBalance })));
 
       if (isSyriusConnected) {
         setIsValidated(true);
@@ -369,6 +523,142 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
       showSpinner(false);
     }
   };
+
+  // const connectMetamask = async () => {
+  //   const showSpinner = handleSpinner(
+  //     <>
+  //       <div className="text-bold text-center mb-5 mt-4">Waiting approval from the wallet</div>
+  //     </>,
+  //     "extension-approval-spinner-root"
+  //   );
+  //   console.log("connecting metamask");
+  //   try {
+  //     checkMetamaskAvailability();
+  //     const provider = new ethers.providers.Web3Provider(window.ethereum);
+
+  //     console.log("connectMetamask, globalConstants", globalConstants);
+
+  //     const metamaskCurrentChainId = (await provider.getNetwork())?.chainId;
+  //     await validateMetamaskNetwork(
+  //       provider,
+  //       [...globalConstants.externalAvailableNetworks, ...globalConstants.liquidityInternalNetworks],
+  //       metamaskCurrentChainId
+  //     );
+
+  //     const accounts = await provider.send("eth_requestAccounts", []);
+
+  //     setMetamaskAddress(accounts[0]);
+
+  //     const currentToken = globalConstants.externalAvailableTokens.find(
+  //       (tok: any) => tok.isAvailable && metamaskCurrentChainId === tok.network.chainId
+  //     )?.address;
+
+  //     console.log("new Contract", currentToken, globalConstants.wznnAbi, provider);
+
+  //     // TODO: Make sure the ABI is correct when/if adding more tokens for the bridge.
+  //     const contract = new ethers.Contract(currentToken, globalConstants.wznnAbi, provider);
+  //     const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
+  //     const signedContract = contract.connect(signer);
+
+  //     console.log("accounts", accounts);
+
+  //     const rawWznnBalance = await signedContract.balanceOf(accounts[0]);
+  //     const wznnBalance = ethers.utils.formatUnits(rawWznnBalance, currentToken.decimals);
+
+  //     const updatedInternalTokens = await getInternalTokensDetails(globalConstants.internalAvailableTokens, zenon);
+  //     let updatedTokenPairs = updateTokenPairsWithNewInternalTokens(globalConstants.tokenPairs, updatedInternalTokens);
+
+  //     console.log("updatedInternalTokens", updatedInternalTokens);
+  //     console.log("updatedTokenPairs", updatedTokenPairs);
+
+  //     const updatedExternalTokens = await getExternalTokensDetails(globalConstants.externalAvailableTokens, provider);
+  //     updatedTokenPairs = updateTokenPairsWithNewExternalTokens(updatedTokenPairs, updatedExternalTokens);
+
+  //     console.log("updatedExternalTokens", updatedExternalTokens);
+  //     console.log("updatedTokenPairs", updatedTokenPairs);
+
+  //     const externalLiquidityTokens = await getExternalTokensDetails(globalConstants.liquidityExternalTokens, provider);
+  //     let updatedLiquidityTokenPairs = updateTokenPairsWithNewExternalTokens(
+  //       globalConstants.liquidityTokenPairs,
+  //       externalLiquidityTokens
+  //     );
+
+  //     console.log("externalLiquidityTokens", externalLiquidityTokens);
+  //     console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
+
+  //     // We do this because even if they're called internal tokens, they are still ERC-20 tokens
+  //     const internalLiquidityTokens = await getExternalTokensDetails(globalConstants.liquidityInternalTokens, provider);
+  //     updatedLiquidityTokenPairs = updateTokenPairsWithNewInternalTokens(
+  //       globalConstants.liquidityTokenPairs,
+  //       internalLiquidityTokens
+  //     );
+
+  //     console.log("internalLiquidityTokens", internalLiquidityTokens);
+  //     console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
+
+  //     const liquidityTokenPairs: any = await getLiquidityPairsDetails(updatedLiquidityTokenPairs, provider);
+
+  //     console.log("getLiquidityPairsDetails", liquidityTokenPairs);
+
+  //     const availableExternalLiquidityTokens = updateExternalLiquidityTokensBasedOnTokenPairs(
+  //       externalLiquidityTokens,
+  //       liquidityTokenPairs
+  //     );
+  //     const availableInternalLiquidityTokens = updateInternalLiquidityTokensBasedOnTokenPairs(
+  //       internalLiquidityTokens,
+  //       liquidityTokenPairs
+  //     );
+
+  //     const updatedConstants = {
+  //       ...globalConstants,
+  //       internalAvailableTokens: updatedInternalTokens,
+  //       externalAvailableTokens: updatedExternalTokens,
+  //       tokenPairs: updatedTokenPairs,
+  //       liquidityExternalTokens: availableExternalLiquidityTokens,
+  //       liquidityInternalTokens: availableInternalLiquidityTokens,
+  //       liquidityTokenPairs: liquidityTokenPairs,
+  //     };
+
+  //     dispatch(storeGlobalConstants(updatedConstants));
+
+  //     console.log("updatedConstants after metamask data", updatedConstants);
+
+  //     setGlobalConstants(updatedConstants);
+
+  //     dispatch(storeErcInfo(JSON.stringify({ address: accounts[0], balance: wznnBalance })));
+
+  //     if (isSyriusConnected) {
+  //       setIsValidated(true);
+  //     }
+
+  //     setIsMetamaskConnected(true);
+  //   } catch (err: any) {
+  //     console.error(err);
+
+  //     let readableError = err;
+  //     if (err?.message) {
+  //       readableError = err?.message;
+  //     }
+  //     readableError =
+  //       readableError?.split(`"Error:`)?.pop()?.split(`"`)[0] ||
+  //       readableError?.split(`'Error:`)?.pop()?.split(`'`)[0] ||
+  //       "";
+
+  //     toast(readableError + "", {
+  //       position: "bottom-center",
+  //       autoClose: 5000,
+  //       hideProgressBar: false,
+  //       closeOnClick: true,
+  //       pauseOnHover: false,
+  //       draggable: true,
+  //       type: "error",
+  //       theme: "dark",
+  //     });
+  //     return err;
+  //   } finally {
+  //     showSpinner(false);
+  //   }
+  // };
 
   // TODO: Extract this function in a separate file so it can be reused on the liquidity flow
   const getBalances = async (address: string) => {
@@ -1047,7 +1337,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
             </div>
             <div className="d-flex gap-2 flex-wrap w-100 justify-content-center align-items-center">
               <div
-                onClick={() => connectSyrius(internalNetworkProviderTypes.syriusExtension)}
+                onClick={() => connectToInternalNetwork(internalNetworkProviderTypes.syriusExtension)}
                 className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${
                   isSyriusConnected && internalNetworkClient.providerType ? "disabled" : ""
                 }
@@ -1065,7 +1355,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
               </div>
               <div className="">or</div>
               <div
-                onClick={() => connectSyrius(internalNetworkProviderTypes.walletConnect)}
+                onClick={() => connectToInternalNetwork(internalNetworkProviderTypes.walletConnect)}
                 className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${
                   isSyriusConnected && internalNetworkClient.providerType ? "disabled" : ""
                 }
@@ -1099,22 +1389,17 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
           </div>
         </div>
       </div>
-      <div
-        className={`extension-item mb-5 ${!isSyriusConnected ? "disabled" : ""} ${
-          isMetamaskConnected ? "" : "cursor-pointer dark-shadow-on-hover"
-        }`}
-        onClick={() => {
-          if (!isMetamaskConnected) {
-            connectMetamask();
-          }
-        }}>
+
+      {/* ToDo: Put the isSyriusConnected ? "disabled" back */}
+      <div className={`extension-item ${!isSyriusConnected ? "disabled" : ""} mb-5 mt-4`}>
+        {/* <div className={`extension-item ${!isSyriusConnected ? "" : ""} mb-5 mt-4`}> */}
         <div className={`step-counter ${isMetamaskConnected && "completed"}`}>2</div>
         <div className="p-3">
           <div className="pl-4">
-            <div className="step-content text-center p-0 d-flex justify-content-center align-items-center">
+            <div className="step-content text-center p-0 mb-2">
               {isMetamaskConnected ? (
                 <div className="text-bold">
-                  <span className="text-primary">{`Connected with Metamask on `}</span>
+                  <span className="text-primary">{`Connected with ${internalNetworkClient.displayedProviderType} on `}</span>
                   <span className="tooltip">
                     <span className="text-white">
                       {metamaskAddress.slice(0, 3) + "..." + metamaskAddress.slice(-3)}
@@ -1123,14 +1408,60 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
                   </span>
                 </div>
               ) : (
-                <div>{`Connect Metamask`}</div>
+                <>{`Connect Ethereum Wallet`}</>
               )}
-              <img
-                alt="step-logo"
-                className="ml-2"
-                style={{ maxWidth: "32px", maxHeight: "32px" }}
-                src={metamaskLogo}></img>
             </div>
+            <div className="d-flex gap-2 flex-wrap w-100 justify-content-center align-items-center">
+              <div
+                onClick={() => connectToExternalNetwork(externalNetworkProviderTypes.metamask)}
+                className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${
+                  isMetamaskConnected && internalNetworkClient.providerType ? "disabled" : ""
+                }
+               ${
+                 isMetamaskConnected && internalNetworkClient.providerType == externalNetworkProviderTypes.metamask
+                   ? "primary soft-disabled"
+                   : "secondary"
+               }`}>
+                <img
+                  alt="step-logo"
+                  className="mr-1"
+                  style={{ maxWidth: "24px", maxHeight: "24px" }}
+                  src={metamaskLogo}></img>
+                <div>Metamask</div>
+              </div>
+              <div className="">or</div>
+              <div
+                onClick={() => connectToExternalNetwork(externalNetworkProviderTypes.walletConnect)}
+                className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${
+                  isMetamaskConnected && internalNetworkClient.providerType ? "disabled" : ""
+                }
+               ${
+                 isMetamaskConnected && internalNetworkClient.providerType == externalNetworkProviderTypes.walletConnect
+                   ? "primary soft-disabled"
+                   : "secondary"
+               }`}>
+                <img
+                  alt="step-logo"
+                  className="mr-1"
+                  style={{ maxWidth: "24px", maxHeight: "24px" }}
+                  src={walletConnectLogo}></img>
+                <div>WalletConnect</div>
+              </div>
+            </div>
+            {isMetamaskConnected || hasParingsOrSessions ? (
+              <div
+                className="disconnect-button tooltip"
+                onClick={() => {
+                  clearWallet();
+                }}>
+                <img src={closeIconRed} alt="disconnect"></img>
+                <span className="tooltip-text">
+                  {hasParingsOrSessions ? "Clear wallet pairing" : "Disconnect wallet"}
+                </span>
+              </div>
+            ) : (
+              <></>
+            )}
           </div>
         </div>
       </div>
