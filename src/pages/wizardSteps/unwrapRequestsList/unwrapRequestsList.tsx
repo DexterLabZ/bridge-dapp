@@ -9,7 +9,7 @@ import Paginator from "../../../components/paginator/paginator";
 import UnwrapRequestItemComponent from "../../../components/unwrapRequestItemComponent/unwrapRequestItemComponent";
 import { UnwrapRequestItem, unwrapRequestStatus } from "../../../models/unwrapRequestItem";
 import { SpinnerContext } from "../../../services/hooks/spinner/spinnerContext";
-import useZenon from "../../../services/hooks/zenon-provider/useZenon";
+import useInternalNetwork from "../../../services/hooks/internalNetwork-provider/useInternalNetwork";
 import { clearActiveUnwrapRequest, storeSuccessInfo } from "../../../services/redux/requestsSlice";
 import { storeCurrentWizardFlowStep, swapFlowSteps } from "../../../services/redux/wizardStatusSlice";
 import { simpleTokenType } from "../swapStep/swapStep";
@@ -34,7 +34,7 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
   const [isLoading, setIsLoading] = useState(false);
   const globalConstants = useSelector((state: any) => state.globalConstants);
   const refreshInterval = 30000;
-  const { zenonClient } = useZenon();
+  const { internalNetworkClient } = useInternalNetwork();
 
   useEffect(() => {
     getRequests(currentPage, itemsPerPage);
@@ -304,7 +304,7 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
           accountBlock: unwrap.toJson(),
         };
 
-        const accountBlock = await zenonClient.sendTransaction(transaction);
+        const accountBlock = await internalNetworkClient.sendTransaction(transaction);
         console.log("final accountBlock", accountBlock);
 
         const hash = accountBlock?.hash.toString();

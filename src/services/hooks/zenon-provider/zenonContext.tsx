@@ -13,7 +13,7 @@ import { resetZenonInfo, storeZenonInfo } from "../../redux/walletSlice";
 import syriusExtensionWrapper from "./syriusExtensionWrapper";
 import walletConnectWrapper from "./walletConnectWrapper";
 
-export enum zenonProviderTypes {
+export enum InternalNetworkProviderTypes {
   "walletConnect" = "walletConnect",
   "syriusExtension" = "syriusExtension",
 }
@@ -25,32 +25,32 @@ export type syriusClientType = {
   eventsHandler: any;
 };
 
-export const ZenonProvider: FC<{ children: any }> = ({ children }) => {
+export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => {
   const walletConnectClient = useRef<Client | null>(null);
   const syriusClient = useRef<syriusClientType | null>(null);
   const walletConnectSession = useRef<SessionTypes.Struct | null>(null);
   const walletConnectPairing = useRef<PairingTypes.Struct | null>(null);
-  const [providerType, setProviderType] = useState<zenonProviderTypes | null>(null);
+  const [providerType, setProviderType] = useState<InternalNetworkProviderTypes | null>(null);
   const [displayedProviderType, setDisplayedProviderType] = useState<string | null>(null);
   const maxRequestRetries = 3;
   const zenonSingleton = Zenon.getSingleton();
   const [globalConstants, setGlobalConstants] = useState(useSelector((state: any) => state.globalConstants));
   const dispatch = useDispatch();
 
-  // Initialize the zenonProvider when the component mounts
+  // Initialize the InternalNetworkProvider when the component mounts
   useEffect(() => {
     return () => {
-      // Clean up the zenonProvider when the component unmounts
+      // Clean up the InternalNetworkProvider when the component unmounts
       if (providerType) {
         switch (providerType) {
-          case zenonProviderTypes.walletConnect: {
+          case InternalNetworkProviderTypes.walletConnect: {
             if (walletConnectClient.current && walletConnectPairing.current) {
               walletConnectWrapper.disconnectPairing(walletConnectClient.current, walletConnectPairing.current);
               walletConnectClient.current = null;
             }
             break;
           }
-          case zenonProviderTypes.syriusExtension: {
+          case InternalNetworkProviderTypes.syriusExtension: {
             if (syriusClient.current) {
               zenonSingleton.clearSocketConnection();
               syriusClient.current = null;
@@ -78,7 +78,7 @@ export const ZenonProvider: FC<{ children: any }> = ({ children }) => {
     );
   }, [providerType]);
 
-  const init = async (_providerType: zenonProviderTypes) => {
+  const init = async (_providerType: InternalNetworkProviderTypes) => {
     console.log("ZenonContext init, ", _providerType);
     if (!_providerType) throw Error("No provider type selected");
     setProviderType(_providerType);
@@ -86,7 +86,7 @@ export const ZenonProvider: FC<{ children: any }> = ({ children }) => {
   };
 
   const connectSyrius = async (
-    _providerType: zenonProviderTypes,
+    _providerType: InternalNetworkProviderTypes,
     onDismiss?: (reason: { [key: string]: any }) => unknown
   ): Promise<boolean> => {
     if (_providerType) {
@@ -100,7 +100,7 @@ export const ZenonProvider: FC<{ children: any }> = ({ children }) => {
     }
 
     switch (_providerType) {
-      case zenonProviderTypes.walletConnect: {
+      case InternalNetworkProviderTypes.walletConnect: {
         const walletClient = walletConnectClient.current || (await walletConnectWrapper.init());
         walletConnectClient.current = walletClient;
 
@@ -116,7 +116,7 @@ export const ZenonProvider: FC<{ children: any }> = ({ children }) => {
         walletConnectWrapper.registerEvents(walletClient, onAddressChange, onChainIdChange, onConnectedNodeChange);
         return true;
       }
-      case zenonProviderTypes.syriusExtension: {
+      case InternalNetworkProviderTypes.syriusExtension: {
         syriusClient.current = {
           zenon: zenonSingleton,
           eventsHandler: syriusExtensionWrapper.registerEvents(onAddressChange, onChainIdChange, onConnectedNodeChange),
@@ -130,7 +130,7 @@ export const ZenonProvider: FC<{ children: any }> = ({ children }) => {
     }
   };
 
-  const disconnect = async (_providerType: zenonProviderTypes): Promise<boolean> => {
+  const disconnect = async (_providerType: InternalNetworkProviderTypes): Promise<boolean> => {
     if (_providerType) {
       setProviderType(_providerType);
     } else {
@@ -142,7 +142,7 @@ export const ZenonProvider: FC<{ children: any }> = ({ children }) => {
     }
 
     switch (_providerType) {
-      case zenonProviderTypes.walletConnect: {
+      case InternalNetworkProviderTypes.walletConnect: {
         if (walletConnectClient.current) {
           walletConnectWrapper.disconnectAllPairings(walletConnectClient.current);
           walletConnectWrapper.disconnectAllSessions(walletConnectClient.current);
@@ -157,7 +157,7 @@ export const ZenonProvider: FC<{ children: any }> = ({ children }) => {
         }
         return true;
       }
-      case zenonProviderTypes.syriusExtension: {
+      case InternalNetworkProviderTypes.syriusExtension: {
         syriusExtensionWrapper.unregisterEvents(syriusClient.current?.eventsHandler);
         syriusClient.current = null;
         setProviderType(null);
@@ -187,14 +187,14 @@ export const ZenonProvider: FC<{ children: any }> = ({ children }) => {
   };
 
   const getWalletInfo: any = async (
-    _providerType: zenonProviderTypes | null = providerType,
+    _providerType: InternalNetworkProviderTypes | null = providerType,
     maxRetries: number = maxRequestRetries
   ) => {
     if (!_providerType) throw Error("No provider type selected");
 
     try {
       switch (_providerType) {
-        case zenonProviderTypes.walletConnect: {
+        case InternalNetworkProviderTypes.walletConnect: {
           if (!walletConnectClient.current) throw Error("Client was not initialized");
           if (!walletConnectSession.current) throw Error("Session was not established");
           // Because walletConnectWrapper.connect triggers an window.open - we don't want to
@@ -208,7 +208,7 @@ export const ZenonProvider: FC<{ children: any }> = ({ children }) => {
           dispatch(storeChainIdentifier(info.chainId));
           return info;
         }
-        case zenonProviderTypes.syriusExtension: {
+        case InternalNetworkProviderTypes.syriusExtension: {
           const info = await syriusExtensionWrapper.getInfo();
           info.nodeUrl = ifNeedReplaceNodeWithDefaultAndNotifyUser(info.nodeUrl);
           dispatch(storeNodeUrl(info.nodeUrl));
@@ -237,7 +237,7 @@ export const ZenonProvider: FC<{ children: any }> = ({ children }) => {
       fromAddress: any;
       accountBlock: any;
     },
-    _providerType: zenonProviderTypes | null = providerType,
+    _providerType: InternalNetworkProviderTypes | null = providerType,
     maxRetries: number = maxRequestRetries
   ): Promise<AccountBlockTemplate> => {
     if (!_providerType) throw Error("No provider type selected");
@@ -245,7 +245,7 @@ export const ZenonProvider: FC<{ children: any }> = ({ children }) => {
 
     try {
       switch (_providerType) {
-        case zenonProviderTypes.walletConnect: {
+        case InternalNetworkProviderTypes.walletConnect: {
           if (!walletConnectClient.current) throw Error("Client was not initialized");
           if (!walletConnectSession.current) throw Error("Session was not established");
 
@@ -263,7 +263,7 @@ export const ZenonProvider: FC<{ children: any }> = ({ children }) => {
           addBeforeUnloadEvents();
           return transaction;
         }
-        case zenonProviderTypes.syriusExtension: {
+        case InternalNetworkProviderTypes.syriusExtension: {
           if (!syriusClient.current) throw Error("Client was not initialized");
           return await syriusExtensionWrapper.sendTransaction(params.accountBlock);
         }
@@ -311,10 +311,7 @@ export const ZenonProvider: FC<{ children: any }> = ({ children }) => {
       }
 
       console.warn("error.message", error.message);
-      if (
-        error.code == -32602 &&
-        error.message?.toLowerCase()?.includes(`No matching key`.toLowerCase())
-      ) {
+      if (error.code == -32602 && error.message?.toLowerCase()?.includes(`No matching key`.toLowerCase())) {
         if (!walletConnectClient.current) throw Error("Client was not initialized");
         if (!walletConnectSession.current) throw Error("Session was not established");
         if (!walletConnectPairing.current) throw Error("Pairing was not established");
@@ -500,8 +497,9 @@ export const ZenonProvider: FC<{ children: any }> = ({ children }) => {
     }
   };
 
-  const zenonProvider = {
-    coreClient: providerType == zenonProviderTypes.walletConnect ? walletConnectClient.current : syriusClient.current,
+  const InternalNetworkProvider = {
+    coreClient:
+      providerType == InternalNetworkProviderTypes.walletConnect ? walletConnectClient.current : syriusClient.current,
     providerType: providerType,
     displayedProviderType: displayedProviderType,
     init: init,
@@ -512,5 +510,5 @@ export const ZenonProvider: FC<{ children: any }> = ({ children }) => {
     sendTransaction: sendTransaction,
   };
 
-  return <ZenonContext.Provider value={zenonProvider}>{children}</ZenonContext.Provider>;
+  return <ZenonContext.Provider value={InternalNetworkProvider}>{children}</ZenonContext.Provider>;
 };

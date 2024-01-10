@@ -10,7 +10,7 @@ import StakingEntryComponent from "../../../components/stakingEntryComponent/sta
 import { LiquidityStakingItem, liquidityStakingStatus } from "../../../models/LiquidityStakingItem";
 import { SimpleToken } from "../../../models/SimpleToken";
 import { SpinnerContext } from "../../../services/hooks/spinner/spinnerContext";
-import useZenon from "../../../services/hooks/zenon-provider/useZenon";
+import useInternalNetwork from "../../../services/hooks/internalNetwork-provider/useInternalNetwork";
 import { clearActiveStakingEntry } from "../../../services/redux/liquidityStakingEntriesSlice";
 import { liquidityFlowSteps, storeCurrentWizardFlowStep } from "../../../services/redux/wizardStatusSlice";
 import newSwapSvg from "./../../../assets/icons/swap.svg";
@@ -37,7 +37,7 @@ const LiquidityStakingHistoryStep = ({ onStepSubmit = () => {} }) => {
     qsrAmount: "",
     znnAmount: "",
   });
-  const { zenonClient } = useZenon();
+  const { internalNetworkClient } = useInternalNetwork();
 
   useEffect(() => {
     getLiquidityStakingItems(currentPage, itemsPerPage);
@@ -324,7 +324,7 @@ const LiquidityStakingHistoryStep = ({ onStepSubmit = () => {} }) => {
           accountBlock: collectReward.toJson(),
         };
 
-        const accountBlock = await zenonClient.sendTransaction(transaction);
+        const accountBlock = await internalNetworkClient.sendTransaction(transaction);
 
         console.log("final accountBlock", accountBlock);
 
@@ -385,7 +385,7 @@ const LiquidityStakingHistoryStep = ({ onStepSubmit = () => {} }) => {
           accountBlock: cancelLiquidityStake.toJson(),
         };
 
-        const accountBlock = await zenonClient.sendTransaction(transaction);
+        const accountBlock = await internalNetworkClient.sendTransaction(transaction);
         console.log("final accountBlock", accountBlock);
 
         const hash = accountBlock?.hash.toString();

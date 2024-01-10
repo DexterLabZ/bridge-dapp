@@ -15,7 +15,7 @@ import { SimpleToken } from "../../../models/SimpleToken";
 import { UnwrapRequestItem, unwrapRequestStatus } from "../../../models/unwrapRequestItem";
 import { WrapRequestItem, wrapRequestStatus } from "../../../models/wrapRequestItem";
 import { SpinnerContext } from "../../../services/hooks/spinner/spinnerContext";
-import useZenon from "../../../services/hooks/zenon-provider/useZenon";
+import useInternalNetwork from "../../../services/hooks/internalNetwork-provider/useInternalNetwork";
 import { storeGlobalConstants } from "../../../services/redux/globalConstantsSlice";
 import { storeActiveUnwrapRequest, storeActiveWrapRequest } from "../../../services/redux/requestsSlice";
 import { storeErcInfo, storeZenonInfo } from "../../../services/redux/walletSlice";
@@ -143,7 +143,8 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
   const [wrapFeePercentage, setWrapFeePercentage] = useState(0);
   const [unwrapFeePercentage, setUnwrapFeePercentage] = useState(0);
 
-  const { zenonClient } = useZenon();
+  const { internalNetworkClient } = useInternalNetwork();
+
   const referralCode = useSelector((state: any) => state.referral);
 
   const wizardStatus = useSelector((state: any) => state.wizardStatus);
@@ -1008,7 +1009,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
         };
 
         try {
-          const accountBlock = await zenonClient.sendTransaction(transaction);
+          const accountBlock = await internalNetworkClient.sendTransaction(transaction);
           console.log("final accountBlock", accountBlock);
           resolve(accountBlock?.hash.toString());
         } catch (err) {

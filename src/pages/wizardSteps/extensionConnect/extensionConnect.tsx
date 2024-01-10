@@ -8,8 +8,8 @@ import { Primitives, Zenon } from "znn-ts-sdk";
 import { AccountInfo } from "znn-ts-sdk/dist/lib/src/model/nom/account_info";
 import { Address } from "znn-ts-sdk/dist/lib/src/model/primitives/address";
 import { SpinnerContext } from "../../../services/hooks/spinner/spinnerContext";
-import useZenon from "../../../services/hooks/zenon-provider/useZenon";
-import { zenonProviderTypes } from "../../../services/hooks/zenon-provider/zenonContext";
+import useInternalNetwork from "../../../services/hooks/internalNetwork-provider/useInternalNetwork";
+import { internalNetworkProviderTypes } from "../../../services/hooks/internalNetwork-provider/internalNetworkContext";
 import { storeMomentumHeight } from "../../../services/redux/connectionSlice";
 import { storeGlobalConstants } from "../../../services/redux/globalConstantsSlice";
 import { storeReferralCode } from "../../../services/redux/referralSlice";
@@ -66,7 +66,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
   const [globalConstants, setGlobalConstants] = useState(storedConstants);
 
   const serializedWalletInfo = useSelector((state: any) => state.wallet);
-  const { zenonClient } = useZenon();
+  const { internalNetworkClient } = useInternalNetwork();
 
   const [hasParingsOrSessions, setHasParingsOrSessions] = useState(false);
 
@@ -100,8 +100,8 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
   }, [serializedWalletInfo]);
 
   useEffect(() => {
-    console.log("extensionConnect - zenonClient", zenonClient);
-  }, [zenonClient]);
+    console.log("extensionConnect - internalNetworkClient", internalNetworkClient);
+  }, [internalNetworkClient]);
 
   useEffect(() => {
     console.log(localStorage.getItem("wc@2:core:0.3//pairing"), localStorage.getItem("wc@2:client:0.3//session"));
@@ -116,7 +116,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
     }
   }, []);
 
-  const connectSyrius = async (providerType: zenonProviderTypes) => {
+  const connectSyrius = async (providerType: internalNetworkProviderTypes) => {
     const showSpinner = handleSpinner(
       <>
         <div className="text-bold text-center mb-5 mt-4">Waiting approval from wallet</div>
@@ -134,27 +134,27 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
     try {
       let zenonInfo;
 
-      if (providerType == zenonProviderTypes.syriusExtension) {
+      if (providerType == internalNetworkProviderTypes.syriusExtension) {
         checkSyriusAvailability();
-        await zenonClient.init(zenonProviderTypes.syriusExtension);
-        await zenonClient.connectSyrius(zenonProviderTypes.syriusExtension, onModalClose);
-        zenonInfo = await zenonClient.getWalletInfo(zenonProviderTypes.syriusExtension);
+        await internalNetworkClient.init(internalNetworkProviderTypes.syriusExtension);
+        await internalNetworkClient.connectSyrius(internalNetworkProviderTypes.syriusExtension, onModalClose);
+        zenonInfo = await internalNetworkClient.getWalletInfo(internalNetworkProviderTypes.syriusExtension);
 
         console.log("zenonInfo", zenonInfo);
 
-        await zenonClient.connectToNode(zenonInfo.nodeUrl);
+        await internalNetworkClient.connectToNode(zenonInfo.nodeUrl);
       } else {
-        if (providerType == zenonProviderTypes.walletConnect) {
-          await zenonClient.init(zenonProviderTypes.walletConnect);
-          await zenonClient.connectSyrius(zenonProviderTypes.walletConnect, onModalClose);
+        if (providerType == internalNetworkProviderTypes.walletConnect) {
+          await internalNetworkClient.init(internalNetworkProviderTypes.walletConnect);
+          await internalNetworkClient.connectSyrius(internalNetworkProviderTypes.walletConnect, onModalClose);
 
           // modal.close() is called when the process is finished
           // and onModalClose is triggered and so the showSpinner(false) is called.
           // Start the spinner again for the getWalletInfo request.
           showSpinner(true);
-          zenonInfo = await zenonClient.getWalletInfo(zenonProviderTypes.walletConnect);
+          zenonInfo = await internalNetworkClient.getWalletInfo(internalNetworkProviderTypes.walletConnect);
           console.log("zenonInfo", zenonInfo);
-          await zenonClient.connectToNode(zenonInfo.nodeUrl);
+          await internalNetworkClient.connectToNode(zenonInfo.nodeUrl);
         }
       }
 
@@ -991,9 +991,9 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
   };
 
   const clearWallet = () => {
-    console.log("zenonClient?.coreClient", zenonClient?.coreClient);
-    if (zenonClient?.coreClient) {
-      zenonClient.disconnect();
+    console.log("internalNetworkClient?.coreClient", internalNetworkClient?.coreClient);
+    if (internalNetworkClient?.coreClient) {
+      internalNetworkClient.disconnect();
     } else {
       localStorage.removeItem("wc@2:core:0.3//pairing");
       localStorage.removeItem("wc@2:client:0.3//session");
@@ -1035,7 +1035,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
             <div className="step-content text-center p-0 mb-2">
               {isSyriusConnected ? (
                 <div className="text-bold">
-                  <span className="text-primary">{`Connected with ${zenonClient.displayedProviderType} on `}</span>
+                  <span className="text-primary">{`Connected with ${internalNetworkClient.displayedProviderType} on `}</span>
                   <span className="tooltip">
                     <span className="text-white">{syriusAddress.slice(0, 3) + "..." + syriusAddress.slice(-3)}</span>
                     <span className="tooltip-text">{syriusAddress}</span>
@@ -1047,12 +1047,12 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
             </div>
             <div className="d-flex gap-2 flex-wrap w-100 justify-content-center align-items-center">
               <div
-                onClick={() => connectSyrius(zenonProviderTypes.syriusExtension)}
+                onClick={() => connectSyrius(internalNetworkProviderTypes.syriusExtension)}
                 className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${
-                  isSyriusConnected && zenonClient.providerType ? "disabled" : ""
+                  isSyriusConnected && internalNetworkClient.providerType ? "disabled" : ""
                 }
                ${
-                 isSyriusConnected && zenonClient.providerType == zenonProviderTypes.syriusExtension
+                 isSyriusConnected && internalNetworkClient.providerType == internalNetworkProviderTypes.syriusExtension
                    ? "primary soft-disabled"
                    : "secondary"
                }`}>
@@ -1065,12 +1065,12 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
               </div>
               <div className="">or</div>
               <div
-                onClick={() => connectSyrius(zenonProviderTypes.walletConnect)}
+                onClick={() => connectSyrius(internalNetworkProviderTypes.walletConnect)}
                 className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${
-                  isSyriusConnected && zenonClient.providerType ? "disabled" : ""
+                  isSyriusConnected && internalNetworkClient.providerType ? "disabled" : ""
                 }
                ${
-                 isSyriusConnected && zenonClient.providerType == zenonProviderTypes.walletConnect
+                 isSyriusConnected && internalNetworkClient.providerType == internalNetworkProviderTypes.walletConnect
                    ? "primary soft-disabled"
                    : "secondary"
                }`}>

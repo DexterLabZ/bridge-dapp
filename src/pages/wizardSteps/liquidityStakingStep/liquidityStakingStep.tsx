@@ -11,7 +11,7 @@ import SimpleDropdown from "../../../components/simpleDropdown/simpleDropdown";
 import TokenDropdown from "../../../components/tokenDropdown/tokenDropdown";
 import { LiquidityStakingItem, liquidityStakingStatus } from "../../../models/LiquidityStakingItem";
 import { SimpleToken } from "../../../models/SimpleToken";
-import useZenon from "../../../services/hooks/zenon-provider/useZenon";
+import useInternalNetwork from "../../../services/hooks/internalNetwork-provider/useInternalNetwork";
 import { storeGlobalConstants } from "../../../services/redux/globalConstantsSlice";
 import { storeActiveStakingEntry, storeSuccessInfo } from "../../../services/redux/liquidityStakingEntriesSlice";
 import { findInObject, hasLowPlasma, multiplyBigNumberStrings } from "../../../utils/utils";
@@ -56,7 +56,7 @@ const LiquidityStakingStep = ({ onStepSubmit = () => {} }) => {
   const [plasmaBalance, setPlasmaBalance] = useState(0);
   const zenon = Zenon.getSingleton();
   const dispatch = useDispatch();
-  const { zenonClient } = useZenon();
+  const { internalNetworkClient } = useInternalNetwork();
   const walletInfo = useSelector((state: any) => state.wallet);
 
   useEffect(() => {
@@ -232,7 +232,7 @@ const LiquidityStakingStep = ({ onStepSubmit = () => {} }) => {
           fromAddress: JSONbig.parse(walletInfo.zenonInfo || "{}")?.address,
           accountBlock: liquidityStakeAccountBlock.toJson(),
         };
-        const accountBlock = await zenonClient.sendTransaction(transaction);
+        const accountBlock = await internalNetworkClient.sendTransaction(transaction);
 
         console.log("final accountBlock", accountBlock);
 
