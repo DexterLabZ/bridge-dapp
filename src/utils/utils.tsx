@@ -531,3 +531,21 @@ export const openSafelyInNewTab = (url: string): void => {
   const newWindow = window.open(url, "_blank", "noopener,noreferrer");
   if (newWindow) newWindow.opener = null;
 };
+
+export const deleteRecentWalletsFromLocalStorage = () => {
+  localStorage.removeItem("WCM_RECENT_WALLET_DATA");
+};
+
+export const extractAddressesFromNamespacesAccounts = (namespacesAccounts: string[]) => {
+  return namespacesAccounts.map((namespacesAccount) => {
+    const [namespace, chainId, address] = namespacesAccount.split(":");
+    return address;
+  });
+};
+
+export const extractChainIdsFromNamespacesAccounts = (namespacesAccounts: string[]) => {
+  return namespacesAccounts.map((namespacesAccount) => {
+    const [namespace, chainId, address] = namespacesAccount.split(":");
+    return chainId;
+  });
+};
