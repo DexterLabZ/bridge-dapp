@@ -38,7 +38,7 @@ import "./swapStep.scss";
 /**
  * * GTM SERVICE
  */
-import { useGTMDispatch } from '@elgorditosalsero/react-gtm-hook'
+import { useGTMDispatch } from "@elgorditosalsero/react-gtm-hook";
 
 /**
  * * TWITTER SERVICE
@@ -158,7 +158,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
 
   useEffect(() => {
     const runAsyncTasks = async () => {
-      console.log("swapStep globalConstants", globalConstants);
+      console.log("swapStep globalConstants", Object.freeze(Object.assign(globalConstants, {})));
       let metamaskCurrentChainId: number;
       let defaultExternalToken: any;
       try {
@@ -166,37 +166,53 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
         metamaskCurrentChainId = (await provider.getNetwork())?.chainId;
         await validateMetamaskNetwork(provider, globalConstants.externalAvailableNetworks, metamaskCurrentChainId);
         console.log("metamaskCurrentChainId", metamaskCurrentChainId);
-        console.log("globalConstants.externalAvailableTokens", globalConstants.externalAvailableTokens);
+        // console.log(
+        //   "globalConstants.externalAvailableTokens",
+        //   Object.freeze(
+        //     Object.assign(
+        //       globalConstants.externalAvailableTokens.map((t: any) => {
+        //         return Object.freeze(Object.assign(t, {}));
+        //       }),
+        //       []
+        //     )
+        //   )
+        // );
+        console.log(
+          "JSON.stringify(globalConstants.externalAvailableTokens)",
+          JSON.stringify(globalConstants.externalAvailableTokens)
+        );
+
         defaultExternalToken = globalConstants.externalAvailableTokens.find(
           (tok: any) => tok.isAvailable && metamaskCurrentChainId === tok.network.chainId
         );
+        console.log("swapStep - defaultExternalToken", Object.freeze(Object.assign(defaultExternalToken, {})));
       } catch (err) {
         console.error(err);
         defaultExternalToken = globalConstants.externalAvailableTokens.find((tok: any) => tok.isAvailable);
+        console.log("swapStep - ERR - defaultExternalToken", Object.freeze(Object.assign(defaultExternalToken, {})));
       }
 
       const ercTok = {
         ...(globalConstants.externalAvailableTokens.find(
-          (tok: any) => tok.address == ercToken.address && tok.network.chainId === metamaskCurrentChainId
+          (tok: any) =>
+            tok.address?.toLowerCase() == ercToken.address?.toLowerCase() &&
+            tok.network.chainId === metamaskCurrentChainId
         ) || defaultExternalToken),
         balance: JSONbig.parse(serializedWalletInfo["ercInfo"]).balance,
       };
-      console.log("init ercToken", ercTok);
+      console.log("init ercToken", Object.freeze(Object.assign(ercTok, {})));
       setValue("ercToken", ercTok, { shouldValidate: true });
       setErcToken(ercTok);
 
-      console.log(
-        "getPairOfToken(defaultExternalToken.address, defaultExternalToken?.network?.chainId)",
-        getPairOfToken(defaultExternalToken.address, defaultExternalToken.chainIdsOfPairedTokens[0])
-      );
       console.log("defaultExternalToken", defaultExternalToken);
       console.log("JSONbig.parse(serializedWalletInfo['zenonInfo'])", JSONbig.parse(serializedWalletInfo["zenonInfo"]));
 
+      const pairOfToken = getPairOfToken(defaultExternalToken.address, defaultExternalToken.chainIdsOfPairedTokens[0]);
+      console.log("pairOfToken", Object.freeze(Object.assign(pairOfToken, {})));
+
       const internalToken = findInObject(
         JSONbig.parse(serializedWalletInfo["zenonInfo"])?.balanceInfoMap,
-        (tok: any) =>
-          tok.address ===
-          getPairOfToken(defaultExternalToken.address, defaultExternalToken.chainIdsOfPairedTokens[0]).address
+        (tok: any) => tok.address?.toLowerCase() === pairOfToken.address?.toLowerCase()
       );
       const znnTok = {
         ...internalToken,
@@ -349,8 +365,8 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
       const currentToken = ercToken.address
         ? ercToken
         : updatedConstants.externalAvailableTokens.find(
-          (tok: any) => tok.isAvailable == true && metamaskCurrentChainId === tok.network.chainId
-        );
+            (tok: any) => tok.isAvailable == true && metamaskCurrentChainId === tok.network.chainId
+          );
 
       console.log("currentToken", JSONbig.stringify(currentToken));
 
@@ -499,15 +515,18 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
       setPlasmaBalance(zenonInfo?.plasma?.currentPlasma);
 
       let tokenWithoutBalance =
-        findInObject(globalConstants.internalAvailableTokens, (tok: any) => tok.address == zenonToken.address) ||
-        globalConstants.internalAvailableTokens[0];
+        findInObject(
+          globalConstants.internalAvailableTokens,
+          (tok: any) => tok.address?.toLowerCase() == zenonToken.address?.toLowerCase()
+        ) || globalConstants.internalAvailableTokens[0];
 
       console.log("tokenWithoutBalance", tokenWithoutBalance);
 
       const tokenWithUpdatedBalance = findInObject(
         zenonInfo?.balanceInfoMap,
         (tok: any) =>
-          tok?.token?.tokenStandard == tokenWithoutBalance.address || tok?.address == tokenWithoutBalance.address
+          tok?.token?.tokenStandard == tokenWithoutBalance.address ||
+          tok?.address?.toLowerCase() == tokenWithoutBalance.address?.toLowerCase()
       );
 
       console.log("tokenWithUpdatedBalance", tokenWithUpdatedBalance);
@@ -599,7 +618,8 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
 
         const currentPair = globalConstants.tokenPairs.find(
           (pair: any) =>
-            pair.internalToken.address == zenonToken.address && pair.externalToken.address == ercToken.address
+            pair.internalToken.address?.toLowerCase() == zenonToken.address?.toLowerCase() &&
+            pair.externalToken.address?.toLowerCase() == ercToken.address?.toLowerCase()
         );
 
         console.log("currentPair", currentPair);
@@ -626,10 +646,13 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
 
   const getPairOfToken = (address: string, destinationChainId = -1) => {
     return (
-      globalConstants.tokenPairs.find((pair: any) => pair.internalToken.address == address)?.externalToken ||
+      globalConstants.tokenPairs.find(
+        (pair: any) => pair.internalToken.address?.toLowerCase() == address?.toLowerCase()
+      )?.externalToken ||
       globalConstants.tokenPairs.find(
         (pair: any) =>
-          pair.externalToken.address == address && pair?.externalToken?.network?.chainId == destinationChainId
+          pair.externalToken.address?.toLowerCase() == address?.toLowerCase() &&
+          pair?.externalToken?.network?.chainId == destinationChainId
       )?.internalToken
     );
   };
@@ -1214,7 +1237,9 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
     console.log("zenonAddress", zenonAddress);
 
     const redeemDelay = globalConstants.tokenPairs.find(
-      (pair: any) => pair.internalToken.address == zenonToken.address && pair.externalToken.address == ercToken.address
+      (pair: any) =>
+        pair.internalToken.address?.toLowerCase() == zenonToken.address?.toLowerCase() &&
+        pair.externalToken.address?.toLowerCase() == ercToken.address?.toLowerCase()
     )?.unwrapRedeemDelay;
 
     const feeAmount = ethers.utils
@@ -1258,7 +1283,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
   /**
    * * GTM SERVICE
    */
-  const sendDataToGTM = useGTMDispatch()
+  const sendDataToGTM = useGTMDispatch();
 
   /**
    * * TWITTER SERVICE
@@ -1280,17 +1305,16 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
       } else {
         // WZNN => ZNN
         await wznnToZnn();
-
         /**
          * * GTM SERVICE
          * ? Sending data to GTM
          */
         sendDataToGTM({
-          event: 'attribute', 
-          action: 'attribute', 
-          category: 'bridge_tokens', 
-          event_category: 'bridge_tokens', 
-          event_label: `swap_wznn_znn_${ercAmount}`, 
+          event: "attribute",
+          action: "attribute",
+          category: "bridge_tokens",
+          event_category: "bridge_tokens",
+          event_label: `swap_wznn_znn_${ercAmount}`,
           event_value: ercAmount,
           label: `swap_wznn_znn_${ercAmount}`, 
           value: ercAmount, 
@@ -1369,8 +1393,9 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
               <div className="custom-control flex-1 min-width-100">
                 <input
                   {...register("zenonAddress", { required: true })}
-                  className={`w-100 h-100 address-field custom-label ${errors.zenonAddress ? "custom-label-error" : ""
-                    }`}
+                  className={`w-100 h-100 address-field custom-label ${
+                    errors.zenonAddress ? "custom-label-error" : ""
+                  }`}
                   placeholder="Type your address"
                   value={zenonAddress}
                   onChange={(e) => {

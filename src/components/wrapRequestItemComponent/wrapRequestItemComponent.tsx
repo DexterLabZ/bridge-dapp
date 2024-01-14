@@ -164,14 +164,16 @@ const WrapRequestItemComponent: FC<{
 
   return (
     <div
-      className={`request-item-container mb-2 ${isSelected ? " item-is-selected " : ""} ${canBeRedeemedAgain() ? " is-redeemable-again " : ""
-        }`}>
+      className={`request-item-container mb-2 ${isSelected ? " item-is-selected " : ""} ${
+        canBeRedeemedAgain() ? " is-redeemable-again " : ""
+      }`}>
       <div
         onClick={() => onSelect(requestItem.id)}
-        className={`request-item ${requestItem?.isActiveRequest ? " active-request " : ""} ${requestItem?.status == wrapRequestStatus.Signing || (countdown < redeemDelayInSeconds && countdown > 0)
+        className={`request-item ${requestItem?.isActiveRequest ? " active-request " : ""} ${
+          requestItem?.status == wrapRequestStatus.Signing || (countdown < redeemDelayInSeconds && countdown > 0)
             ? " moving-green-shadow "
             : ""
-          }`}>
+        }`}>
         <div className="mr-3">
           <div className="d-flex align-items-center">
             <div>
@@ -222,10 +224,11 @@ const WrapRequestItemComponent: FC<{
                     <img alt="" className="mr-2 ml-2" height="18px" src={transferArrow} />
                     <span className="tooltip-text">
                       {requestItem?.status == wrapRequestStatus.FinalRedeemed
-                        ? `${requestItem?.transactionHash
-                          ? "Hash: 0x" + requestItem?.transactionHash
-                          : "Zenon Hash: " + requestItem?.id
-                        }`
+                        ? `${
+                            requestItem?.transactionHash
+                              ? "Hash: 0x" + requestItem?.transactionHash
+                              : "Zenon Hash: " + requestItem?.id
+                          }`
                         : `Zenon Hash: ${requestItem?.id}`}
                     </span>
                   </div>
@@ -238,20 +241,20 @@ const WrapRequestItemComponent: FC<{
                     <div className="d-flex text-bold tooltip">
                       {parseFloat(
                         ethers.utils.formatUnits(
-                          ethers.BigNumber.from(requestItem.amount.toString() || 0).sub(
+                          ethers.BigNumber.from(requestItem.amount?.toString() || 0).sub(
                             ethers.BigNumber.from(requestItem?.feeAmount?.toString() || 0)
                           ),
-                          ethers.BigNumber.from((requestItem?.toToken?.decimals.toString() || 8) + "")
+                          ethers.BigNumber.from((requestItem?.toToken?.decimals?.toString() || 8) + "")
                         )
                       ).toFixed(2) +
                         " " +
                         (requestItem?.toToken?.symbol || "wZNN")}
                       <span className="tooltip-text">
                         {ethers.utils.formatUnits(
-                          ethers.BigNumber.from(requestItem.amount.toString() || 0).sub(
+                          ethers.BigNumber.from(requestItem.amount?.toString() || 0).sub(
                             ethers.BigNumber.from(requestItem?.feeAmount?.toString() || 0)
                           ),
-                          ethers.BigNumber.from((requestItem?.toToken?.decimals.toString() || 8) + "")
+                          ethers.BigNumber.from((requestItem?.toToken?.decimals?.toString() || 8) + "")
                         ) +
                           " " +
                           (requestItem?.toToken?.symbol || "wZNN")}

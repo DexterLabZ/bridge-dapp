@@ -19,7 +19,7 @@ import { simpleTokenType } from "../swapStep/swapStep";
 import znnTokenIcon from "./../../../assets/tokens/znn.svg";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
-const LiquidityStakingStep = ({ onStepSubmit = () => { } }) => {
+const LiquidityStakingStep = ({ onStepSubmit = () => {} }) => {
   const {
     register,
     control,
@@ -79,7 +79,9 @@ const LiquidityStakingStep = ({ onStepSubmit = () => { } }) => {
         JSON.stringify(
           findInObject(
             zenonInfo?.balanceInfoMap,
-            (tok: any) => tok?.token?.tokenStandard == selectedToken.address || tok?.address == selectedToken.address
+            (tok: any) =>
+              tok?.token?.tokenStandard?.toLowerCase() == selectedToken.address?.toLowerCase() ||
+              tok?.address?.toLowerCase() == selectedToken.address?.toLowerCase()
           ) || {}
         )
       );
@@ -186,13 +188,13 @@ const LiquidityStakingStep = ({ onStepSubmit = () => { } }) => {
     );
 
     console.log("updatedTuples", updatedTuples);
-    
+
     updatedConstants.liquidityTokenTuples.push(...updatedTuples);
 
     dispatch(storeGlobalConstants(updatedConstants));
-    
+
     console.log("updatedConstants - updatedTuples", updatedConstants);
-    
+
     setGlobalConstants(updatedConstants);
     return updatedConstants;
   };
@@ -200,12 +202,12 @@ const LiquidityStakingStep = ({ onStepSubmit = () => { } }) => {
   // TODO extract this to utils
   const getZenonTokenInfo = async (tokenStandard: string) => {
     console.log("tokenStandard", tokenStandard);
-    
+
     const tokStandard = Primitives.TokenStandard.parse(tokenStandard);
-    
+
     console.log("tokStandard", tokStandard);
     console.log("tokStandard.toString()", tokStandard.toString());
-    
+
     return await zenon.embedded.token.getByZts(tokStandard);
   };
 
@@ -222,7 +224,7 @@ const LiquidityStakingStep = ({ onStepSubmit = () => { } }) => {
           Primitives.TokenStandard.parse(token.address || ""),
           bigNumAmount
         );
-        
+
         console.log("liquidityStakeAccountBlock", liquidityStakeAccountBlock);
         console.log("liquidityStakeAccountBlock.toJson()", liquidityStakeAccountBlock.toJson());
 
@@ -231,9 +233,9 @@ const LiquidityStakingStep = ({ onStepSubmit = () => { } }) => {
           accountBlock: liquidityStakeAccountBlock.toJson(),
         };
         const accountBlock = await zenonClient.sendTransaction(transaction);
-        
+
         console.log("final accountBlock", accountBlock);
-        
+
         const hash = accountBlock?.hash.toString();
 
         toast("Successfully staked", {
@@ -356,9 +358,9 @@ const LiquidityStakingStep = ({ onStepSubmit = () => { } }) => {
 
           <div className="mt-1 ml-1">
             {!selectedToken?.balanceWithDecimals ||
-              selectedToken?.balanceWithDecimals == "0" ||
-              selectedToken?.balanceWithDecimals == "0.0" ||
-              selectedToken?.balance == "0" ? (
+            selectedToken?.balanceWithDecimals == "0" ||
+            selectedToken?.balanceWithDecimals == "0.0" ||
+            selectedToken?.balance == "0" ? (
               <>
                 <div className="tooltip d-flex align-items-center">
                   <img alt="fees-info" className="switch-arrow mr-1" src={warningIcon} />

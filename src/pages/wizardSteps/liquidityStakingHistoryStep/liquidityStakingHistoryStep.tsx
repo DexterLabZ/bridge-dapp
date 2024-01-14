@@ -17,7 +17,7 @@ import newSwapSvg from "./../../../assets/icons/swap.svg";
 import "./liquidityStakingHistoryStep.scss";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
-const LiquidityStakingHistoryStep = ({ onStepSubmit = () => { } }) => {
+const LiquidityStakingHistoryStep = ({ onStepSubmit = () => {} }) => {
   const newSwapIcon = <img alt="" className="" height="15px" src={newSwapSvg} />;
   const [maxPages, setMaxPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
@@ -256,10 +256,10 @@ const LiquidityStakingHistoryStep = ({ onStepSubmit = () => { } }) => {
     console.log("uncollectedReward", uncollectedReward);
     console.log("globalConstants", globalConstants);
     const znnDecimals = globalConstants.internalAvailableTokens.find(
-      (tok: any) => tok.address == globalConstants.znnTokenInfo
+      (tok: any) => tok.address?.toLowerCase() == globalConstants.znnTokenInfo?.address?.toLowerCase()
     ).decimals;
     const qsrDecimals = globalConstants.internalAvailableTokens.find(
-      (tok: any) => tok.address == globalConstants.qsrTokenInfo
+      (tok: any) => tok.address?.toLowerCase() == globalConstants.qsrTokenInfo?.address?.toLowerCase()
     ).decimals;
 
     const znnAmount = ethers.utils.formatUnits(
@@ -538,23 +538,23 @@ const LiquidityStakingHistoryStep = ({ onStepSubmit = () => { } }) => {
         <h4>Liquidity stake requests</h4>
         {stakingItems.length > 0
           ? stakingItems.map((stakingItem, i) => {
-            return (
-              <StakingEntryComponent
-                key={"request-item-" + stakingItem.id + stakingItem.stakeAddress + i}
-                onRevoke={onItemRevoke}
-                stakingItem={stakingItem}
-              />
-            );
-          })
+              return (
+                <StakingEntryComponent
+                  key={"request-item-" + stakingItem.id + stakingItem.stakeAddress + i}
+                  onRevoke={onItemRevoke}
+                  stakingItem={stakingItem}
+                />
+              );
+            })
           : !isLoading && (
-            <div className="w-100 d-flex align-items-center flex-columns mt-5">
-              <h4 className="text-gray text-center">You have no staking requests yet.</h4>
+              <div className="w-100 d-flex align-items-center flex-columns mt-5">
+                <h4 className="text-gray text-center">You have no staking requests yet.</h4>
 
-              <div className="mt-5" style={{ width: "220px" }} onClick={() => goToNewStaking()} tabIndex={0}>
-                <NavMenuButton content="Stake now" link="" isActive={false} icon={newSwapIcon}></NavMenuButton>
+                <div className="mt-5" style={{ width: "220px" }} onClick={() => goToNewStaking()} tabIndex={0}>
+                  <NavMenuButton content="Stake now" link="" isActive={false} icon={newSwapIcon}></NavMenuButton>
+                </div>
               </div>
-            </div>
-          )}
+            )}
       </div>
       <div className={`${maxPages > 1 ? "" : "invisible-no-interaction"}`}>
         <Paginator

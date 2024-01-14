@@ -58,7 +58,7 @@ const constants = {
   ethWqsrTokenInfo: {
     symbol: "wQSR",
     decimals: 8,
-    address: "0x7aaa4628d9a9b4a6f809b5ad4f5e62cfe703efe9",
+    address: "0x96546afe4a21515a3a30cd3fd64a70eb478dc174",
   },
 
   // Internal default tokens
@@ -72,12 +72,12 @@ const constants = {
     decimals: 8,
     address: "zts1qsrxxxxxxxxxxxxxmrhjll",
   },
-  znnEthLpsTokenInfo: {
+  znnEthLpTokenInfo: {
     symbol: "ZNNETHLP",
     decimals: 18,
     address: "zts17d6yr02kh0r9qr566p7tg6",
   },
-  qsrEthLpsTokenInfo: {
+  qsrEthLpTokenInfo: {
     symbol: "QSRETHLP",
     decimals: 18,
     address: "zts1akfzw3s3h6ytwm07x9mldh",
@@ -245,7 +245,8 @@ const testConstants = {
   ethWznnTokenInfo: {
     symbol: "wZNN",
     decimals: 8,
-    address: "0x0000000000000000000000000000000000000000",
+    address:
+      process.env.REACT_APP_PUBLIC_CONSTANTS_TEST_ETH_WZNN_ADDRESS || "0x0000000000000000000000000000000000000000",
   },
   bscWqsrTokenInfo: {
     symbol: "wQSR",
@@ -255,40 +256,51 @@ const testConstants = {
   ethWqsrTokenInfo: {
     symbol: "wQSR",
     decimals: 8,
-    address: "0x0000000000000000000000000000000000000000",
+    address:
+      process.env.REACT_APP_PUBLIC_CONSTANTS_TEST_ETH_WQSR_ADDRESS || "0x0000000000000000000000000000000000000000",
   },
 
   // Internal tokens
-  znnEthLpsTokenInfo: {
+  znnEthLpTokenInfo: {
     symbol: "ZNNETHLP",
     decimals: 18,
-    address: "zts1y54lmvqgntdpgpzlmp45cm",
+    address: process.env.REACT_APP_PUBLIC_CONSTANTS_TEST_ZNN_ETH_LP_ADDRESS || "zts000000000000000000000000",
   },
-  qsrEthLpsTokenInfo: {
+  qsrEthLpTokenInfo: {
     symbol: "QSRETHLP",
     decimals: 18,
-    address: "zts1akfzw3s3h6ytwm07x9mldh",
+    address: process.env.REACT_APP_PUBLIC_CONSTANTS_TEST_QSR_ETH_LP_ADDRESS || "zts000000000000000000000000",
   },
 
   // Liquidity networks
   defaultLiquidityExternalNetworkDetails: {
     ETH: {
       name: "TEST-ETH",
-      chainId: 31337,
+      chainId: 11155111,
       // contractAddress is also known as bridgeAddress
-      contractAddress: "0x0000000000000000000000000000000000000000",
+      contractAddress:
+        process.env.REACT_APP_PUBLIC_CONSTANTS_TEST_LIQUIDITY_EXTERNAL_NETWORK_ETH_ADDRESS ||
+        "0x0000000000000000000000000000000000000000",
     },
   },
 
   // Liquidity pairs
   defaultLiquidityPairsDetails: {
     ETH: {
-      wethTokenAddress: "0x0000000000000000000000000000000000000000",
-      // LP Token address is the same as pair address
-      lpTokenAddress: "0x0000000000000000000000000000000000000000",
-      pairAddress: "0x0000000000000000000000000000000000000000",
+      wethTokenAddress:
+        process.env.REACT_APP_PUBLIC_CONSTANTS_TEST_LIQUIDITY_DEFAULT_PAIRS_WETH_ADDRESS ||
+        "0x0000000000000000000000000000000000000000",
+      // Lp Token address is the same as pair address
+      lpTokenAddress:
+        process.env.REACT_APP_PUBLIC_CONSTANTS_TEST_LIQUIDITY_DEFAULT_PAIRS_LP_TOKEN_ADDRESS ||
+        "0x0000000000000000000000000000000000000000",
+      pairAddress:
+        process.env.REACT_APP_PUBLIC_CONSTANTS_TEST_LIQUIDITY_DEFAULT_PAIRS_PAIR_TOKEN_ADDRESS ||
+        "0x0000000000000000000000000000000000000000",
       // Router
-      routerContract: "0x0000000000000000000000000000000000000000",
+      routerContract:
+        process.env.REACT_APP_PUBLIC_CONSTANTS_TEST_LIQUIDITY_DEFAULT_PAIRS_ROUTER_CONTRACT_ADDRESS ||
+        "0x0000000000000000000000000000000000000000",
     },
   },
 
@@ -343,6 +355,7 @@ const testConstants = {
       multiplierLabel: "1.6x",
     },
   ],
+  GTM_ID: "GTM-XXXXXX",
 };
 
 //
@@ -365,7 +378,8 @@ const developmentConstants = {
   ethWznnTokenInfo: {
     symbol: "wZNN",
     decimals: 8,
-    address: "0x0000000000000000000000000000000000000000",
+    address:
+      process.env.REACT_APP_PUBLIC_CONSTANTS_DEV_ETH_WZNN_ADDRESS || "0x0000000000000000000000000000000000000000",
   },
   bscWqsrTokenInfo: {
     symbol: "wQSR",
@@ -375,40 +389,51 @@ const developmentConstants = {
   ethWqsrTokenInfo: {
     symbol: "wQSR",
     decimals: 8,
-    address: "0x0000000000000000000000000000000000000000",
+    address:
+      process.env.REACT_APP_PUBLIC_CONSTANTS_DEV_ETH_WQSR_ADDRESS || "0x0000000000000000000000000000000000000000",
   },
 
   // Internal tokens
-  znnEthLpsTokenInfo: {
+  znnEthLpTokenInfo: {
     symbol: "ZNNETHLP",
     decimals: 18,
-    address: "zts1dt5pxzwpvp2vrl6ewd728g",
+    address: process.env.REACT_APP_PUBLIC_CONSTANTS_DEV_ZNN_ETH_LP_ADDRESS || "zts000000000000000000000000",
   },
-  qsrEthLpsTokenInfo: {
+  qsrEthLpTokenInfo: {
     symbol: "QSRETHLP",
     decimals: 18,
-    address: "zts1akfzw3s3h6ytwm07x9mldh",
+    address: process.env.REACT_APP_PUBLIC_CONSTANTS_DEV_QSR_ETH_LP_ADDRESS || "zts000000000000000000000000",
   },
 
   // Liquidity networks
   defaultLiquidityExternalNetworkDetails: {
     ETH: {
       name: "DEV-ETH",
-      chainId: 31337,
+      chainId: 11155111,
       // contractAddress is also known as bridgeAddress
-      contractAddress: "0x0000000000000000000000000000000000000000",
+      contractAddress:
+        process.env.REACT_APP_PUBLIC_CONSTANTS_DEV_LIQUIDITY_EXTERNAL_NETWORK_ETH_ADDRESS ||
+        "0x0000000000000000000000000000000000000000",
     },
   },
 
   // Liquidity pairs
   defaultLiquidityPairsDetails: {
     ETH: {
-      wethTokenAddress: "0x0000000000000000000000000000000000000000",
-      // LP Token address is the same as pair address
-      lpTokenAddress: "0x0000000000000000000000000000000000000000",
-      pairAddress: "0x0000000000000000000000000000000000000000",
+      wethTokenAddress:
+        process.env.REACT_APP_PUBLIC_CONSTANTS_DEV_LIQUIDITY_DEFAULT_PAIRS_WETH_ADDRESS ||
+        "0x0000000000000000000000000000000000000000",
+      // Lp Token address is the same as pair address
+      lpTokenAddress:
+        process.env.REACT_APP_PUBLIC_CONSTANTS_DEV_LIQUIDITY_DEFAULT_PAIRS_LP_TOKEN_ADDRESS ||
+        "0x0000000000000000000000000000000000000000",
+      pairAddress:
+        process.env.REACT_APP_PUBLIC_CONSTANTS_DEV_LIQUIDITY_DEFAULT_PAIRS_PAIR_TOKEN_ADDRESS ||
+        "0x0000000000000000000000000000000000000000",
       // Router
-      routerContract: "0x0000000000000000000000000000000000000000",
+      routerContract:
+        process.env.REACT_APP_PUBLIC_CONSTANTS_DEV_LIQUIDITY_DEFAULT_PAIRS_ROUTER_CONTRACT_ADDRESS ||
+        "0x0000000000000000000000000000000000000000",
     },
   },
 
@@ -463,6 +488,7 @@ const developmentConstants = {
       multiplierLabel: "1.6x",
     },
   ],
+  GTM_ID: "GTM-XXXXXX",
 };
 
 let exportedConstants = constants;
@@ -470,7 +496,8 @@ let exportedConstants = constants;
 console.log("process.env.NODE_ENV", process.env.NODE_ENV);
 console.log("process.env.REACT_APP_NETWORK_ENV", process.env.REACT_APP_NETWORK_ENV);
 
-if (process.env.REACT_APP_NETWORK_ENV === "production") exportedConstants = constants;
+if (process.env.REACT_APP_NETWORK_ENV === "production" || process.env.REACT_APP_NETWORK_ENV === "staging")
+  exportedConstants = constants;
 if (process.env.REACT_APP_NETWORK_ENV === "development") exportedConstants = developmentConstants;
 if (process.env.REACT_APP_NETWORK_ENV === "test") exportedConstants = testConstants;
 

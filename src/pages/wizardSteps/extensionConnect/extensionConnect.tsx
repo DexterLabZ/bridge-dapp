@@ -46,7 +46,7 @@ import znnTokenIcon from "./../../../assets/tokens/znn.svg";
 import "./extensionConnect.scss";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
-const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFlow = false }) => {
+const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlow = false }) => {
   const zenon = Zenon.getSingleton();
 
   const [isMetamaskConnected, setIsMetamaskConnected] = useState(false);
@@ -163,10 +163,15 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
       setSyriusAddress(zenonInfo.address);
       const zenonWalletInfo = await getBalances(zenonInfo.address);
       console.log("zenonWalletInfo", zenonWalletInfo);
+      console.log("JSON.stringify(zenonWalletInfo)", JSON.stringify(zenonWalletInfo));
 
       let updatedConstants = await updateGlobalConstantsWithBridgeInfo();
       console.log("globalConstants", updatedConstants);
-      console.log("globalConstants.internalAvailableTokens", updatedConstants.internalAvailableTokens);
+      console.log("updatedConstants.internalAvailableTokens", updatedConstants.internalAvailableTokens);
+      console.log(
+        "JSON.stringify(updatedConstants.internalAvailableTokens)",
+        JSON.stringify(updatedConstants.internalAvailableTokens)
+      );
       zenonWalletInfo.balanceInfoMap = await mapObject(
         updatedConstants.internalAvailableTokens,
         async (tok: simpleTokenType) => {
@@ -190,6 +195,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
           }
         }
       );
+      console.log("JSON.stringify(zenonWalletInfo.balanceInfoMap)", JSON.stringify(zenonWalletInfo.balanceInfoMap));
 
       updatedConstants = await updateGlobalConstantsWithLiquidityInfo(
         zenon,
@@ -324,9 +330,9 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
       };
 
       dispatch(storeGlobalConstants(updatedConstants));
-      
+
       console.log("updatedConstants after metamask data", updatedConstants);
-      
+
       setGlobalConstants(updatedConstants);
 
       dispatch(storeErcInfo(JSON.stringify({ address: accounts[0], balance: wznnBalance })));
@@ -370,7 +376,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
       const addressObject = Primitives.Address.parse(address);
 
       const getAccountInfoByAddress = await zenon.ledger.getAccountInfoByAddress(addressObject);
-      
+
       console.log("getAccountInfoByAddress", getAccountInfoByAddress);
 
       const plasma = await zenon.embedded.plasma.get(addressObject);
@@ -476,6 +482,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
 
     const getAllNetworks = await zenon.embedded.bridge.getAllNetworks();
     console.log("getAllNetworks", getAllNetworks);
+    console.log("JSON.stringify(getAllNetworks)", JSON.stringify(getAllNetworks));
 
     const getFrontierMomentum = await zenon.ledger.getFrontierMomentum();
     console.log("getFrontierMomentum", getFrontierMomentum);
@@ -486,15 +493,48 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
       dispatch(storeMomentumHeight(args[0].height));
     });
 
-    const internalAvailableNetworks: simpleNetworkType[] = [
-      {
-        name: "Zenon",
-        chainId: 3,
-        icon: znnNetworkIcon,
-        isAvailable: true,
-        color: "#67E646",
-      },
-    ];
+    const disconnectHandler = (args: any) => {
+      console.error("Disconnected from socket!", args);
+      toast("Disconnected from node. Please check your internet connection and refresh the page", {
+        position: "bottom-center",
+        autoClose: false,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: false,
+        draggable: true,
+        type: "error",
+        theme: "dark",
+        toastId: "disconnected",
+      });
+    };
+
+    zenon.wsClient?._wsRpc2Client.on("disconnect", disconnectHandler);
+    zenon.wsClient?._wsRpc2Client.on("close", disconnectHandler);
+    zenon.wsClient?._wsRpc2Client.on("error", disconnectHandler);
+
+    let internalAvailableNetworks: simpleNetworkType[] = [];
+
+    if (updatedConstants.isDevNet || updatedConstants.isTestNet) {
+      internalAvailableNetworks = [
+        {
+          name: "Zenon",
+          chainId: 3,
+          icon: znnNetworkIcon,
+          isAvailable: true,
+          color: "#67E646",
+        },
+      ];
+    } else {
+      internalAvailableNetworks = [
+        {
+          name: "Zenon",
+          chainId: 1,
+          icon: znnNetworkIcon,
+          isAvailable: true,
+          color: "#67E646",
+        },
+      ];
+    }
 
     // Default - mainNet
     let externalAvailableNetworks: simpleNetworkType[] = [
@@ -581,24 +621,24 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
       },
       {
         icon: znnTokenIcon,
-        symbol: globalConstants.znnEthLpsTokenInfo.symbol,
+        symbol: globalConstants.znnEthLpTokenInfo.symbol,
         name: "ZNN - ETH LP",
-        address: globalConstants.znnEthLpsTokenInfo.address,
+        address: globalConstants.znnEthLpTokenInfo.address,
         network: internalAvailableNetworks[0],
         balance: "0",
-        decimals: globalConstants.znnEthLpsTokenInfo.decimals,
+        decimals: globalConstants.znnEthLpTokenInfo.decimals,
         isAvailable: false,
         availableSoon: false,
         isCommonToken: true,
       },
       {
         icon: qsrTokenIcon,
-        symbol: globalConstants.qsrEthLpsTokenInfo.symbol,
+        symbol: globalConstants.qsrEthLpTokenInfo.symbol,
         name: "QSR - ETH LP",
-        address: globalConstants.qsrEthLpsTokenInfo.address,
+        address: globalConstants.qsrEthLpTokenInfo.address,
         network: internalAvailableNetworks[0],
         balance: "0",
-        decimals: globalConstants.qsrEthLpsTokenInfo.decimals,
+        decimals: globalConstants.qsrEthLpTokenInfo.decimals,
         isAvailable: false,
         availableSoon: false,
         isCommonToken: true,
@@ -726,6 +766,8 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
       },
     ];
 
+    console.log("EXT_CONNECT_CONSTANTS getAllNetworks", getAllNetworks);
+    console.log("EXT_CONNECT_CONSTANTS externalAvailableNetworks", externalAvailableNetworks);
     getAllNetworks.list.forEach((network: any) => {
       let isNetworkLocallyDefined = false;
       externalAvailableNetworks = externalAvailableNetworks.map((extNetwork) => {
@@ -765,7 +807,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
           tok.chainIdsOfPairedTokens.push(network.chainId);
         }
 
-        if (tok.address == tokenAddress && tok.network.chainId == network.chainId) {
+        if (tok.address.toLowerCase() == tokenAddress.toLowerCase() && tok.network.chainId == network.chainId) {
           isTokenLocallyDefined = true;
           tok.isAvailable = true;
           tok.network = networkList.find((net) => net.chainId === network.chainId);
@@ -801,11 +843,16 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
           externalAvailableNetworks.find((net) => net.chainId === network.chainId) || externalAvailableNetworks[0]
         );
 
+        console.log("first_externalAvailableTokens", JSON.stringify(externalAvailableTokens));
+
         const updatedPair = {
           ...pair,
-          internalToken: internalAvailableTokens.find((tok) => tok.address === pair.tokenStandard),
+          internalToken: internalAvailableTokens.find(
+            (tok) => tok.address.toLowerCase() === pair.tokenStandard.toLowerCase()
+          ),
           externalToken: externalAvailableTokens.find(
-            (tok) => tok.address === pair.tokenAddress && tok.network.chainId === network.chainId
+            (tok) =>
+              tok.address.toLowerCase() === pair.tokenAddress.toLowerCase() && tok.network.chainId === network.chainId
           ),
           wrapFeePercentage: pair.feePercentage,
           unwrapRedeemDelay: pair.redeemDelay,
@@ -972,7 +1019,11 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
                 every unwrap from wZNN to ZNN and wQSR to QSR
               </div>
             </div>
-            <img alt="step-logo" className="ml-1" style={{ maxWidth: "32px", maxHeight: "32px" }} src={twitterLogo}></img>
+            <img
+              alt="step-logo"
+              className="ml-1"
+              style={{ maxWidth: "32px", maxHeight: "32px" }}
+              src={twitterLogo}></img>
           </div>
         </a>
       )}
@@ -997,12 +1048,14 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
             <div className="d-flex gap-2 flex-wrap w-100 justify-content-center align-items-center">
               <div
                 onClick={() => connectSyrius(zenonProviderTypes.syriusExtension)}
-                className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${isSyriusConnected && zenonClient.providerType ? "disabled" : ""
-                  }
-               ${isSyriusConnected && zenonClient.providerType == zenonProviderTypes.syriusExtension
-                    ? "primary soft-disabled"
-                    : "secondary"
-                  }`}>
+                className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${
+                  isSyriusConnected && zenonClient.providerType ? "disabled" : ""
+                }
+               ${
+                 isSyriusConnected && zenonClient.providerType == zenonProviderTypes.syriusExtension
+                   ? "primary soft-disabled"
+                   : "secondary"
+               }`}>
                 <img
                   alt="step-logo"
                   className="mr-1"
@@ -1013,12 +1066,14 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
               <div className="">or</div>
               <div
                 onClick={() => connectSyrius(zenonProviderTypes.walletConnect)}
-                className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${isSyriusConnected && zenonClient.providerType ? "disabled" : ""
-                  }
-               ${isSyriusConnected && zenonClient.providerType == zenonProviderTypes.walletConnect
-                    ? "primary soft-disabled"
-                    : "secondary"
-                  }`}>
+                className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${
+                  isSyriusConnected && zenonClient.providerType ? "disabled" : ""
+                }
+               ${
+                 isSyriusConnected && zenonClient.providerType == zenonProviderTypes.walletConnect
+                   ? "primary soft-disabled"
+                   : "secondary"
+               }`}>
                 <img
                   alt="step-logo"
                   className="mr-1"
@@ -1045,8 +1100,9 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => { }, isLiquidityFl
         </div>
       </div>
       <div
-        className={`extension-item mb-5 ${!isSyriusConnected ? "disabled" : ""} ${isMetamaskConnected ? "" : "cursor-pointer dark-shadow-on-hover"
-          }`}
+        className={`extension-item mb-5 ${!isSyriusConnected ? "disabled" : ""} ${
+          isMetamaskConnected ? "" : "cursor-pointer dark-shadow-on-hover"
+        }`}
         onClick={() => {
           if (!isMetamaskConnected) {
             connectMetamask();

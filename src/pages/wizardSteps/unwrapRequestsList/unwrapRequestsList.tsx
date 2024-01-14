@@ -20,7 +20,7 @@ import telegramLogo from "./../../../assets/logos/telegram.svg";
 import twitterLogo from "./../../../assets/logos/twitter.svg";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
-const UnwrapRequestsList = ({ onStepSubmit = () => { } }) => {
+const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
   const newSwapIcon = <img alt="" className="" height="15px" src={newSwapSvg} />;
   const storedRequests = useSelector((state: any) => state.requests);
   const walletInfo = useSelector((state: any) => state.wallet);
@@ -127,7 +127,8 @@ const UnwrapRequestsList = ({ onStepSubmit = () => { } }) => {
   const transformUnwrapRequest = async (request: { [key: string]: any }) => {
     console.log("transformUnwrapRequest, request", request);
     request.fromToken = globalConstants.externalAvailableTokens.find(
-      (tok: simpleTokenType) => tok.address == request.tokenAddress && tok.network.chainId == request?.chainId
+      (tok: simpleTokenType) =>
+        tok.address?.toLowerCase() == request.tokenAddress?.toLowerCase() && tok.network.chainId == request?.chainId
     );
 
     request.toToken = {
@@ -135,7 +136,7 @@ const UnwrapRequestsList = ({ onStepSubmit = () => { } }) => {
       address: request.token?.tokenStandard.toString(),
       decimals: request.token?.decimals,
       ...globalConstants.internalAvailableTokens.find(
-        (tok: simpleTokenType) => tok.address == request.token.tokenStandard
+        (tok: simpleTokenType) => tok.address?.toLowerCase() == request.token.tokenStandard?.toLowerCase()
       ),
     };
 
@@ -148,7 +149,12 @@ const UnwrapRequestsList = ({ onStepSubmit = () => { } }) => {
         console.log("evmTransaction", evmTransaction);
 
         const iface = new ethers.utils.Interface(globalConstants.abiContract);
-        const amountForBeingReferred = iface.decodeFunctionData("unwrap", evmTransaction?.data)[1];
+        let amountForBeingReferred = 0;
+        try {
+          amountForBeingReferred = iface.decodeFunctionData("unwrap", evmTransaction?.data)[1];
+        } catch (err) {
+          console.error(err);
+        }
         const parsedAmount = ethers.utils.formatUnits(amountForBeingReferred, request.token?.decimals);
 
         console.log("amountForBeingReferred", amountForBeingReferred);
@@ -300,7 +306,7 @@ const UnwrapRequestsList = ({ onStepSubmit = () => { } }) => {
 
         const accountBlock = await zenonClient.sendTransaction(transaction);
         console.log("final accountBlock", accountBlock);
-        
+
         const hash = accountBlock?.hash.toString();
 
         if (unwrapRequest.status == unwrapRequestStatus.Redeemable) {
@@ -426,48 +432,52 @@ const UnwrapRequestsList = ({ onStepSubmit = () => { } }) => {
         {/* <div style={{position: 'sticky'}}></div> */}
         {requestItems.length > 0
           ? requestItems.map((requestItem, i) => {
-            return (
-              <UnwrapRequestItemComponent
-                key={"request-item-" + requestItem.transactionHash + requestItem.toAddress + i}
-                onRedeem={onItemRedeem}
-                requestItem={requestItem}></UnwrapRequestItemComponent>
-            );
-          })
+              return (
+                <UnwrapRequestItemComponent
+                  key={"request-item-" + requestItem.transactionHash + requestItem.toAddress + i}
+                  onRedeem={onItemRedeem}
+                  requestItem={requestItem}></UnwrapRequestItemComponent>
+              );
+            })
           : !isLoading && (
-            <div className="w-100 d-flex align-items-center flex-columns mt-5">
-              <h4 className="text-gray text-center">
+              <div className="w-100 d-flex align-items-center flex-columns mt-5">
                 <h4 className="text-gray text-center">
-                  {`You have no unwrap requests yet.`}
-                  <br></br>
-                  <br></br>
-                  {`If you've created an Unwrap Request in the past 30 minutes and it's missing, it is probably still confirming on the Ethereum network or being signed by the bridge. This can sometimes take longer than 30 minutes, so please be patient or reach out on Telegram for support.`}
+                  <h4 className="text-gray text-center">
+                    {`You have no unwrap requests yet.`}
+                    <br></br>
+                    <br></br>
+                    {`If you've created an Unwrap Request in the past 30 minutes and it's missing, it is probably still confirming on the Ethereum network or being signed by the bridge. This can sometimes take longer than 30 minutes, so please be patient or reach out on Telegram for support.`}
+                  </h4>
                 </h4>
-              </h4>
 
-              <div className="d-flex align-items-center justify-items-center gap-2">
-                <a href="https://twitter.com/LearnZenon" target="_blank" rel="noreferrer" className="tooltip">
-                  <img alt="twitter support" className="cursor-pointer" height={52} src={twitterLogo}></img>
-                  <span className="tooltip-text">Twitter</span>
-                </a>
-                <a href=" https://t.me/zenonnetwork" target="_blank" rel="noreferrer" className="tooltip">
-                  <img alt="telegram support" className="cursor-pointer" height={52} src={telegramLogo}></img>
-                  <span className="tooltip-text">Telegram</span>
-                </a>
-                <a href="https://forum.zenon.org" target="_blank" rel="noreferrer" className="tooltip">
-                  <img alt="forum support" className="cursor-pointer" height={52} src={forumLogo}></img>
-                  <span className="tooltip-text">Forum</span>
-                </a>
-                <a href="https://discord.com/invite/zenonnetwork" target="_blank" rel="noreferrer" className="tooltip">
-                  <img alt="discord support" className="cursor-pointer" height={52} src={discordLogo}></img>
-                  <span className="tooltip-text">Discord</span>
-                </a>
-              </div>
+                <div className="d-flex align-items-center justify-items-center gap-2">
+                  <a href="https://twitter.com/LearnZenon" target="_blank" rel="noreferrer" className="tooltip">
+                    <img alt="twitter support" className="cursor-pointer" height={52} src={twitterLogo}></img>
+                    <span className="tooltip-text">Twitter</span>
+                  </a>
+                  <a href=" https://t.me/zenonnetwork" target="_blank" rel="noreferrer" className="tooltip">
+                    <img alt="telegram support" className="cursor-pointer" height={52} src={telegramLogo}></img>
+                    <span className="tooltip-text">Telegram</span>
+                  </a>
+                  <a href="https://forum.zenon.org" target="_blank" rel="noreferrer" className="tooltip">
+                    <img alt="forum support" className="cursor-pointer" height={52} src={forumLogo}></img>
+                    <span className="tooltip-text">Forum</span>
+                  </a>
+                  <a
+                    href="https://discord.com/invite/zenonnetwork"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="tooltip">
+                    <img alt="discord support" className="cursor-pointer" height={52} src={discordLogo}></img>
+                    <span className="tooltip-text">Discord</span>
+                  </a>
+                </div>
 
-              <div className="mt-5" style={{ width: "220px" }} onClick={() => goToNewSwap()} tabIndex={0}>
-                <NavMenuButton content="Make a swap" link="" isActive={false} icon={newSwapIcon}></NavMenuButton>
+                <div className="mt-5" style={{ width: "220px" }} onClick={() => goToNewSwap()} tabIndex={0}>
+                  <NavMenuButton content="Make a swap" link="" isActive={false} icon={newSwapIcon}></NavMenuButton>
+                </div>
               </div>
-            </div>
-          )}
+            )}
       </div>
       <div className={`${maxPages > 1 ? "" : "invisible-no-interaction"}`}>
         <Paginator
