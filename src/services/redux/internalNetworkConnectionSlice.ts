@@ -8,7 +8,7 @@ const initialState = {
 };
 
 export const connectionSlice = createSlice({
-  name: "connection",
+  name: "internalNetworkConnection",
   initialState,
   reducers: {
     resetConnectionState: (state) => {
@@ -28,6 +28,7 @@ export const connectionSlice = createSlice({
   },
 });
 
-export const { resetConnectionState, storeNodeUrl, storeChainIdentifier, storeMomentumHeight } = connectionSlice.actions;
+export const { resetConnectionState, storeNodeUrl, storeChainIdentifier, storeMomentumHeight } =
+  connectionSlice.actions;
 
 export default connectionSlice.reducer;

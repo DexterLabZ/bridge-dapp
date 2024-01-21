@@ -7,11 +7,11 @@ import { clearSuccessInfo } from "../../../services/redux/requestsSlice";
 import "./liquidityStakingSuccessStep.scss";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
-const LiquidityStakingSuccessStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit = () => { } }) => {
+const LiquidityStakingSuccessStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit = () => {} }) => {
   const dispatch = useDispatch();
   const storedRequests = useSelector((state: any) => state.liquidityStakingEntries);
   const [successInfo, setSuccessInfo] = useState<LiquidityStakingItem>();
-  const networkDetailsState = useSelector((state: any) => state.connection);
+  const internalNetworkConnectionDetails = useSelector((state: any) => state.internalNetworkConnection);
   const globalConstants = useSelector((state: any) => state.globalConstants);
 
   const internalExplorerByChainId: { [index: number]: string } = globalConstants.internalNetworkExplorerURLbyChainId;
@@ -21,7 +21,7 @@ const LiquidityStakingSuccessStep: FC<{ onStepSubmit: () => void }> = ({ onStepS
       console.log("successInfo", JSONbig.parse(storedRequests.successInfo || "{}"));
 
       const succInfo = LiquidityStakingItem.fromJson(JSONbig.parse(storedRequests.successInfo || "{}"));
-      
+
       console.log("successInfo", succInfo);
 
       setSuccessInfo(succInfo);
@@ -60,8 +60,8 @@ const LiquidityStakingSuccessStep: FC<{ onStepSubmit: () => void }> = ({ onStepS
               <span className="text-gray">
                 {successInfo?.stakeAddress.toString() &&
                   successInfo?.stakeAddress.toString()?.slice(0, 3) +
-                  "..." +
-                  successInfo?.stakeAddress.toString()?.slice(-3)}
+                    "..." +
+                    successInfo?.stakeAddress.toString()?.slice(-3)}
               </span>
               <span className="tooltip-text mt-5">{successInfo?.stakeAddress.toString()}</span>
             </div>
@@ -72,10 +72,9 @@ const LiquidityStakingSuccessStep: FC<{ onStepSubmit: () => void }> = ({ onStepS
       <div className="mt-5 success-buttons-container">
         <a
           className="no-decoration"
-          href={internalExplorerByChainId[networkDetailsState.chainIdentifier] + (successInfo?.id || "")}
+          href={internalExplorerByChainId[internalNetworkConnectionDetails.chainIdentifier] + (successInfo?.id || "")}
           target="_blank"
-          rel="noreferrer"
-        >
+          rel="noreferrer">
           <div className={`button mt-2 accent text-white`} onClick={() => goToExplorer()}>
             Discover transaction in the block explorer
           </div>

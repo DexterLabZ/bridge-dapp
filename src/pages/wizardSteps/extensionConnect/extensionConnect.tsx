@@ -9,7 +9,7 @@ import { AccountInfo } from "znn-ts-sdk/dist/lib/src/model/nom/account_info";
 import { Address } from "znn-ts-sdk/dist/lib/src/model/primitives/address";
 import { SpinnerContext } from "../../../services/hooks/spinner/spinnerContext";
 import { internalNetworkProviderTypes } from "../../../services/hooks/internalNetwork-provider/internalNetworkContext";
-import { storeMomentumHeight } from "../../../services/redux/connectionSlice";
+import { storeMomentumHeight } from "../../../services/redux/internalNetworkConnectionSlice";
 import { storeGlobalConstants } from "../../../services/redux/globalConstantsSlice";
 import { storeReferralCode } from "../../../services/redux/referralSlice";
 import { storeErcInfo, storeZenonInfo } from "../../../services/redux/walletSlice";

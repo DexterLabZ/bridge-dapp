@@ -6,7 +6,7 @@ import syriusExtensionWrapper from "./syriusExtensionWrapper";
 import { Primitives, Zenon } from "znn-ts-sdk";
 import { AccountBlockTemplate } from "znn-ts-sdk/dist/lib/src/model/nom/account_block_template";
 import { useDispatch, useSelector } from "react-redux";
-import { resetConnectionState, storeChainIdentifier, storeNodeUrl } from "../../redux/connectionSlice";
+import { resetConnectionState, storeChainIdentifier, storeNodeUrl } from "../../redux/internalNetworkConnectionSlice";
 import { toast } from "react-toastify";
 import { resetZenonInfo, storeZenonInfo } from "../../redux/walletSlice";
 import { getReferralAddress, getZenonWalletInfo } from "../../../utils/utils";

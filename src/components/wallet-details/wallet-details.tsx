@@ -8,7 +8,7 @@ import "./wallet-details.scss";
 
 const WalletDetails: FC = () => {
   const serializedWalletInfo = useSelector((state: any) => state.wallet);
-  const connectionInfo = useSelector((state: any) => state.connection);
+  const internalNetworkConnectionDetails = useSelector((state: any) => state.internalNetworkConnection);
   const referralInfo = useSelector((state: any) => state.referral);
   const [zenonAddress, setZenonAddress] = useState("");
   const [ercAddress, setErcAddress] = useState("");
@@ -61,13 +61,13 @@ const WalletDetails: FC = () => {
 
   return (
     <div className="wallet-details">
-      {connectionInfo?.nodeUrl ? (
+      {internalNetworkConnectionDetails?.nodeUrl ? (
         <div className="connection-details">
           <div
             className="tooltip d-flex align-items-center cursor-pointer"
             onClick={() => {
               try {
-                navigator.clipboard.writeText(connectionInfo?.nodeUrl);
+                navigator.clipboard.writeText(internalNetworkConnectionDetails?.nodeUrl);
                 toast(`Node URL copied to clipboard`, {
                   position: "bottom-center",
                   autoClose: 2500,
@@ -82,12 +82,12 @@ const WalletDetails: FC = () => {
                 console.error(err);
               }
             }}>
-            {connectionInfo?.nodeUrl.split("//")[1].split(":")[0]}
+            {internalNetworkConnectionDetails?.nodeUrl.split("//")[1].split(":")[0]}
             <div className="connected-dot ml-1"></div>
             <div className="tooltip-text text-left">
-              Connected Node: <b>{connectionInfo?.nodeUrl}</b>
+              Connected Node: <b>{internalNetworkConnectionDetails?.nodeUrl}</b>
               <br></br>
-              Chain ID: <b>{connectionInfo?.chainIdentifier}</b>
+              Chain ID: <b>{internalNetworkConnectionDetails?.chainIdentifier}</b>
             </div>
           </div>
         </div>

@@ -151,7 +151,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
   const referralCode = useSelector((state: any) => state.referral);
 
   const wizardStatus = useSelector((state: any) => state.wizardStatus);
-  // const externalNetworkConnectionInfo = useSelector((state: any) => state.connection);
+  // const externalNetworkConnectionInfo = useSelector((state: any) => state.internalNetworkConnection);
 
   useEffect(() => {
     const runAsyncTasks = async () => {

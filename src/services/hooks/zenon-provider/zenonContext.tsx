@@ -7,7 +7,7 @@ import { Primitives, Zenon } from "znn-ts-sdk";
 import { AccountBlockTemplate } from "znn-ts-sdk/dist/lib/src/model/nom/account_block_template";
 import { getReferralAddress, getZenonWalletInfo } from "../../../utils/utils";
 import { addBeforeUnloadEvents, removeBeforeUnloadEvents } from "../../pageHandlers/pageHandlers";
-import { resetConnectionState, storeChainIdentifier, storeNodeUrl } from "../../redux/connectionSlice";
+import { resetConnectionState, storeChainIdentifier, storeNodeUrl } from "../../redux/internalNetworkConnectionSlice";
 import { storeReferralCode } from "../../redux/referralSlice";
 import { resetZenonInfo, storeZenonInfo } from "../../redux/walletSlice";
 import syriusExtensionWrapper from "./syriusExtensionWrapper";

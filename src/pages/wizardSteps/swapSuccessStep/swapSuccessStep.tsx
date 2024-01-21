@@ -9,7 +9,7 @@ import sendRightIcon from "./../../../assets/transfer-arrow.svg";
 import "./swapSuccessStep.scss";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
-const SwapSuccessStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit = () => { } }) => {
+const SwapSuccessStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit = () => {} }) => {
   const dispatch = useDispatch();
   const storedRequests = useSelector((state: any) => state.requests);
   const [successInfo, setSuccessInfo] = useState<any>();
@@ -18,7 +18,7 @@ const SwapSuccessStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit = () =
 
   const externalExplorerByChainId: { [index: number]: string } = globalConstants.externalNetworkExplorerURLbyChainId;
   const internalExplorerByChainId: { [index: number]: string } = globalConstants.internalNetworkExplorerURLbyChainId;
-  const networkDetailsState = useSelector((state: any) => state.connection);
+  const internalNetworkConnectionDetails = useSelector((state: any) => state.internalNetworkConnection);
 
   const wizardStatus = useSelector((state: any) => state.wizardStatus);
 
@@ -240,7 +240,7 @@ const SwapSuccessStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit = () =
         ) : (
           <a
             className="no-decoration"
-            href={internalExplorerByChainId[networkDetailsState.chainIdentifier] + (successInfo?.id || "")}
+            href={internalExplorerByChainId[internalNetworkConnectionDetails.chainIdentifier] + (successInfo?.id || "")}
             target="_blank"
             rel="noreferrer">
             <div className={`button mt-2 accent text-white`} onClick={() => goToExplorer()}>
