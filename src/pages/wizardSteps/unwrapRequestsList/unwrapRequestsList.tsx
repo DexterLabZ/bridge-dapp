@@ -18,6 +18,7 @@ import discordLogo from "./../../../assets/logos/discord-logo.svg";
 import forumLogo from "./../../../assets/logos/forum-logo.svg";
 import telegramLogo from "./../../../assets/logos/telegram.svg";
 import twitterLogo from "./../../../assets/logos/twitter.svg";
+import useExternalNetwork from "../../../services/hooks/externalNetwork-provider/useExternalNetwork";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
@@ -35,6 +36,7 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
   const globalConstants = useSelector((state: any) => state.globalConstants);
   const refreshInterval = 30000;
   const { internalNetworkClient } = useInternalNetwork();
+  const { externalNetworkClient } = useExternalNetwork();
 
   useEffect(() => {
     getRequests(currentPage, itemsPerPage);
@@ -141,7 +143,8 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
     };
 
     if (request.logIndex < globalConstants.maxLogIndex) {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = await externalNetworkClient.getProvider();
+      // const provider = new ethers.providers.Web3Provider(window.ethereum);
       console.log("request.transactionHash", request.transactionHash);
 
       const evmTransaction = await provider.getTransaction("0x" + request.transactionHash);
@@ -164,6 +167,7 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
         request.amount = request.amount.toString();
       }
     } else {
+      console.log("evmTransaction not found");
       request.amount = request.amount.toString();
     }
 
@@ -303,6 +307,17 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
           fromAddress: JSONbig.parse(walletInfo.zenonInfo || "{}")?.address,
           accountBlock: unwrap.toJson(),
         };
+
+        toast(`Transaction sent to your wallet. Please check ${internalNetworkClient.displayedProviderType}`, {
+          position: "bottom-center",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: false,
+          draggable: true,
+          type: "info",
+          theme: "dark",
+        });
 
         const accountBlock = await internalNetworkClient.sendTransaction(transaction);
         console.log("final accountBlock", accountBlock);

@@ -15,6 +15,7 @@ const WalletDetails: FC = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
+    console.log("walletDetails - wallet changed");
     console.log("serializedWalletInfo", serializedWalletInfo);
 
     console.log(JSONbig.parse(serializedWalletInfo["zenonInfo"] || "{}"));
@@ -36,7 +37,7 @@ const WalletDetails: FC = () => {
       console.log("accountChangedHandler", accounts);
 
       const oldErcInfo = JSONbig.parse(serializedWalletInfo["ercInfo"] || "{}");
-      dispatch(storeErcInfo(JSONbig.stringify({ ...oldErcInfo, address: accounts[0] })));
+      dispatch(storeErcInfo(JSONbig.stringify({ ...oldErcInfo, address: accounts[0]?.toLowerCase() })));
     };
     window?.ethereum?.on("accountsChanged", accountChangedHandler);
 

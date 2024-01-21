@@ -1,5 +1,6 @@
-import {Primitives} from "znn-ts-sdk";
-import {AccountBlockTemplate} from "znn-ts-sdk/dist/lib/src/model/nom/account_block_template";
+import { Primitives } from "znn-ts-sdk";
+import { AccountBlockTemplate } from "znn-ts-sdk/dist/lib/src/model/nom/account_block_template";
+import { internalNetworkProviderTypes } from "./internalNetworkContext";
 
 const getInfo = async () => {
   return new Promise<any>(async (resolve, reject) => {
@@ -118,9 +119,9 @@ const unregisterEvents = (messageHandler: any) => {
 };
 
 const registerEvents = (
-  onAddressChange: (newAddress: string) => unknown,
-  onChainIdChange: (newChainId: string) => unknown,
-  onNodeChange: (newNode: string) => unknown
+  onAddressChange: (newAddress: string, providerType: internalNetworkProviderTypes) => unknown,
+  onChainIdChange: (newChainId: string, providerType: internalNetworkProviderTypes) => unknown,
+  onNodeChange: (newNode: string, providerType: internalNetworkProviderTypes) => unknown
 ) => {
   const messageHandler = async (event: any) => {
     const parsedData = event?.data;
@@ -131,7 +132,7 @@ const registerEvents = (
 
           const newAddress = parsedData.data?.newAddress;
           // console.log("addressChanged to", newAddress);
-          onAddressChange(newAddress);
+          onAddressChange(newAddress, internalNetworkProviderTypes.syriusExtension);
 
           console.log("Removing event listener");
 
@@ -142,7 +143,7 @@ const registerEvents = (
 
           const newChainId = parsedData.data?.newChainId;
           // console.log("chainIdChanged to", newChainId);
-          onChainIdChange(newChainId);
+          onChainIdChange(newChainId, internalNetworkProviderTypes.syriusExtension);
 
           break;
         }
@@ -152,7 +153,7 @@ const registerEvents = (
 
           const newNode = parsedData.data?.newNode;
           // console.log("nodeChanged to", newNode);
-          onNodeChange(newNode);
+          onNodeChange(newNode, internalNetworkProviderTypes.syriusExtension);
 
           break;
         }
@@ -171,6 +172,6 @@ const registerEvents = (
   return messageHandler;
 };
 
-const syriusExtensionWrapper = {getInfo, sendTransaction, registerEvents, unregisterEvents};
+const syriusExtensionWrapper = { getInfo, sendTransaction, registerEvents, unregisterEvents };
 
 export default syriusExtensionWrapper;

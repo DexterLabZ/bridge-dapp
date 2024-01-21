@@ -19,11 +19,12 @@ import {
   individualChains,
   rpcProvidersByChainId,
 } from "../../../utils/wcUtils";
-import { ethers } from "ethers-ts";
+import { ContractReceipt, ethers } from "ethers-ts";
 import axios, { AxiosInstance } from "axios";
 import { EthereumProvider } from "@walletconnect/ethereum-provider";
 import { EthereumRpcMap } from "@walletconnect/ethereum-provider/dist/types/EthereumProvider";
 import { SimpleToken } from "../../../models/SimpleToken";
+import { TransactionReceiptResponse, anyProviderType, externalNetworkProviderTypes } from "./externalNetworkContext";
 
 const projectId = "6106aa8c2f308b338f31465bef999a1f";
 const themeVariables = {
@@ -86,7 +87,7 @@ const initModal = async () => {
   return wcModal;
 };
 
-const initProvider = async (externalNetworkChainId: any) => {
+const initProvider = async (externalNetworkChainId: number) => {
   //
   // Using JsonRpcProvider
   //
@@ -96,6 +97,7 @@ const initProvider = async (externalNetworkChainId: any) => {
 
   return provider;
 };
+
 const connect = async (signClient: Client, onDismiss?: (reason: string) => unknown) => {
   console.log("Connecting wallet");
 
@@ -142,7 +144,7 @@ const connect = async (signClient: Client, onDismiss?: (reason: string) => unkno
       // const ethProvider = new ethers.providers.Web3Provider(modalProvider);
 
       // We usually got some errors if not adding the delay. Sessions were not updated as soon as the await finished
-      await delay(5000);
+      await delay(3000);
       const newSession = getLatestActiveSession(signClient, "eip155");
       console.log("[CONNECTED] New session", newSession);
       return { session: newSession, pairing: latestPairing };
@@ -186,7 +188,7 @@ const connect = async (signClient: Client, onDismiss?: (reason: string) => unkno
         // We usually got some errors if not adding the delay.
         // The new pairings was not in the list as soon as the await finished
         //
-        await delay(5000);
+        await delay(3000);
 
         // Important !!!
         //
@@ -217,7 +219,7 @@ const connect = async (signClient: Client, onDismiss?: (reason: string) => unkno
   }
 };
 
-const getAccountBalances = async (_accounts: string[]) => {
+const getAccountsBalances = async (provider: ethers.providers.Web3Provider, _accounts: string[]) => {
   try {
     const arr = await Promise.all(
       _accounts.map(async (account) => {
@@ -226,7 +228,7 @@ const getAccountBalances = async (_accounts: string[]) => {
         // const assets = await apiGetAccountBalance(address, chainId);
         // console.log("apiGetAccountBalanceRes", assets);
 
-        const assets = await getAccountBalance(address, chainId);
+        const assets = await getBalance(provider, address, reference);
         console.log("assets", assets);
 
         return { account, assets: [assets] };
@@ -283,34 +285,33 @@ export async function apiGetAccountBalance(address: string, chainId: string): Pr
   return { balance, ...token };
 }
 
-export async function getAccountBalance(
-  holderAddress: string,
-  chainId: string
-  // token: SimpleToken,
-  // tokenAbi: string
-): Promise<AssetData> {
-  const [namespace, networkId] = chainId.split(":");
-  console.log("[namespace, networkId]", [namespace, networkId]);
+export const getBalance = async (
+  provider: ethers.providers.JsonRpcProvider,
+  account: string,
+  tokenAddress?: string,
+  tokenAbi?: string
+): Promise<ethers.BigNumber> => {
+  // console.log("[namespace, networkId]", [namespace, networkId]);
 
-  const RPC_URL = getRandomRpcProviderByChainId(Number(networkId));
-  console.log("RPC_URL", RPC_URL);
+  // const RPC_URL = getRandomRpcProviderByChainId(Number(networkId));
+  // console.log("RPC_URL", RPC_URL);
 
-  const rpcProvider = new ethers.providers.JsonRpcProvider(RPC_URL);
-  console.log("rpcProvider", rpcProvider);
+  // const rpcProvider = new ethers.providers.JsonRpcProvider(RPC_URL);
+  // console.log("rpcProvider", rpcProvider);
 
   // const contract = new ethers.Contract(token.address, tokenAbi, rpcProvider);
   // console.log("contract", contract);
 
-  // const rawWznnBalance = await contract.balanceOf(holderAddress);
+  // const rawWznnBalance = await contract.balanceOf(account);
   // tokenBalance = ethers.utils.formatUnits(rawWznnBalance, token.decimals);
 
-  const token = rpcProvidersByChainId[Number(networkId)].token;
-  if (!RPC_URL) {
-    return { balance: "", symbol: "", name: "" };
-  }
-
-  const res = await rpcProvider.getBalance(holderAddress);
-  const balance = ethers.utils.formatUnits(res, token.decimals);
+  // const token = rpcProvidersByChainId[Number(chainId)].token;
+  // console.log("provider", provider);
+  // console.log("account", account);
+  // console.log("chainId", chainId);
+  // console.log("token", token);
+  // const res = await provider.getBalance(account);
+  // const balance = ethers.utils.formatUnits(res, token.decimals);
 
   // const api: AxiosInstance = axios.create({
   //   baseURL: RPC_URL,
@@ -321,48 +322,74 @@ export async function getAccountBalance(
   //   },
   // });
 
-  if (namespace !== "eip155") {
-    return { balance: "", symbol: "", name: "" };
-  }
   // const response = await api.post(RPC_URL, {
   //   jsonrpc: "2.0",
   //   method: "eth_getBalance",
-  //   params: [holderAddress, "latest"],
+  //   params: [account, "latest"],
   //   id: 1,
   // });
   // const { result } = response.data;
   // const balance = parseInt(result, 16).toString();
-  return { balance, ...token };
-}
+  // return { balance, ...token };
 
-const getInfo = async (signClient: Client, session: SessionTypes.Struct) => {
-  console.log("getInfo - session.topic", session.topic);
-
-  const accounts = session.namespaces.eip155.accounts;
-  console.log("getInfo - accounts", accounts);
-  const addresses = extractAddressesFromNamespacesAccounts(accounts);
-  console.log("eth_requestAccounts addresses", addresses);
-  const balances = await getAccountBalances(accounts);
-
-  // const testAddress = accounts[0];
-  // const req = {
-  //   topic: session.topic,
-  //   chainId: "eip155:11155111",
-  //   request: {
-  //     method: "eth_getBalance",
-  //     params: [testAddress, "latest"],
-  //   },
-  // };
-  // console.log("eth_getBalance req", req);
-
-  // const result = await signClient.request(req);
-  // console.log("eth_getBalance result", result);
-
-  console.log("eth_requestAccounts balances", balances);
-
-  // ToDo: RETURN ChainId Here and then pass it everywhere
-  return balances;
+  if (tokenAddress && tokenAbi) {
+    // Return the balance of the custom token
+    const contract = new ethers.Contract(tokenAddress, tokenAbi, provider);
+    return await contract.balanceOf(account);
+  } else {
+    // Return the balance of the native token (ETH)
+    return await provider.getBalance(account);
+  }
 };
+
+const getConnectedAccounts = (session: SessionTypes.Struct): string[] => {
+  const accounts = session?.namespaces?.eip155?.accounts;
+  console.log("accounts", accounts);
+  return accounts;
+};
+
+const getCurrentAccount = (session: SessionTypes.Struct): string => {
+  return getConnectedAccounts(session)?.[0]?.split(":")?.[2];
+};
+
+const getConnectedChains = (session: SessionTypes.Struct): string[] => {
+  const chains = session?.namespaces?.eip155?.chains || [];
+  console.log("chains", chains);
+  return chains;
+};
+
+const getCurrentChainId = (session: SessionTypes.Struct): number => {
+  return Number(getConnectedChains(session)?.[0]?.split(":")?.[1] || "");
+};
+
+// const getAllAccountsBalances = async (accounts: string[], tokenAddress?: string) => {
+//   // console.log("getBalance - session.topic", session.topic);
+
+//   // const accounts = session.namespaces.eip155.accounts;
+//   console.log("getBalance - accounts", accounts);
+//   // const addresses = extractAddressesFromNamespacesAccounts(accounts);
+//   // console.log("eth_requestAccounts addresses", addresses);
+//   const balances = await getAccountBalances(accounts);
+
+//   // const testAddress = accounts[0];
+//   // const req = {
+//   //   topic: session.topic,
+//   //   chainId: "eip155:11155111",
+//   //   request: {
+//   //     method: "eth_getBalance",
+//   //     params: [testAddress, "latest"],
+//   //   },
+//   // };
+//   // console.log("eth_getBalance req", req);
+
+//   // const result = await signClient.request(req);
+//   // console.log("eth_getBalance result", result);
+
+//   console.log("eth_requestAccounts balances", balances);
+
+//   // ToDo: RETURN ChainId Here and then pass it everywhere
+//   return balances;
+// };
 
 const signTransaction = async (signClient: Client, session: SessionTypes.Struct, params: any) => {
   console.log("signTransaction - params", params);
@@ -388,7 +415,8 @@ const callContract = async (
   signClient: Client,
   session: SessionTypes.Struct,
   pairing: PairingTypes.Struct,
-  params: any[] = []
+  params: any[] = [],
+  currentUserAddress: string
 ) => {
   console.log("callContract()");
   // console.log("contractAddress", contractAddress);
@@ -422,6 +450,7 @@ const callContract = async (
   // Version 2
   // Using WalletConnect's Ethereum Provider method
   //
+  const currentChainId = (await provider.getNetwork())?.chainId;
   const rpcMap = Object.entries(rpcProvidersByChainId).reduce((acc, [chainId, data]) => {
     acc[chainId.toString()] = getRandomRpcProviderByChainId(Number(chainId));
     return acc;
@@ -430,39 +459,40 @@ const callContract = async (
   console.log("rpcMap", rpcMap);
   console.log("individualChains", individualChains);
 
-  const _provider = await EthereumProvider.init({
-    // rpcMap?: EthereumRpcMap;
-    // metadata?: Metadata;
-    // qrModalOptions?: QrModalOptions;
+  // const _provider = await EthereumProvider.init({
+  //   // rpcMap?: EthereumRpcMap;
+  //   // metadata?: Metadata;
+  //   // qrModalOptions?: QrModalOptions;
 
-    projectId: projectId, // REQUIRED your projectId
-    chains: [11155111], // REQUIRED chain ids
-    optionalChains: undefined, // OPTIONAL chains
-    showQrModal: true, // REQUIRED set to "true" to use @walletconnect/modal
-    methods: allNamespaces.eip155.methods, // REQUIRED ethereum methods
-    optionalMethods: undefined, // OPTIONAL ethereum methods
-    events: allNamespaces.eip155.events, // REQUIRED ethereum events
-    optionalEvents: undefined, // OPTIONAL ethereum events
-    rpcMap: rpcMap,
-    // metadata, // OPTIONAL metadata of your app
-    // qrModalOptions: wcConfig,
-  });
+  //   projectId: projectId, // REQUIRED your projectId
+  //   chains: [11155111], // REQUIRED chain ids
+  //   optionalChains: undefined, // OPTIONAL chains
+  //   showQrModal: true, // REQUIRED set to "true" to use @walletconnect/modal
+  //   methods: allNamespaces.eip155.methods, // REQUIRED ethereum methods
+  //   optionalMethods: undefined, // OPTIONAL ethereum methods
+  //   events: allNamespaces.eip155.events, // REQUIRED ethereum events
+  //   optionalEvents: undefined, // OPTIONAL ethereum events
+  //   rpcMap: rpcMap,
+  //   // metadata, // OPTIONAL metadata of your app
+  //   // qrModalOptions: wcConfig,
+  // });
 
-  console.log("ethereumProvider", _provider);
+  // console.log("ethereumProvider", _provider);
 
-  //
-  // These events are for logging and testing purposes only
-  //
-  _provider.on("display_uri", (uri: string) => {
-    // Handle the display of the QR code URI
-    console.log("On display url: ", uri);
-  });
-  _provider.on("chainChanged", (chainId: string) => {
-    // Handle chain change
-  });
-  _provider.on("accountsChanged", (accounts: string[]) => {
-    // Handle accounts change
-  });
+  // //
+  // // These events are for logging and testing purposes only
+  // //
+  // _provider.on("display_uri", (uri: string) => {
+  //   // Handle the display of the QR code URI
+  //   console.log("On display url: ", uri);
+  // });
+  // _provider.on("chainChanged", (chainId: string) => {
+  //   // Handle chain change
+  // });
+  // _provider.on("accountsChanged", (accounts: string[]) => {
+  //   // Handle accounts change
+  // });
+
   //
   // End events
   //
@@ -481,8 +511,8 @@ const callContract = async (
   //
   // Version 2 with enable
   //
-  const enabled = await _provider.enable();
-  console.log("enabled", enabled);
+  // const enabled = await _provider.enable();
+  // console.log("enabled", enabled);
 
   // const eth_requestAccounts = await _provider.request({method: "eth_requestAccounts"});
   // console.log("eth_requestAccounts", eth_requestAccounts);
@@ -537,13 +567,13 @@ const callContract = async (
   // Version 4
   //
 
-  const RPC_URL = getRandomRpcProviderByChainId(_provider.chainId);
-  console.log("RPC_URL", RPC_URL);
+  // const RPC_URL = getRandomRpcProviderByChainId(currentChainId);
+  // console.log("RPC_URL", RPC_URL);
 
-  const rpcProvider = new ethers.providers.JsonRpcProvider(RPC_URL);
-  console.log("rpcProvider", rpcProvider);
+  // const rpcProvider = new ethers.providers.JsonRpcProvider(RPC_URL);
+  // console.log("rpcProvider", rpcProvider);
 
-  const contract = new ethers.Contract(contractAddress, abi, rpcProvider);
+  const contract = new ethers.Contract(contractAddress, abi, provider);
   console.log("contract", contract);
 
   console.log("contractAddress", contractAddress);
@@ -559,7 +589,7 @@ const callContract = async (
   const transactionValue = 0;
 
   const trParams = {
-    from: _provider?.accounts?.[0],
+    from: currentUserAddress,
     to: contractAddress,
     data: callData,
     // data: "0x",
@@ -585,7 +615,7 @@ const callContract = async (
 
   const req = {
     topic: session.topic,
-    chainId: "eip155:11155111",
+    chainId: `eip155:${currentChainId}`,
     request: {
       method: "eth_sendTransaction",
       params: [trParams],
@@ -596,10 +626,18 @@ const callContract = async (
   const result: any = await signClient.request(req);
   console.log("result", result);
 
-  const receipt = await rpcProvider.waitForTransaction(result, 2);
+  const transactionConfirmationNeeded = 1;
+
+  const receipt = await provider.waitForTransaction(result, transactionConfirmationNeeded);
   console.log("receipt", receipt);
 
-  return result;
+  const response: TransactionReceiptResponse = {
+    hash: receipt?.transactionHash,
+    logIndex: receipt?.transactionIndex,
+  };
+  console.log("TransactionReceiptResponse", response);
+
+  return response;
 };
 
 const sendTransaction = async (signClient: Client, session: SessionTypes.Struct, params: any) => {
@@ -741,8 +779,22 @@ const disconnectAllSessions = async (signClient: Client, reasonMessage?: string,
 
 const registerEvents = (
   signClient: Client,
-  onAddressChange: (newAddress: string) => unknown,
-  onChainIdChange: (newChainId: string) => unknown
+  provider: ethers.providers.JsonRpcProvider,
+  onAddressChange: (
+    newAddress: string,
+    provider: ethers.providers.JsonRpcProvider,
+    providerType: externalNetworkProviderTypes
+  ) => unknown,
+  onChainIdChange: (
+    newChainId: string,
+    provider: ethers.providers.JsonRpcProvider,
+    providerType: externalNetworkProviderTypes
+  ) => unknown,
+  onAccountsChange: (
+    newAccounts: string[],
+    provider: ethers.providers.JsonRpcProvider,
+    providerType: externalNetworkProviderTypes
+  ) => unknown
 ) => {
   // Subscribe to events
 
@@ -812,27 +864,49 @@ const registerEvents = (
   console.log("registeringEvents");
   signClient.on("session_event", (args: any) => {
     // This is where chainIdChange and addressChange happens
-    console.log(".on session_event", args);
+    console.log(".on external network session_event", args);
+    console.log(".on session_event - provider", provider);
 
-    switch (args?.params?.event?.name) {
-      case "accountsChanged": {
-        const newAddress = args?.params?.event?.data;
-        // console.log("addressChanged to", newAddress);
-        onAddressChange(newAddress);
-        break;
-      }
-      case "chainChanged": {
-        const newChainId = args?.params?.event?.data;
-        // console.log("chainIdChanged to", newChainId);
-        onChainIdChange(newChainId);
-        break;
-      }
+    const [networkId, chainId] = args?.params?.chainId?.split(":");
 
-      default: {
-        console.log("Unhandled event triggered", args?.params?.event?.name);
-        break;
+    // ToDo: do something about the hardcoded 'eip155' chainId'
+    if (networkId === "eip155") {
+      switch (args?.params?.event?.name) {
+        case "accountsChanged": {
+          const newAccounts = args?.params?.event?.data;
+          console.log("addressChanged to", newAccounts);
+
+          const newAddress = newAccounts[0].split(":")[2]?.toLowerCase();
+          onAddressChange(newAddress, provider, externalNetworkProviderTypes.walletConnect);
+          const formattedChainId = newAccounts[0].split(":")[1];
+          onChainIdChange(formattedChainId, provider, externalNetworkProviderTypes.walletConnect);
+          onAccountsChange(newAccounts, provider, externalNetworkProviderTypes.walletConnect);
+          break;
+        }
+        case "chainChanged": {
+          const newAccounts = args?.params?.event?.data;
+          console.log("chainIdChanged to", newAccounts);
+          const newChainId = newAccounts[0].split(":")[1];
+
+          onChainIdChange(newChainId, provider, externalNetworkProviderTypes.walletConnect);
+          break;
+        }
+
+        default: {
+          console.log("Unhandled event triggered", args?.params?.event?.name);
+          break;
+        }
       }
     }
+  });
+
+  signClient.on("session_event", (args: any) => {
+    // Because of a weird walletConnect bug, we need to register this event twice
+    // Otherwise, registering the internalNetwork session event won't work
+    //
+    // Might be because of the internal implementation of signClient.on()
+    // and the way it registers multiple callbacks for the same event
+    console.log(".on internal network session_event 2", args);
   });
 
   signClient.on("proposal_expire", (args: any) => {
@@ -846,7 +920,11 @@ const externalNetworkWalletConnectWrapper = {
   initModal,
   initProvider,
   connect,
-  getInfo,
+  getConnectedAccounts,
+  getCurrentAccount,
+  getCurrentChainId,
+  getAccountsBalances,
+  getBalance,
   signTransaction,
   callContract,
   sendTransaction,

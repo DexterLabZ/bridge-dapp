@@ -16,6 +16,7 @@ import {
   getLatestActiveSession,
 } from "../../../utils/wcUtils";
 import constants from "../../../utils/constants";
+import { InternalWalletInfo, internalNetworkProviderTypes } from "./internalNetworkContext";
 
 const walletConnectProjectId = "6106aa8c2f308b338f31465bef999a1f";
 const desktopWallets = [
@@ -204,13 +205,8 @@ const connect = async (signClient: Client, onDismiss?: (reason: string) => unkno
 const getInfo = async (signClient: Client, session: SessionTypes.Struct) => {
   console.log("getInfo", signClient, session);
   console.log("getInfo - session.topic", session.topic);
-  type getInfoType = {
-    address: string;
-    chainId: number;
-    nodeUrl: string;
-  };
 
-  const result: getInfoType = await signClient.request({
+  const result: InternalWalletInfo = await signClient.request({
     topic: session.topic,
     chainId: "zenon:1",
     request: {
@@ -377,10 +373,11 @@ const disconnectAllSessions = async (signClient: Client, reasonMessage?: string,
 
 const registerEvents = (
   signClient: Client,
-  onAddressChange: (newAddress: string) => unknown,
-  onChainIdChange: (newChainId: string) => unknown,
-  onNodeChange: (newChainId: string) => unknown
+  onAddressChange: (newAddress: string, providerType: internalNetworkProviderTypes) => unknown,
+  onChainIdChange: (newChainId: string, providerType: internalNetworkProviderTypes) => unknown,
+  onNodeChange: (newChainId: string, providerType: internalNetworkProviderTypes) => unknown
 ) => {
+  console.log("internalNetwork - registerEvents");
   // Subscribe to events
 
   // Available events
@@ -452,33 +449,49 @@ const registerEvents = (
 
   signClient.on("session_event", (args: any) => {
     // This is where chainIdChange and addressChange happens
-    console.log(".on session_event", args);
+    console.log(".on internal network session_event", args);
+    const [networkId, chainId] = args?.params?.chainId?.split(":");
+    console.log("networkId", networkId);
+    console.log("chainId", chainId);
 
-    switch (args?.params?.event?.name) {
-      case "addressChange": {
-        const newAddress = args?.params?.event?.data;
-        console.log("addressChanged to", newAddress);
-        onAddressChange(newAddress);
-        break;
-      }
-      case "chainIdChange": {
-        const newChainId = args?.params?.event?.data;
-        console.log("chainIdChanged to", newChainId);
-        onChainIdChange(newChainId);
-        break;
-      }
-      case "nodeChange": {
-        const newChainId = args?.params?.event?.data;
-        console.log("nodeChanged to", newChainId);
-        onNodeChange(newChainId);
-        break;
-      }
+    // ToDo: do something about the hardcoded 'zenon' chainId'
+    if (networkId === "zenon") {
+      console.log("args?.params?.event?.name", args?.params?.event?.name);
+      switch (args?.params?.event?.name) {
+        case "addressChange": {
+          const newAddress = args?.params?.event?.data?.toLowerCase();
+          console.log("addressChanged to", newAddress);
+          onAddressChange(newAddress, internalNetworkProviderTypes.walletConnect);
+          break;
+        }
+        case "chainIdChange": {
+          const newChainId = args?.params?.event?.data;
+          console.log("chainIdChanged to", newChainId);
+          onChainIdChange(newChainId, internalNetworkProviderTypes.walletConnect);
+          break;
+        }
+        case "nodeChange": {
+          const newChainId = args?.params?.event?.data;
+          console.log("nodeChanged to", newChainId);
+          onNodeChange(newChainId, internalNetworkProviderTypes.walletConnect);
+          break;
+        }
 
-      default: {
-        console.log("Unhandled event triggered", args?.params?.event?.name);
-        break;
+        default: {
+          console.log("Unhandled event triggered", args?.params?.event?.name);
+          break;
+        }
       }
     }
+  });
+
+  signClient.on("session_event", (args: any) => {
+    // Because of a weird walletConnect bug, we need to register this event twice
+    // Otherwise, registering the externalNetwork session event won't work
+    //
+    // Might be because of the internal implementation of signClient.on()
+    // and the way it registers multiple callbacks for the same event
+    console.log(".on internal network session_event 2", args);
   });
 
   signClient.on("proposal_expire", (args: any) => {

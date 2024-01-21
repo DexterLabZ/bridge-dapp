@@ -274,6 +274,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
     );
     console.log("connecting metamask");
     try {
+      showSpinner(true);
       let externalNetworkAddress = "";
       let externalNetworkChainId: number;
       let provider: any;
@@ -360,11 +361,12 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
           liquidityInternalTokens: availableInternalLiquidityTokens,
           liquidityTokenPairs: liquidityTokenPairs,
         };
-        // await internalNetworkClient.init(externalNetworkProviderTypes.metamask);
-        // await internalNetworkClient.connectSyrius(externalNetworkProviderTypes.metamask, onModalDismiss);
-        // zenonInfo = await internalNetworkClient.getWalletInfo(externalNetworkProviderTypes.metamask);
+        await externalNetworkClient.init(externalNetworkProviderTypes.metamask);
+        await externalNetworkClient.connect(externalNetworkProviderTypes.metamask);
+        // await externalNetworkClient.connectSyrius(externalNetworkProviderTypes.metamask, onModalDismiss);
+        // zenonInfo = await externalNetworkClient.getWalletInfo(externalNetworkProviderTypes.metamask);
         // console.log("zenonInfo", zenonInfo);
-        // await internalNetworkClient.connectToNode(zenonInfo.nodeUrl);
+        // await externalNetworkClient.connectToNode(zenonInfo.nodeUrl);
       } else {
         if (providerType == externalNetworkProviderTypes.walletConnect) {
           // ToDo: treat the case where the user closes the walletConnect Modal
@@ -383,21 +385,18 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
 
           console.log("externalNetworkClient", externalNetworkClient);
           await externalNetworkClient.init(externalNetworkProviderTypes.walletConnect);
-          await externalNetworkClient.connect(externalNetworkProviderTypes.walletConnect, onModalDismiss(showSpinner));
+
+          //
+          // ToDo: solve the fact that the change events are registered without a provider here.
+          // And can't have the updated provider when called
+          //
+          const connectionInfo = await externalNetworkClient.connect(
+            externalNetworkProviderTypes.walletConnect,
+            onModalDismiss(showSpinner)
+          );
           console.log("externalNetworkClient - connected");
-
-          const eipInfo = await externalNetworkClient.getWalletInfo(externalNetworkProviderTypes.walletConnect);
-          console.log("eipInfo", eipInfo);
-
-          const firstAccount = Object.keys(eipInfo)[0];
-          const firstAccountAddress = firstAccount.split(":")[2];
-          const firstAccountChainId = parseInt(firstAccount.split(":")[1]);
-
-          //
-          // IMPORTANT TO DO: DELETE THIS AND USE THE PROPER CHAIN ID
-          //
-          externalNetworkChainId = firstAccountChainId;
-          // externalNetworkChainId = parseInt(firstAccount.split(":")[1]);
+          console.log("connectionInfo", connectionInfo);
+          externalNetworkChainId = connectionInfo.chainId;
 
           const provider = await externalNetworkClient.getProvider(
             externalNetworkProviderTypes.walletConnect,
@@ -405,20 +404,40 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
           );
           console.log("JsonRpcProvider provider", provider);
 
+          const eipInfo = await externalNetworkClient.getWalletInfo(
+            provider,
+            externalNetworkProviderTypes.walletConnect
+          );
+          console.log("eipInfo", eipInfo);
+
+          // const firstAccount = Object.keys(eipInfo)[0];
+          // const firstAccountAddress = firstAccount.split(":")[2];
+          // const firstAccountChainId = parseInt(firstAccount.split(":")[1]);
+
+          //
+          // IMPORTANT TO DO: DELETE THIS AND USE THE PROPER CHAIN ID
+          //
+          // externalNetworkChainId = eipInfo.chainId;
+          // externalNetworkChainId = parseInt(firstAccount.split(":")[1]);
+
           currentToken = globalConstants.externalAvailableTokens.find(
             (tok: any) => tok.isAvailable && externalNetworkChainId === tok.network.chainId
           );
 
-          externalNetworkAddress = firstAccountAddress;
+          externalNetworkAddress = connectionInfo.address;
 
           console.log("chainId", externalNetworkChainId);
-          console.log("firstAccountAddress", firstAccountAddress);
+          console.log("externalNetworkAddress", externalNetworkAddress);
           console.log("currentToken", currentToken);
 
-          wznnBalance =
-            eipInfo[firstAccount].find((asset: AssetData) => {
-              return asset.symbol == currentToken.symbol;
-            }) || "0";
+          // ToDo: how to get details about the token from wrappers in order to have it here?
+          // wznnBalance =
+          //   eipInfo[externalNetworkAddress].find((asset: AssetData) => {
+          //     return asset.symbol == currentToken.symbol;
+          //   }) || "0";
+
+          // wznnBalance = externalNetworkClient.getBalance()
+          wznnBalance = "0";
 
           setMetamaskAddress(externalNetworkAddress);
 
@@ -489,7 +508,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
       console.log("updatedConstants after metamask data", updatedConstants);
       setGlobalConstants(updatedConstants);
 
-      dispatch(storeErcInfo(JSON.stringify({ address: externalNetworkAddress, balance: wznnBalance })));
+      dispatch(storeErcInfo(JSON.stringify({ address: externalNetworkAddress?.toLowerCase(), balance: wznnBalance })));
 
       if (isSyriusConnected) {
         setIsValidated(true);
@@ -1399,7 +1418,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
             <div className="step-content text-center p-0 mb-2">
               {isMetamaskConnected ? (
                 <div className="text-bold">
-                  <span className="text-primary">{`Connected with ${internalNetworkClient.displayedProviderType} on `}</span>
+                  <span className="text-primary">{`Connected with ${externalNetworkClient.displayedProviderType} on `}</span>
                   <span className="tooltip">
                     <span className="text-white">
                       {metamaskAddress.slice(0, 3) + "..." + metamaskAddress.slice(-3)}
@@ -1415,10 +1434,10 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
               <div
                 onClick={() => connectToExternalNetwork(externalNetworkProviderTypes.metamask)}
                 className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${
-                  isMetamaskConnected && internalNetworkClient.providerType ? "disabled" : ""
+                  isMetamaskConnected && externalNetworkClient.providerType ? "disabled" : ""
                 }
                ${
-                 isMetamaskConnected && internalNetworkClient.providerType == externalNetworkProviderTypes.metamask
+                 isMetamaskConnected && externalNetworkClient.providerType == externalNetworkProviderTypes.metamask
                    ? "primary soft-disabled"
                    : "secondary"
                }`}>
@@ -1433,10 +1452,10 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
               <div
                 onClick={() => connectToExternalNetwork(externalNetworkProviderTypes.walletConnect)}
                 className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${
-                  isMetamaskConnected && internalNetworkClient.providerType ? "disabled" : ""
+                  isMetamaskConnected && externalNetworkClient.providerType ? "disabled" : ""
                 }
                ${
-                 isMetamaskConnected && internalNetworkClient.providerType == externalNetworkProviderTypes.walletConnect
+                 isMetamaskConnected && externalNetworkClient.providerType == externalNetworkProviderTypes.walletConnect
                    ? "primary soft-disabled"
                    : "secondary"
                }`}>

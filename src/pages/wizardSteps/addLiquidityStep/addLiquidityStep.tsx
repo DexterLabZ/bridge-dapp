@@ -331,7 +331,7 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
       console.log("currentErcToken", JSONbig.stringify(currentErcToken));
       console.log("currentZenonToken", JSONbig.stringify(currentZenonToken));
 
-      const ercInfo = { address: accounts[0], balance: "0", rawBalance: ethers.BigNumber.from("0") };
+      const ercInfo = { address: accounts[0]?.toLowerCase(), balance: "0", rawBalance: ethers.BigNumber.from("0") };
       const zenonInfo = { address: accounts[0], balance: "0", rawBalance: ethers.BigNumber.from("0") };
 
       if (currentErcToken.symbol == "ETH" && currentErcToken.address == "") {

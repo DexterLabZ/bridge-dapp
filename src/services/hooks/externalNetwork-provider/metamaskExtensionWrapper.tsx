@@ -1,83 +1,53 @@
-import {ethers} from "ethers-ts";
-import {Primitives} from "znn-ts-sdk";
-import {AccountBlockTemplate} from "znn-ts-sdk/dist/lib/src/model/nom/account_block_template";
-import {checkMetamaskAvailability} from "../../../utils/utils";
+import { ethers } from "ethers-ts";
+import { checkMetamaskAvailability } from "../../../utils/utils";
+import { ExternalWalletInfo, TransactionReceiptResponse, externalNetworkProviderTypes } from "./externalNetworkContext";
+
+const getConnectionInfo = async (): Promise<Partial<ExternalWalletInfo>> => {
+  checkMetamaskAvailability();
+
+  const connectionInfo: Partial<ExternalWalletInfo> = {
+    address: await getCurrentAccount(getProvider()),
+    chainId: Number((await getProvider()?.getNetwork())?.chainId || ""),
+  };
+
+  return connectionInfo;
+};
 
 const getProvider = () => {
   checkMetamaskAvailability();
   return new ethers.providers.Web3Provider(window.ethereum);
 };
 
-const getInfo = async () => {
-  return new Promise<any>(async (resolve, reject) => {
-    // const messageHandler = async (event: any) => {
-    //   try {
-    //     const parsedData = event.data;
-    //     if (parsedData.method) {
-    //       switch (parsedData.method) {
-    //         case "znn.grantedWalletRead": {
-    //           console.log("znn.grantedWalletRead", parsedData);
-    //           type walletInfoData = {
-    //             address: string;
-    //             chainId: number;
-    //             nodeUrl: string;
-    //           };
-    //           resolve(parsedData.data as walletInfoData);
-    //           console.log("Removing event listener");
-    //           window.removeEventListener("message", messageHandler, false);
-    //           break;
-    //         }
-    //         case "znn.deniedWalletRead": {
-    //           console.log("znn.deniedWalletRead", parsedData);
-    //           console.log("Removing event listener");
-    //           window.removeEventListener("message", messageHandler, false);
-    //           throw "Denied wallet read.";
-    //         }
-    //       }
-    //     }
-    //     return true;
-    //   } catch (err: any) {
-    //     console.error(err);
-    //     let readableError = err;
-    //     if (err?.message) {
-    //       readableError = err?.message;
-    //     }
-    //     readableError =
-    //       readableError?.split(`"Error:`)?.pop()?.split(`"`)[0] ||
-    //       readableError?.split(`'Error:`)?.pop()?.split(`'`)[0] ||
-    //       "";
-    //     console.log("Removing event listener");
-    //     window.removeEventListener("message", messageHandler, false);
-    //     reject(err);
-    //     return true;
-    //   }
-    // };
-    // window.addEventListener("message", messageHandler);
-    // window.postMessage(
-    //   {
-    //     method: "znn.requestWalletAccess",
-    //     params: {},
-    //   },
-    //   "*"
-    // );
-    //
-    // Something like this
-    //
-    // const externalNetworkDetails = await getMetamaskAddress();
-    // externalNetworkAddress = externalNetworkDetails.address;
-    // externalNetworkChainId = externalNetworkDetails.chainId;
-    // provider = externalNetworkDetails.provider;
-    // currentToken = globalConstants.externalAvailableTokens.find(
-    //   (tok: any) => tok.isAvailable && externalNetworkChainId === tok.network.chainId
-    // );
-    // // ToDo create contract with selected external token (make wznn ABI as default but get it from internalAvTok)
-    // console.log("new Contract", currentToken.address, globalConstants.wznnAbi, provider);
-    // const contract = new ethers.Contract(currentToken.address, globalConstants.wznnAbi, provider);
-    // const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
-    // const signedContract = contract.connect(signer);
-    // const rawWznnBalance = await signedContract.balanceOf(externalNetworkAddress);
-    // wznnBalance = ethers.utils.formatUnits(rawWznnBalance, currentToken.decimals);
-  });
+const getConnectedAccounts = async (provider: ethers.providers.Web3Provider): Promise<string[]> => {
+  checkMetamaskAvailability();
+  const accounts = await provider.send("eth_requestAccounts", []);
+  console.log("accounts", accounts);
+  return accounts;
+};
+
+const getCurrentAccount = async (provider: ethers.providers.Web3Provider): Promise<string> => {
+  return (await getConnectedAccounts(provider))[0];
+};
+
+const getCurrentChainId = async (provider: ethers.providers.Web3Provider): Promise<number> => {
+  const currentChainId = (await (provider as ethers.providers.JsonRpcProvider)?.getNetwork())?.chainId || 0;
+  return currentChainId;
+};
+
+const getBalance = async (
+  provider: ethers.providers.Web3Provider,
+  account: string,
+  tokenAddress?: string,
+  tokenAbi?: string
+): Promise<ethers.BigNumber> => {
+  if (tokenAddress && tokenAbi) {
+    // Return the balance of the custom token
+    const contract = new ethers.Contract(tokenAddress, tokenAbi, provider);
+    return await contract.balanceOf(account);
+  } else {
+    // Return the balance of the native token (ETH)
+    return await provider.getBalance(account);
+  }
 };
 
 const callContract = async (
@@ -100,108 +70,84 @@ const callContract = async (
   console.log("signedContract", signedContract);
   const res = await signedContract[functionName](...params);
   console.log("callContract res", res);
-  return res;
+  await res.wait();
+
+  const response: TransactionReceiptResponse = {
+    hash: res?.hash,
+    logIndex: res?.transactionIndex,
+  };
+  console.log("TransactionReceiptResponse", response);
+
+  return response;
 };
 
 const sendTransaction = async (accountBlock: any) => {
-  return new Promise<AccountBlockTemplate>(async (resolve, reject) => {
-    window.postMessage(
-      {
-        method: "znn.sendAccountBlockToSend",
-        params: accountBlock,
-      },
-      "*"
-    );
-
-    const messageHandler = (event: any) => {
-      console.log("Message received on site ", event);
-      try {
-        const parsedData = event.data;
-        console.log("parsedData", parsedData);
-
-        if (parsedData.method) {
-          switch (parsedData.method) {
-            case "znn.accountBlockSent": {
-              const result = parsedData.data;
-              console.log("result", result);
-              const accountBlock = Primitives.AccountBlockTemplate.fromJson(result?.signedTransaction || "{}");
-
-              resolve(accountBlock);
-              console.log("Removing event listener");
-              window.removeEventListener("message", messageHandler, false);
-              break;
-            }
-            case "znn.deniedSendAccountBlock": {
-              console.log("parsedData.error", parsedData.error);
-              reject(Error("Denied block sending."));
-              console.log("Removing event listener");
-              window.removeEventListener("message", messageHandler, false);
-            }
-          }
-        }
-        return true;
-      } catch (err) {
-        console.error(err);
-        console.log("Removing event listener");
-        window.removeEventListener("message", messageHandler, false);
-        reject(err);
-        return true;
-      }
-    };
-    window.addEventListener("message", messageHandler);
-  });
+  // return new Promise<TransactionReceiptResponse>(async (resolve, reject) => {
+  // Unused at this moment
+  // });
 };
 
-const unregisterEvents = (messageHandler: any) => {
-  console.log("Removing event listener");
-  window.removeEventListener("message", messageHandler, false);
+const unregisterEvents = (changeEventHandlers: MetamaskChangeEventsHandler) => {
+  console.log("Removing web3 change listeners", changeEventHandlers);
+  window?.ethereum?.removeListener("accountsChanged", changeEventHandlers.accountsChanged);
+  window?.ethereum?.removeListener("chainChanged", changeEventHandlers.chainChanged);
+};
+
+export type MetamaskAccountsChangedHandler = (accounts: any) => void;
+export type MetamaskChainChangedHandler = (chainId: any) => void;
+
+export type MetamaskChangeEventsHandler = {
+  accountsChanged: MetamaskAccountsChangedHandler;
+  chainChanged: MetamaskChainChangedHandler;
 };
 
 const registerEvents = (
-  onAddressChange: (newAddress: string) => unknown,
-  onChainIdChange: (newChainId: string) => unknown
+  provider: ethers.providers.Web3Provider,
+  onAddressChange: (
+    newAddress: string,
+    provider: ethers.providers.Web3Provider,
+    providerType: externalNetworkProviderTypes
+  ) => unknown,
+  onChainIdChange: (
+    newChainId: string,
+    provider: ethers.providers.Web3Provider,
+    providerType: externalNetworkProviderTypes
+  ) => unknown
 ) => {
-  const messageHandler = async (event: any) => {
-    const parsedData = event?.data;
-    if (parsedData.method) {
-      switch (parsedData.method) {
-        case "znn.addressChanged": {
-          console.log(parsedData);
+  const accountChangedHandler: MetamaskAccountsChangedHandler = (accounts: any) => {
+    console.log("metamaskWrapper - accountChangedHandler", accounts);
 
-          const newAddress = parsedData.data?.newAddress;
-          // console.log("addressChanged to", newAddress);
-          onAddressChange(newAddress);
+    // const oldErcInfo = JSONbig.parse(serializedWalletInfo["ercInfo"] || "{}");
+    // dispatch(storeErcInfo(JSONbig.stringify({ ...oldErcInfo, address: accounts[0]?.toLowerCase() })));
+    onAddressChange(accounts, provider, externalNetworkProviderTypes.metamask);
+  };
+  window?.ethereum?.on("accountsChanged", accountChangedHandler);
 
-          console.log("Removing event listener");
+  const chainChangedHandler: MetamaskChainChangedHandler = (chainId: any) => {
+    console.log("metamaskWrapper - chainChangedHandler", chainId);
+    console.log("metamaskWrapper - chainId", ethers.BigNumber.from(chainId).toNumber());
+    const newChainId = ethers.BigNumber.from(chainId).toNumber();
+    console.log("newChainId", newChainId);
 
-          break;
-        }
-        case "znn.chainIdChanged": {
-          console.log("parsedData", parsedData);
+    onChainIdChange(newChainId.toString(), provider, externalNetworkProviderTypes.metamask);
+    // window.location.reload();
+  };
+  window?.ethereum?.on("chainChanged", chainChangedHandler);
 
-          const newChainId = parsedData.data?.newChainId;
-          // console.log("chainIdChanged to", newChainId);
-          onChainIdChange(newChainId);
-
-          break;
-        }
-
-        default: {
-          console.log("Other event triggered: ", parsedData.method);
-          break;
-        }
-      }
-    }
-    return true;
+  const changeEventsHandlers: MetamaskChangeEventsHandler = {
+    accountsChanged: accountChangedHandler,
+    chainChanged: chainChangedHandler,
   };
 
-  window.addEventListener("message", messageHandler);
-
-  return messageHandler;
+  return changeEventsHandlers;
 };
 
 const metamaskExtensionWrapper = {
-  getInfo,
+  getConnectionInfo,
+  getConnectedAccounts,
+  getCurrentAccount,
+  getCurrentChainId,
+  getBalance,
   getProvider,
   callContract,
   sendTransaction,

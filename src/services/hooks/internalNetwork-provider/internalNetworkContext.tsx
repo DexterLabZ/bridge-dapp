@@ -26,6 +26,12 @@ export type syriusClientType = {
   eventsHandler: any;
 };
 
+export type InternalWalletInfo = {
+  address: string;
+  chainId: number;
+  nodeUrl: string;
+};
+
 export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => {
   const walletConnectClient = useRef<Client | null>(null);
   const wcModal = useRef<WalletConnectModal | null>(null);
@@ -203,10 +209,10 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
     return zenonSingleton.initialize(nodeUrl, false, 10000);
   };
 
-  const getWalletInfo: any = async (
+  const getWalletInfo = async (
     _providerType: internalNetworkProviderTypes | null = providerType,
     maxRetries: number = maxRequestRetries
-  ) => {
+  ): Promise<InternalWalletInfo> => {
     if (!_providerType) throw Error("No provider type selected");
 
     try {
@@ -379,9 +385,10 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
     }
   };
 
-  const onConnectedNodeChange = async (newNodeUrl: string) => {
+  const onConnectedNodeChange = async (newNodeUrl: string, providerType: internalNetworkProviderTypes) => {
     try {
       console.log("__nodeChanged to", newNodeUrl);
+      console.log("providerType", providerType);
       newNodeUrl = ifNeedReplaceNodeWithDefaultAndNotifyUser(newNodeUrl);
       await connectToNode(newNodeUrl);
       dispatch(storeNodeUrl(newNodeUrl));
@@ -395,14 +402,16 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
     }
   };
 
-  const onAddressChange = async (newAddress: string) => {
+  const onAddressChange = async (newAddress: string, providerType: internalNetworkProviderTypes) => {
     console.log("__addressChanged to", newAddress);
+    console.log("providerType", providerType);
     const newZenonInfo = await getZenonWalletInfo(zenonSingleton, newAddress);
     console.log("newZenonInfo", newZenonInfo);
     dispatch(storeZenonInfo(JSON.stringify(newZenonInfo)));
   };
 
-  const onChainIdChange = (newChainId: string) => {
+  const onChainIdChange = (newChainId: string, providerType: internalNetworkProviderTypes) => {
+    console.log("providerType", providerType);
     console.log("__chainIdChanged to", newChainId);
     dispatch(storeChainIdentifier(newChainId));
   };

@@ -2,14 +2,14 @@ import React, { FC, createContext, useEffect, useRef, useState } from "react";
 import Client from "@walletconnect/sign-client";
 import externalNetworkWalletConnectWrapper from "./externalNetworkWalletConnectWrapper";
 import { SessionTypes, PairingTypes } from "@walletconnect/types";
-import metamaskWrapper from "./metamaskExtensionWrapper";
+import metamaskWrapper, { MetamaskChangeEventsHandler } from "./metamaskExtensionWrapper";
 import { Primitives, Zenon } from "znn-ts-sdk";
 import { AccountBlockTemplate } from "znn-ts-sdk/dist/lib/src/model/nom/account_block_template";
 import { useDispatch, useSelector } from "react-redux";
 import { resetConnectionState, storeChainIdentifier, storeNodeUrl } from "../../redux/connectionSlice";
 import { toast } from "react-toastify";
-import { resetZenonInfo, storeZenonInfo } from "../../redux/walletSlice";
-import { getReferralAddress, getZenonWalletInfo } from "../../../utils/utils";
+import { resetZenonInfo, storeErcInfo, storeZenonInfo } from "../../redux/walletSlice";
+import { extractAddressesFromNamespacesAccounts, getReferralAddress, getZenonWalletInfo } from "../../../utils/utils";
 import { addBeforeUnloadEvents, removeBeforeUnloadEvents } from "../../pageHandlers/pageHandlers";
 import { storeReferralCode } from "../../redux/referralSlice";
 import { WalletConnectModal } from "@walletconnect/modal";
@@ -28,6 +28,17 @@ export type syriusClientType = {
   eventsHandler: any;
 };
 
+export type TransactionReceiptResponse = {
+  hash: string;
+  logIndex: number;
+};
+
+export type ExternalWalletInfo = {
+  address: string;
+  chainId: number;
+  nodeUrl?: string;
+};
+
 export type anyProviderType = ethers.providers.Web3Provider | ethers.providers.JsonRpcProvider | EthereumProvider;
 
 export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => {
@@ -36,6 +47,7 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
   const syriusClient = useRef<syriusClientType | null>(null);
   const walletConnectSession = useRef<SessionTypes.Struct | null>(null);
   const walletConnectPairing = useRef<PairingTypes.Struct | null>(null);
+  const metamaskEventHandlers = useRef<MetamaskChangeEventsHandler | null>(null);
   const [provider, setProvider] = useState<anyProviderType | null>(null);
   const [providerType, setProviderType] = useState<externalNetworkProviderTypes | null>(null);
   const [displayedProviderType, setDisplayedProviderType] = useState<string | null>(null);
@@ -43,6 +55,7 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
   const zenonSingleton = Zenon.getSingleton();
   const [globalConstants, setGlobalConstants] = useState(useSelector((state: any) => state.globalConstants));
   const dispatch = useDispatch();
+  const walletInfo = useSelector((state: any) => state.wallet);
 
   // Initialize the externalNetworkProvider when the component mounts
   useEffect(() => {
@@ -61,10 +74,12 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
             break;
           }
           case externalNetworkProviderTypes.metamask: {
-            if (syriusClient.current) {
-              zenonSingleton.clearSocketConnection();
-              syriusClient.current = null;
-            }
+            // ToDo: treat this case
+
+            // if (syriusClient.current) {
+            // zenonSingleton.clearSocketConnection();
+            // syriusClient.current = null;
+            // }
             break;
           }
           default: {
@@ -95,18 +110,23 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
     console.log("providerType", providerType);
   };
 
-  const getProvider = async (_providerType: externalNetworkProviderTypes, externalNetworkChainId?: number) => {
+  const getProvider = async (_providerType?: externalNetworkProviderTypes, externalNetworkChainId?: number) => {
+    if (!!providerType && !!provider) return provider;
     switch (_providerType) {
       case externalNetworkProviderTypes.walletConnect: {
         if (!walletConnectSession.current) throw Error("Session was not established");
         if (!externalNetworkChainId) throw Error("Please select network's chain ID");
+        if (!!provider) return provider;
         const _provider = await externalNetworkWalletConnectWrapper.initProvider(externalNetworkChainId);
         setProvider(_provider);
+        console.log("Initialized new JsonRpcProvider", _provider);
         return _provider;
       }
       case externalNetworkProviderTypes.metamask: {
+        if (!!provider) return provider;
         const _provider = metamaskWrapper.getProvider();
         setProvider(_provider);
+        console.log("Initialized new metamask provider", _provider);
         return _provider;
       }
       default: {
@@ -118,7 +138,7 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
   const connect = async (
     _providerType: externalNetworkProviderTypes,
     onDismiss?: (reason: string) => unknown
-  ): Promise<boolean> => {
+  ): Promise<Partial<ExternalWalletInfo>> => {
     if (_providerType) {
       setProviderType(_providerType);
     } else {
@@ -150,16 +170,45 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         walletConnectSession.current = session;
         walletConnectPairing.current = pairing;
 
-        externalNetworkWalletConnectWrapper.registerEvents(walletClient, onAddressChange, onChainIdChange);
-        return true;
+        console.log("success session", session);
+        console.log("success pairing", pairing);
+
+        const connectionInfo: Partial<ExternalWalletInfo> = {
+          address: session?.namespaces?.eip155?.accounts?.[0]?.split(":")?.[2] || "",
+          chainId: Number(session?.namespaces?.eip155?.chains?.[0]?.split(":")?.[1] || ""),
+        };
+        const provider = await getProvider(_providerType, connectionInfo.chainId);
+
+        externalNetworkWalletConnectWrapper.registerEvents(
+          walletClient,
+          provider as ethers.providers.JsonRpcProvider,
+          onAddressChange,
+          onChainIdChange,
+          onAccountsChange
+        );
+        return connectionInfo;
       }
       case externalNetworkProviderTypes.metamask: {
-        syriusClient.current = {
-          zenon: zenonSingleton,
-          eventsHandler: metamaskWrapper.registerEvents(onAddressChange, onChainIdChange),
-        };
+        // ToDo: Treat this case
 
-        return true;
+        // syriusClient.current = {
+        //   zenon: zenonSingleton,
+        //   eventsHandler: metamaskWrapper.registerEvents(onAddressChange, onChainIdChange),
+        // };
+
+        metamaskEventHandlers.current = metamaskWrapper.registerEvents(
+          provider as ethers.providers.Web3Provider,
+          onAddressChange,
+          onChainIdChange
+        );
+
+        const connectionInfo = await metamaskWrapper.getConnectionInfo();
+
+        // const connectionInfo: Partial<ExternalWalletInfo> = {
+        //   address: session?.namespaces?.eip155?.chains?.[0]?.split(":")?.[0] || "",
+        //   chainId: Number(session?.namespaces?.eip155?.chains?.[0]?.split(":")?.[1] || ""),
+        // };
+        return connectionInfo;
       }
       default: {
         throw Error(`Unknown providerType: ${_providerType}`);
@@ -195,16 +244,22 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         return true;
       }
       case externalNetworkProviderTypes.metamask: {
-        metamaskWrapper.unregisterEvents(syriusClient.current?.eventsHandler);
-        syriusClient.current = null;
+        // ToDo: Treat this case
+
+        if (metamaskEventHandlers.current) {
+          metamaskWrapper.unregisterEvents(metamaskEventHandlers.current);
+          metamaskEventHandlers.current = null;
+        }
         setProviderType(null);
 
-        dispatch(resetZenonInfo());
-        dispatch(resetConnectionState());
+        // dispatch(resetZenonInfo());
+        // dispatch(resetConnectionState());
 
         return true;
       }
       default: {
+        // ToDo: treat this case
+
         syriusClient.current = null;
         walletConnectClient.current = null;
         walletConnectSession.current = null;
@@ -219,43 +274,73 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
   };
 
   const connectToNode = async (nodeUrl: string): Promise<void> => {
-    zenonSingleton.clearSocketConnection();
-    return zenonSingleton.initialize(nodeUrl, false, 2500);
+    // zenonSingleton.clearSocketConnection();
+    // return zenonSingleton.initialize(nodeUrl, false, 2500);
   };
 
-  const getWalletInfo: any = async (
+  const getWalletInfo = async (
+    _provider: anyProviderType | null = provider,
     _providerType: externalNetworkProviderTypes | null = providerType,
     maxRetries: number = maxRequestRetries
-  ) => {
-    if (!_providerType) throw Error("No provider type selected");
-
+  ): Promise<ExternalWalletInfo> => {
     try {
+      console.log("getWalletInfo - Provider", provider);
+      console.log("getWalletInfo - ProviderType", providerType);
+
+      if (!_providerType) throw Error("No provider type selected");
+      if (!_provider) throw Error("No provider initialized");
       switch (_providerType) {
         case externalNetworkProviderTypes.walletConnect: {
           if (!walletConnectClient.current) throw Error("Client was not initialized");
           if (!walletConnectSession.current) throw Error("Session was not established");
-          // Because externalNetworkWalletConnectWrapper.connect triggers an window.open - we dont want to
+          // Because externalNetworkWalletConnectWrapper.connect triggers an window.open - we don't want to
           // keep the beforeUnload event that asks the user if he wants to leave the page.
           removeBeforeUnloadEvents();
-          const info = await externalNetworkWalletConnectWrapper.getInfo(
-            walletConnectClient.current,
-            walletConnectSession.current
-          );
+          console.log("getWalletInfo - provider", _provider);
+          const currentAccount = externalNetworkWalletConnectWrapper
+            .getCurrentAccount(walletConnectSession.current)
+            ?.toLowerCase();
+          const currentChainId = externalNetworkWalletConnectWrapper.getCurrentChainId(walletConnectSession.current);
+          // const balance = await externalNetworkWalletConnectWrapper.getBalance(
+          //   _provider as ethers.providers.JsonRpcProvider,
+          //   currentAccount,
+          //   currentChainId?.toString()
+          // );
           addBeforeUnloadEvents();
-
-          console.log("Info", info);
+          // console.log("Balance", balance);
 
           // dispatch(storeNodeUrl(info.nodeUrl));
           // dispatch(storeChainIdentifier(info.chainId));
-          return info;
+          const walletInfo: ExternalWalletInfo = {
+            address: currentAccount,
+            chainId: currentChainId,
+            nodeUrl: (_provider as ethers.providers.JsonRpcProvider)?.connection?.url,
+          };
+          console.log("walletInfo", walletInfo);
+          return walletInfo;
         }
         case externalNetworkProviderTypes.metamask: {
           // if (!syriusClient.current) throw Error("Client was not initialized");
-          const info = await metamaskWrapper.getInfo();
-          info.nodeUrl = ifNeedReplaceNodeWithDefaultAndNotifyUser(info.nodeUrl);
-          dispatch(storeNodeUrl(info.nodeUrl));
-          dispatch(storeChainIdentifier(info.chainId));
-          return info;
+          console.log("getWalletInfo - _provider", _provider);
+
+          const currentAccount = (
+            await metamaskWrapper.getCurrentAccount(_provider as ethers.providers.Web3Provider)
+          )?.toLowerCase();
+          const currentChainId = await metamaskWrapper.getCurrentChainId(_provider as ethers.providers.Web3Provider);
+          // const balance = await metamaskWrapper.getBalance(_provider as ethers.providers.Web3Provider, currentAccount);
+          // console.log("Balance", balance);
+
+          const walletInfo: ExternalWalletInfo = {
+            address: currentAccount,
+            chainId: currentChainId,
+            nodeUrl: (_provider as ethers.providers.JsonRpcProvider)?.connection?.url,
+          };
+          console.log("walletInfo", walletInfo);
+
+          // info.nodeUrl = ifNeedReplaceNodeWithDefaultAndNotifyUser(info.nodeUrl);
+          // dispatch(storeNodeUrl(info.nodeUrl));
+          // dispatch(storeChainIdentifier(info.chainId));
+          return walletInfo;
         }
         default: {
           throw Error(`Unknown providerType: ${_providerType}`);
@@ -268,7 +353,55 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         console.log("Retrying request");
         // Retry
         if (maxRetries > 0) {
-          return await getWalletInfo(_providerType, maxRetries - 1);
+          return await getWalletInfo(_provider, _providerType, maxRetries - 1);
+        } else throw Error(`Unable to make request after ${maxRequestRetries} retries.`);
+      } else throw Error(`Unable to make request and couldn't retry.`);
+    }
+  };
+
+  const getBalance = async (
+    tokenAddress?: string,
+    tokenAbi?: string,
+    _provider: anyProviderType | null = provider,
+    _providerType: externalNetworkProviderTypes | null = providerType,
+    maxRetries: number = maxRequestRetries
+  ): Promise<ethers.BigNumber> => {
+    try {
+      const walletInfo = await getWalletInfo(_provider, _providerType, maxRetries);
+      switch (_providerType) {
+        case externalNetworkProviderTypes.walletConnect: {
+          const balance = await externalNetworkWalletConnectWrapper.getBalance(
+            _provider as ethers.providers.JsonRpcProvider,
+            walletInfo.address,
+            tokenAddress,
+            tokenAbi
+          );
+          console.log("balance", balance);
+          return balance;
+        }
+        case externalNetworkProviderTypes.metamask: {
+          const balance = await metamaskWrapper.getBalance(
+            _provider as ethers.providers.Web3Provider,
+            walletInfo.address,
+            tokenAddress,
+            tokenAbi
+          );
+          console.log("Balance", balance);
+
+          return balance;
+        }
+        default: {
+          throw Error(`Unknown providerType: ${_providerType}`);
+        }
+      }
+    } catch (err: any) {
+      console.error("getInfo error", err);
+      const handledError = await handleError(err);
+      if (handledError.shouldRetry) {
+        console.log("Retrying request");
+        // Retry
+        if (maxRetries > 0) {
+          return await getBalance(tokenAddress, tokenAbi, _provider, _providerType, maxRetries - 1);
         } else throw Error(`Unable to make request after ${maxRequestRetries} retries.`);
       } else throw Error(`Unable to make request and couldn't retry.`);
     }
@@ -282,11 +415,13 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
     _providerType: externalNetworkProviderTypes | null = providerType,
     _provider: anyProviderType | null = provider,
     maxRetries: number = maxRequestRetries
-  ): Promise<any> => {
-    if (!_providerType) throw Error("No provider type selected");
-    console.log("externalNetworkContext - sendTransaction - params", params);
-
+  ): Promise<TransactionReceiptResponse> => {
     try {
+      removeBeforeUnloadEvents();
+      if (!_providerType) throw Error("No provider type selected");
+      console.log("externalNetworkContext - sendTransaction - params", params);
+      if (!_provider) throw Error("No provider initialized");
+
       switch (_providerType) {
         case externalNetworkProviderTypes.walletConnect: {
           if (!walletConnectClient.current) throw Error("Client was not initialized");
@@ -318,6 +453,9 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
           //   },
           // });
 
+          const ercInfo = JSON.parse(walletInfo.ercInfo || "{}");
+          const currentUserAddress = ercInfo?.address;
+
           return await externalNetworkWalletConnectWrapper.callContract(
             _provider,
             contractAddress,
@@ -327,12 +465,14 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
             walletConnectSession.current,
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             walletConnectPairing.current!,
-            params
+            params,
+            currentUserAddress
           );
         }
         case externalNetworkProviderTypes.metamask: {
-          if (!syriusClient.current) throw Error("Client was not initialized");
-          return await metamaskWrapper.callContract(_provider, contractAddress, abi, functionName, params);
+          // if (!syriusClient.current) throw Error("Client was not initialized");
+          const response = await metamaskWrapper.callContract(_provider, contractAddress, abi, functionName, params);
+          return response;
         }
         default: {
           throw Error(`Unknown providerType: ${_providerType}`);
@@ -356,6 +496,8 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
           );
         } else throw Error(`Unable to make request after ${maxRequestRetries} retries.`);
       } else throw Error(`Unable to make request and couldn't retry.`);
+    } finally {
+      addBeforeUnloadEvents();
     }
   };
 
@@ -371,6 +513,7 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
     console.log("externalNetworkContext - sendTransaction - params", params);
 
     try {
+      removeBeforeUnloadEvents();
       switch (_providerType) {
         case externalNetworkProviderTypes.walletConnect: {
           if (!walletConnectClient.current) throw Error("Client was not initialized");
@@ -411,7 +554,7 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
           );
         }
         case externalNetworkProviderTypes.metamask: {
-          if (!syriusClient.current) throw Error("Client was not initialized");
+          // if (!syriusClient.current) throw Error("Client was not initialized");
           return await metamaskWrapper.sendTransaction(params.transaction);
         }
         default: {
@@ -428,6 +571,8 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
           return await sendTransaction(params, _providerType, maxRetries - 1);
         } else throw Error(`Unable to make request after ${maxRequestRetries} retries.`);
       } else throw Error(`Unable to make request and couldn't retry.`);
+    } finally {
+      addBeforeUnloadEvents();
     }
   };
 
@@ -520,21 +665,52 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
     }
   };
 
-  const onAddressChange = async (newAddress: string) => {
+  const onAccountsChange = async (
+    newAccounts: string[],
+    _provider: anyProviderType,
+    _providerType: externalNetworkProviderTypes
+  ) => {
+    console.log("onAccountsChange - provider", provider);
+    if (walletConnectSession?.current?.namespaces?.eip155?.accounts) {
+      walletConnectSession.current.namespaces.eip155.accounts = newAccounts;
+    }
+    // const currentAccountAddress = extractAddressesFromNamespacesAccounts(newAccounts)[0];
+    // const newErcInfo = await externalNetworkWalletConnectWrapper.getBalance(currentAccountAddress);
+    const walletInfo = await getWalletInfo(_provider, _providerType);
+    console.log("getWalletInfo", walletInfo);
+    dispatch(storeErcInfo(JSON.stringify(walletInfo)));
+  };
+
+  const onAddressChange = async (
+    newAddress: string,
+    _provider: anyProviderType,
+    _providerType: externalNetworkProviderTypes
+  ) => {
     console.log("__addressChanged to", newAddress);
     // const getAccountInfoByAddress = await zenonSingleton.ledger.getAccountInfoByAddress(addressObject);
     // console.log("getAccountInfoByAddress", getAccountInfoByAddress);
 
-    // ToDo: Update balances
-    // dispatch(storeZenonInfo(newAddress));
-    const newZenonInfo = await getZenonWalletInfo(zenonSingleton, newAddress);
-    console.log("newZenonInfo", newZenonInfo);
-    dispatch(storeZenonInfo(JSON.stringify(newZenonInfo)));
+    // ToDo: Update balances and address
+    //
+    const walletInfo = await getWalletInfo(_provider, _providerType);
+    console.log("getWalletInfo", walletInfo);
+    dispatch(storeErcInfo(JSON.stringify(walletInfo)));
   };
 
-  const onChainIdChange = (newChainId: string) => {
+  const onChainIdChange = async (
+    newChainId: string,
+    _provider: anyProviderType,
+    _providerType: externalNetworkProviderTypes
+  ) => {
     console.log("__chainIdChanged to", newChainId);
-    dispatch(storeChainIdentifier(newChainId));
+
+    const walletInfo = await getWalletInfo(_provider, _providerType);
+    console.log("getWalletInfo", walletInfo);
+    dispatch(storeErcInfo(JSON.stringify(walletInfo)));
+
+    // ToDo: Create a connection slice for external data
+    // Or split existing one into 2
+    // dispatch(storeChainIdentifier(newChainId));
   };
 
   const ifNeedReplaceNodeWithDefaultAndNotifyUser = (nodeUrl: string): any => {
@@ -688,6 +864,7 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
     connect: connect,
     connectToNode: connectToNode,
     getWalletInfo: getWalletInfo,
+    getBalance: getBalance,
     sendTransaction: sendTransaction,
     callContract: callContract,
   };
