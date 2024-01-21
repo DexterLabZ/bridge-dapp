@@ -8,8 +8,8 @@ import { AccountBlockTemplate } from "znn-ts-sdk/dist/lib/src/model/nom/account_
 import { useDispatch, useSelector } from "react-redux";
 import {
   resetInternalNetworkConnectionState,
-  storeChainIdentifier,
-  storeNodeUrl,
+  storeInternalNetworkChainIdentifier,
+  storeInternalNetworkNodeUrl,
 } from "../../redux/internalNetworkConnectionSlice";
 import { toast } from "react-toastify";
 import { resetZenonInfo, storeErcInfo, storeZenonInfo } from "../../redux/walletSlice";
@@ -313,8 +313,8 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
           addBeforeUnloadEvents();
           // console.log("Balance", balance);
 
-          // dispatch(storeNodeUrl(info.nodeUrl));
-          // dispatch(storeChainIdentifier(info.chainId));
+          // dispatch(storeInternalNetworkNodeUrl(info.nodeUrl));
+          // dispatch(storeInternalNetworkChainIdentifier(info.chainId));
           const walletInfo: ExternalWalletInfo = {
             address: currentAccount,
             chainId: currentChainId,
@@ -342,8 +342,8 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
           console.log("walletInfo", walletInfo);
 
           // info.nodeUrl = ifNeedReplaceNodeWithDefaultAndNotifyUser(info.nodeUrl);
-          // dispatch(storeNodeUrl(info.nodeUrl));
-          // dispatch(storeChainIdentifier(info.chainId));
+          // dispatch(storeInternalNetworkNodeUrl(info.nodeUrl));
+          // dispatch(storeInternalNetworkChainIdentifier(info.chainId));
           return walletInfo;
         }
         default: {
@@ -714,7 +714,7 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
 
     // ToDo: Create a connection slice for external data
     // Or split existing one into 2
-    // dispatch(storeChainIdentifier(newChainId));
+    // dispatch(storeInternalNetworkChainIdentifier(newChainId));
   };
 
   const ifNeedReplaceNodeWithDefaultAndNotifyUser = (nodeUrl: string): any => {

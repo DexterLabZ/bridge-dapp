@@ -15,10 +15,10 @@ export const connectionSlice = createSlice({
       state = initialState;
       return state;
     },
-    storeNodeUrl: (state, action) => {
+    storeInternalNetworkNodeUrl: (state, action) => {
       state.nodeUrl = action.payload;
     },
-    storeChainIdentifier: (state, action) => {
+    storeInternalNetworkChainIdentifier: (state, action) => {
       state.chainIdentifier = action.payload;
       Zenon.setChainIdentifier(action.payload);
     },
@@ -28,7 +28,11 @@ export const connectionSlice = createSlice({
   },
 });
 
-export const { resetInternalNetworkConnectionState, storeNodeUrl, storeChainIdentifier, storeMomentumHeight } =
-  connectionSlice.actions;
+export const {
+  resetInternalNetworkConnectionState,
+  storeInternalNetworkNodeUrl,
+  storeInternalNetworkChainIdentifier,
+  storeMomentumHeight,
+} = connectionSlice.actions;
 
 export default connectionSlice.reducer;

@@ -9,8 +9,8 @@ import { getReferralAddress, getZenonWalletInfo } from "../../../utils/utils";
 import { addBeforeUnloadEvents, removeBeforeUnloadEvents } from "../../pageHandlers/pageHandlers";
 import {
   resetInternalNetworkConnectionState,
-  storeChainIdentifier,
-  storeNodeUrl,
+  storeInternalNetworkChainIdentifier,
+  storeInternalNetworkNodeUrl,
 } from "../../redux/internalNetworkConnectionSlice";
 import { storeReferralCode } from "../../redux/referralSlice";
 import { resetZenonInfo, storeZenonInfo } from "../../redux/walletSlice";
@@ -208,15 +208,15 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
           addBeforeUnloadEvents();
 
           info.nodeUrl = ifNeedReplaceNodeWithDefaultAndNotifyUser(info.nodeUrl);
-          dispatch(storeNodeUrl(info.nodeUrl));
-          dispatch(storeChainIdentifier(info.chainId));
+          dispatch(storeInternalNetworkNodeUrl(info.nodeUrl));
+          dispatch(storeInternalNetworkChainIdentifier(info.chainId));
           return info;
         }
         case InternalNetworkProviderTypes.syriusExtension: {
           const info = await syriusExtensionWrapper.getInfo();
           info.nodeUrl = ifNeedReplaceNodeWithDefaultAndNotifyUser(info.nodeUrl);
-          dispatch(storeNodeUrl(info.nodeUrl));
-          dispatch(storeChainIdentifier(info.chainId));
+          dispatch(storeInternalNetworkNodeUrl(info.nodeUrl));
+          dispatch(storeInternalNetworkChainIdentifier(info.chainId));
           return info;
         }
         default: {
@@ -343,7 +343,7 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
       console.log("__nodeChanged to", newNodeUrl);
       newNodeUrl = ifNeedReplaceNodeWithDefaultAndNotifyUser(newNodeUrl);
       await connectToNode(newNodeUrl);
-      dispatch(storeNodeUrl(newNodeUrl));
+      dispatch(storeInternalNetworkNodeUrl(newNodeUrl));
       console.log("zenonSingleton", zenonSingleton);
       console.log("zenonSingleton?.wsClient?.url", zenonSingleton?.wsClient?.url);
       if (zenonSingleton?.wsClient?.url) {
@@ -363,7 +363,7 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
 
   const onChainIdChange = (newChainId: string) => {
     console.log("__chainIdChanged to", newChainId);
-    dispatch(storeChainIdentifier(newChainId));
+    dispatch(storeInternalNetworkChainIdentifier(newChainId));
   };
 
   const ifNeedReplaceNodeWithDefaultAndNotifyUser = (nodeUrl: string): any => {
