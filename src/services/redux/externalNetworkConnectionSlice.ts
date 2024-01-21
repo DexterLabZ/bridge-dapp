@@ -9,7 +9,7 @@ export const connectionSlice = createSlice({
   name: "externalNetworkConnection",
   initialState,
   reducers: {
-    resetConnectionState: (state) => {
+    resetExternalNetworkConnectionState: (state) => {
       state = initialState;
       return state;
     },
@@ -22,6 +22,6 @@ export const connectionSlice = createSlice({
   },
 });
 
-export const { resetConnectionState, storeNodeUrl, storeChainIdentifier } = connectionSlice.actions;
+export const { resetExternalNetworkConnectionState, storeNodeUrl, storeChainIdentifier } = connectionSlice.actions;
 
 export default connectionSlice.reducer;
