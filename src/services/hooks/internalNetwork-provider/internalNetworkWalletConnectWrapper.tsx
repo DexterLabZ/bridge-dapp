@@ -29,19 +29,9 @@ const desktopWallets = [
     },
   },
 ];
-
 const walletImages = {
   syrius: syriusLogo,
 };
-const zenonNamespace = {
-  zenon: {
-    id: "syrius",
-    chains: ["zenon:1"],
-    methods: ["znn_sign", "znn_info", "znn_send"],
-    events: ["chainIdChange", "addressChange"],
-  },
-};
-
 const themeVariables = {
   "--wcm-font-family": `-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif`,
   "--wcm-background-color": "#26BA3F",
@@ -72,7 +62,7 @@ const initModal = async () => {
   const wcConfig: WalletConnectModalConfig = {
     // ...ConfigCtrl.state,
     projectId: walletConnectProjectId,
-    chains: ["zenon:1"],
+    chains: allNamespaces.zenon.chains,
     themeVariables: themeVariables,
     mobileWallets: [],
     desktopWallets: desktopWallets,
@@ -208,7 +198,7 @@ const getInfo = async (signClient: Client, session: SessionTypes.Struct) => {
 
   const result: InternalWalletInfo = await signClient.request({
     topic: session.topic,
-    chainId: "zenon:1",
+    chainId: allNamespaces.zenon.chains[0],
     request: {
       method: "znn_info",
       params: undefined,
@@ -223,7 +213,7 @@ const signTransaction = async (signClient: Client, session: SessionTypes.Struct,
   console.log("signTransaction", signClient, session);
   const signature = await signClient.request({
     topic: session.topic,
-    chainId: "zenon:1",
+    chainId: allNamespaces.zenon.chains[0],
     request: {
       method: "znn_sign",
       params: JSON.stringify(params.accountBlock),
@@ -239,7 +229,7 @@ const sendTransaction = async (signClient: Client, session: SessionTypes.Struct,
   console.log("sendTransaction", signClient, session);
   const result = await signClient.request({
     topic: session.topic,
-    chainId: "zenon:1",
+    chainId: allNamespaces.zenon.chains[0],
     request: {
       method: "znn_send",
       params: {

@@ -25,6 +25,7 @@ import { EthereumProvider } from "@walletconnect/ethereum-provider";
 import { EthereumRpcMap } from "@walletconnect/ethereum-provider/dist/types/EthereumProvider";
 import { SimpleToken } from "../../../models/SimpleToken";
 import { TransactionReceiptResponse, anyProviderType, externalNetworkProviderTypes } from "./externalNetworkContext";
+import exportedConstants from "../../../utils/constants";
 
 const projectId = "6106aa8c2f308b338f31465bef999a1f";
 const themeVariables = {
@@ -39,6 +40,7 @@ const themeVariables = {
 const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 const initClient = async () => {
+  console.log("InitClient - wc ext");
   const signClient = await SignClient.init({
     projectId: projectId,
     metadata: {
@@ -396,7 +398,7 @@ const signTransaction = async (signClient: Client, session: SessionTypes.Struct,
   console.log("signTransaction", signClient, session);
   const signature = await signClient.request({
     topic: session.topic,
-    chainId: "eip155:11155111",
+    chainId: `eip155:${exportedConstants.defaultExternalChainId}`,
     request: {
       method: "eth_signTransaction",
       params: JSON.stringify(params.accountBlock),
@@ -645,7 +647,7 @@ const sendTransaction = async (signClient: Client, session: SessionTypes.Struct,
   console.log("sendTransaction", signClient, session);
   const result = await signClient.request({
     topic: session.topic,
-    chainId: "eip155:11155111",
+    chainId: `eip155:${exportedConstants.defaultExternalChainId}`,
     request: {
       method: "eth_sendTransaction",
       params: {

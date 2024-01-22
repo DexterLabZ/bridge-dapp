@@ -487,17 +487,6 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
       //   "0x" + newSig
       // );
 
-      toast(`Transaction sent to your wallet. Please check ${externalNetworkClient.displayedProviderType}`, {
-        position: "bottom-center",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: false,
-        draggable: true,
-        type: "info",
-        theme: "dark",
-      });
-
       const redeemTransactionParams = [wrapRequest.toAddress, tokenAddress, amount, "0x" + id, "0x" + newSig];
       console.log("redeemTransactionParams", redeemTransactionParams);
       const redeemResponse = await externalNetworkClient.callContract(

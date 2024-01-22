@@ -308,17 +308,6 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
           accountBlock: unwrap.toJson(),
         };
 
-        toast(`Transaction sent to your wallet. Please check ${internalNetworkClient.displayedProviderType}`, {
-          position: "bottom-center",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: false,
-          draggable: true,
-          type: "info",
-          theme: "dark",
-        });
-
         const accountBlock = await internalNetworkClient.sendTransaction(transaction);
         console.log("final accountBlock", accountBlock);
 

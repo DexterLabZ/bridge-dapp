@@ -1,10 +1,13 @@
 import Client from "@walletconnect/sign-client";
 import { PairingTypes } from "@walletconnect/types";
+import exportedConstants from "./constants";
 
 export const allNamespaces = {
   zenon: {
     id: "syrius",
-    chains: ["zenon:1"],
+    // chains: [`zenon:${exportedConstants.defaultInternalChainId}`],
+    // Syrius wallet only works on zenon:1
+    chains: [`zenon:1`],
     methods: ["znn_sign", "znn_info", "znn_send"],
     events: ["chainIdChange", "addressChange"],
   },
@@ -20,16 +23,17 @@ export const allNamespaces = {
       "eth_chainId",
       "eth_getBalance",
     ],
-    chains: ["eip155:11155111"],
+    chains: [`eip155:${exportedConstants.defaultExternalChainId}`],
     events: ["chainChanged", "accountsChanged"],
   },
 };
+console.log("allNamespaces", allNamespaces);
 
 declare type ArrayOneOrMore<T> = {
   0: T;
 } & Array<T>;
 
-export const individualChains = [1, 11155111] as ArrayOneOrMore<number>;
+export const individualChains = [exportedConstants.defaultExternalChainId] as ArrayOneOrMore<number>;
 
 export const getRandomRpcProviderByChainId = (chainId: number) => {
   console.log("getRandomRpcProviderByChainId", chainId);

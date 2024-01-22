@@ -442,35 +442,24 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         case externalNetworkProviderTypes.walletConnect: {
           if (!walletConnectClient.current) throw Error("Client was not initialized");
           if (!walletConnectSession.current) throw Error("Session was not established");
-          // const signature = await externalNetworkWalletConnectWrapper.signTransaction(
-          //   walletConnectClient.current,
-          //   walletConnectSession.current,
-          //   params
-          // );
-          // console.log("signature", signature);
-          // params.accountBlock.signature = signature;
-          // console.log("signedAccountBlock", params.accountBlock);
-
+          if (!walletConnectPairing.current) throw Error("Pairing was not established");
           console.log("externalNetworkContext - sending - session", walletConnectSession.current);
-          console.log("externalNetworkContext - sending - pairing", walletConnectPairing?.["current"]);
-
-          // return await externalNetworkWalletConnectWrapper.sendTransaction(
-          //   walletConnectClient.current,
-          //   walletConnectSession.current,
-          //   params
-          // );
-
-          // await walletConnectClient.current.disconnect({
-          //   topic: walletConnectPairing?.current?.topic || "",
-          //   reason: {
-          //     code: 0,
-          //     message: "error.message" || "Socket error",
-          //     data: "error.message" || "Socket error",
-          //   },
-          // });
+          console.log("externalNetworkContext - sending - pairing", walletConnectPairing.current);
 
           const ercInfo = JSON.parse(walletInfo.ercInfo || "{}");
           const currentUserAddress = ercInfo?.address;
+
+          const walletName = walletConnectSession.current?.peer?.metadata?.name;
+          toast(`Transaction sent to your wallet. Please check ${walletName} app`, {
+            position: "bottom-center",
+            autoClose: 10000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: false,
+            draggable: true,
+            type: "info",
+            theme: "dark",
+          });
 
           return await externalNetworkWalletConnectWrapper.callContract(
             _provider,
@@ -479,14 +468,23 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
             functionName,
             walletConnectClient.current,
             walletConnectSession.current,
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            walletConnectPairing.current!,
+            walletConnectPairing.current,
             params,
             currentUserAddress
           );
         }
         case externalNetworkProviderTypes.metamask: {
-          // if (!syriusClient.current) throw Error("Client was not initialized");
+          toast(`Transaction sent to your wallet. Please check MetaMask Extension`, {
+            position: "bottom-center",
+            autoClose: 10000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: false,
+            draggable: true,
+            type: "info",
+            theme: "dark",
+          });
+
           const response = await metamaskWrapper.callContract(_provider, contractAddress, abi, functionName, params);
           return response;
         }
