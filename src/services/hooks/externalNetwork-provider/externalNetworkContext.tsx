@@ -19,6 +19,10 @@ import { storeReferralCode } from "../../redux/referralSlice";
 import { WalletConnectModal } from "@walletconnect/modal";
 import { ethers } from "ethers-ts";
 import { EthereumProvider } from "@walletconnect/ethereum-provider/dist/types/EthereumProvider";
+import {
+  storeExternalNetworkChainIdentifier,
+  storeExternalNetworkNodeUrl,
+} from "../../redux/externalNetworkConnectionSlice";
 
 export enum externalNetworkProviderTypes {
   "walletConnect" = "walletConnect",
@@ -123,6 +127,7 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         if (!!provider) return provider;
         const _provider = await externalNetworkWalletConnectWrapper.initProvider(externalNetworkChainId);
         setProvider(_provider);
+        dispatch(storeExternalNetworkNodeUrl((_provider as ethers.providers.JsonRpcProvider)?.connection?.url));
         console.log("Initialized new JsonRpcProvider", _provider);
         return _provider;
       }
@@ -280,6 +285,7 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
   const connectToNode = async (nodeUrl: string): Promise<void> => {
     // zenonSingleton.clearSocketConnection();
     // return zenonSingleton.initialize(nodeUrl, false, 2500);
+    // dispatch(storeExternalNetworkNodeUrl(nodeUrl));
   };
 
   const getWalletInfo = async (
@@ -321,6 +327,9 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
             nodeUrl: (_provider as ethers.providers.JsonRpcProvider)?.connection?.url,
           };
           console.log("walletInfo", walletInfo);
+
+          dispatch(storeExternalNetworkChainIdentifier(walletInfo.chainId));
+          dispatch(storeExternalNetworkNodeUrl(walletInfo.nodeUrl));
           return walletInfo;
         }
         case externalNetworkProviderTypes.metamask: {
@@ -337,9 +346,12 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
           const walletInfo: ExternalWalletInfo = {
             address: currentAccount,
             chainId: currentChainId,
-            nodeUrl: (_provider as ethers.providers.JsonRpcProvider)?.connection?.url,
+            // Metamask doesn't disclose the node url it's using
+            nodeUrl: "",
           };
           console.log("walletInfo", walletInfo);
+          dispatch(storeExternalNetworkChainIdentifier(walletInfo.chainId));
+          dispatch(storeExternalNetworkNodeUrl(walletInfo.nodeUrl));
 
           // info.nodeUrl = ifNeedReplaceNodeWithDefaultAndNotifyUser(info.nodeUrl);
           // dispatch(storeInternalNetworkNodeUrl(info.nodeUrl));
@@ -708,153 +720,11 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
   ) => {
     console.log("__chainIdChanged to", newChainId);
 
-    const walletInfo = await getWalletInfo(_provider, _providerType);
+    const newProvider = await getProvider(_providerType, Number(newChainId));
+    const walletInfo = await getWalletInfo(newProvider, _providerType);
     console.log("getWalletInfo", walletInfo);
     dispatch(storeErcInfo(JSON.stringify(walletInfo)));
-
-    // ToDo: Create a connection slice for external data
-    // Or split existing one into 2
-    // dispatch(storeInternalNetworkChainIdentifier(newChainId));
-  };
-
-  const ifNeedReplaceNodeWithDefaultAndNotifyUser = (nodeUrl: string): any => {
-    if (nodeUrl?.toLowerCase()?.includes("embedded") || nodeUrl?.includes("127.0.0.1")) {
-      // Embedded node is selected.
-      // This might cause problems because browser may be restricted to connect to local node
-      // Use the default node from constants
-      //
-      toast(
-        `Cannot connect to selected node (${nodeUrl}). Please pick another one from Syrius. Connecting to ${globalConstants.defaultNodeToConnect} instead.`,
-        {
-          position: "bottom-center",
-          autoClose: 15000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: false,
-          draggable: true,
-          type: "info",
-          theme: "dark",
-        }
-      );
-
-      return globalConstants.defaultNodeToConnect;
-    } else {
-      return nodeUrl;
-    }
-  };
-
-  const checkForAffiliationCodeFromNode = async (zenon: Zenon) => {
-    try {
-      const extraData = await zenon.stats.getExtraData();
-      console.log("extraData", extraData);
-      console.log("extraData.affiliate.toString()", extraData.affiliate.toString());
-
-      if (extraData.affiliate) {
-        const referrerAddress = extraData.affiliate.toString();
-
-        if (referrerAddress) {
-          console.log("New referral code detected", referrerAddress);
-          if (!getReferralAddress()) {
-            console.log("Using: ", referrerAddress);
-            try {
-              if (Primitives.Address.parse(referrerAddress)) {
-                // setReferralCodeAddress(referrerAddress || "");
-                // dispatch(storeReferralCode(mangleReferralCode(extraData.affiliate.toString())));
-                dispatch(storeReferralCode(extraData.affiliate.toString()));
-                toast(`Referral code changed. You will receive 1% bonus when unwrapping wZNN => ZNN and wQSR => QSR`, {
-                  position: "bottom-center",
-                  autoClose: 5000,
-                  hideProgressBar: false,
-                  closeOnClick: true,
-                  pauseOnHover: false,
-                  draggable: true,
-                  type: "success",
-                  theme: "dark",
-                  toastId: "validReferralCode",
-                });
-              }
-            } catch (err) {
-              console.error("Invalid Referral Code");
-              toast("Invalid Referral Code", {
-                position: "bottom-center",
-                autoClose: 5000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: false,
-                draggable: true,
-                type: "error",
-                theme: "dark",
-                toastId: "invalidReferralCode",
-              });
-            }
-          } else {
-            console.log("Detected existing referall code: ", getReferralAddress());
-            console.log("Using the old(existing) one", getReferralAddress());
-            dispatch(storeReferralCode(getReferralAddress()));
-          }
-        }
-      }
-    } catch (err: any) {
-      console.error(err);
-      let readableError = err;
-      if (err?.message) {
-        readableError = err?.message;
-      }
-      readableError = (readableError + "").split("Error: ")[(readableError + "").split("Error: ").length - 1];
-      console.error("readableError", readableError);
-
-      if (getReferralAddress()) {
-        console.log("Invalid referral code found on node. Using existing: ", getReferralAddress());
-        try {
-          if (Primitives.Address.parse(getReferralAddress())) {
-            // setReferralCodeAddress(referrerAddress || "");
-            // dispatch(storeReferralCode(mangleReferralCode(extraData.affiliate.toString())));
-            dispatch(storeReferralCode(getReferralAddress()));
-            toast(`Referral code changed. You will receive 1% bonus when unwrapping wZNN => ZNN and wQSR => QSR`, {
-              position: "bottom-center",
-              autoClose: 5000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: false,
-              draggable: true,
-              type: "success",
-              theme: "dark",
-              toastId: "validReferralCode",
-            });
-          }
-        } catch (err) {
-          console.error("Invalid Referral Code found on connected node and locally.");
-          dispatch(storeReferralCode(undefined));
-          toast("Invalid Referral Code found locally", {
-            position: "bottom-center",
-            autoClose: 5000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: false,
-            draggable: true,
-            type: "error",
-            theme: "dark",
-            toastId: "invalidReferralCode",
-          });
-        }
-      } else {
-        console.log("Invalid referral code found on node. No existing referral code found either.");
-        dispatch(storeReferralCode(undefined));
-      }
-
-      toast("Invalid referral code found on node. No existing referral code found either", {
-        position: "bottom-center",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: false,
-        draggable: true,
-        type: "error",
-        theme: "dark",
-        toastId: "invalidReferralCode",
-      });
-      return {};
-    }
+    dispatch(storeExternalNetworkChainIdentifier(newChainId));
   };
 
   const externalNetworkProvider = {

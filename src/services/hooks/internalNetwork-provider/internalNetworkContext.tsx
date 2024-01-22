@@ -321,6 +321,7 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
       message: "",
     };
     try {
+      console.warn("error.message", error.message);
       if (error.code == -32602 && error.message?.toLowerCase()?.includes(`Bad state: No element`.toLowerCase())) {
         if (!walletConnectClient.current) throw Error("Client was not initialized");
         if (!walletConnectSession.current) throw Error("Session was not established");
@@ -346,7 +347,11 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         handledError.message = error.message;
       }
 
-      console.warn("error.message", error.message);
+      if (error.code == 9000 && error.message?.toLowerCase()?.includes(`Wallet is locked`.toLowerCase())) {
+        handledError.shouldRetry = false;
+        throw Error("Your wallet is locked. Please unlock!");
+      }
+
       if (error.code == -32602 && error.message?.toLowerCase()?.includes(`No matching key`.toLowerCase())) {
         if (!walletConnectClient.current) throw Error("Client was not initialized");
         if (!walletConnectSession.current) throw Error("Session was not established");

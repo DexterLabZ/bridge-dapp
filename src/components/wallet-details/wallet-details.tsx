@@ -5,10 +5,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { storeErcInfo } from "../../services/redux/walletSlice";
 import "./wallet-details.scss";
+import useExternalNetwork from "../../services/hooks/externalNetwork-provider/useExternalNetwork";
 
 const WalletDetails: FC = () => {
   const serializedWalletInfo = useSelector((state: any) => state.wallet);
   const internalNetworkConnectionDetails = useSelector((state: any) => state.internalNetworkConnection);
+  const { externalNetworkClient } = useExternalNetwork();
+  const externalNetworkConnectionDetails = useSelector((state: any) => state.externalNetworkConnection);
   const referralInfo = useSelector((state: any) => state.referral);
   const [zenonAddress, setZenonAddress] = useState("");
   const [ercAddress, setErcAddress] = useState("");
@@ -82,7 +85,7 @@ const WalletDetails: FC = () => {
                 console.error(err);
               }
             }}>
-            {internalNetworkConnectionDetails?.nodeUrl.split("//")[1].split(":")[0]}
+            {internalNetworkConnectionDetails?.nodeUrl?.split("//")?.[1]?.split(":")?.[0]}
             <div className="connected-dot ml-1"></div>
             <div className="tooltip-text text-left">
               Connected Node: <b>{internalNetworkConnectionDetails?.nodeUrl}</b>
@@ -94,6 +97,7 @@ const WalletDetails: FC = () => {
       ) : (
         <></>
       )}
+
       {zenonAddress && (
         <div
           className="tooltip d-flex align-items-center mt-2 cursor-pointer"
@@ -116,9 +120,79 @@ const WalletDetails: FC = () => {
           }}>
           {zenonAddress.slice(0, 3) + "..." + zenonAddress.slice(-3)}
           <div className="connected-dot ml-1"></div>
-          <span className="tooltip-text">{zenonAddress}</span>
+          <span className="tooltip-text">
+            Zenon Address: <b>{zenonAddress}</b>
+          </span>
         </div>
       )}
+
+      {externalNetworkConnectionDetails?.nodeUrl ? (
+        <>
+          <div
+            className="tooltip d-flex align-items-center mt-2 cursor-pointer"
+            onClick={() => {
+              try {
+                navigator.clipboard.writeText(externalNetworkConnectionDetails?.nodeUrl);
+                toast(`Node URL copied to clipboard`, {
+                  position: "bottom-center",
+                  autoClose: 2500,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: false,
+                  draggable: true,
+                  type: "success",
+                  theme: "dark",
+                });
+              } catch (err) {
+                console.error(err);
+              }
+            }}>
+            {externalNetworkConnectionDetails?.nodeUrl?.split("//")?.[1]?.split(":")?.[0]}
+
+            <div className="connected-dot ml-1"></div>
+            <div className="tooltip-text text-left">
+              {externalNetworkConnectionDetails?.nodeUrl ? (
+                <>
+                  Connected Node: <b>{externalNetworkConnectionDetails?.nodeUrl}</b>
+                  <br></br>
+                </>
+              ) : (
+                <></>
+              )}
+              Chain ID: <b>{externalNetworkConnectionDetails?.chainIdentifier}</b>
+            </div>
+          </div>
+        </>
+      ) : (
+        externalNetworkClient?.displayedProviderType && (
+          <div
+            className="tooltip d-flex align-items-center mt-2 cursor-pointer"
+            onClick={() => {
+              try {
+                navigator.clipboard.writeText(externalNetworkConnectionDetails?.chainIdentifier);
+                toast(`Chain ID copied to clipboard`, {
+                  position: "bottom-center",
+                  autoClose: 2500,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: false,
+                  draggable: true,
+                  type: "success",
+                  theme: "dark",
+                });
+              } catch (err) {
+                console.error(err);
+              }
+            }}>
+            {externalNetworkClient.displayedProviderType} connected
+            <div className="connected-dot ml-1"></div>
+            <div className="tooltip-text text-left">
+              Chain ID: <b>{externalNetworkConnectionDetails?.chainIdentifier}</b>
+            </div>
+          </div>
+        )
+      )}
+
       {ercAddress && (
         <div
           className="tooltip d-flex align-items-center mt-2 cursor-pointer"
@@ -141,7 +215,9 @@ const WalletDetails: FC = () => {
           }}>
           {ercAddress.slice(0, 3) + "..." + ercAddress.slice(-3)}
           <div className="connected-dot ml-1"></div>
-          <span className="tooltip-text">{ercAddress}</span>
+          <span className="tooltip-text">
+            {externalNetworkClient.displayedProviderType} Address: <b>{ercAddress}</b>
+          </span>
         </div>
       )}
 

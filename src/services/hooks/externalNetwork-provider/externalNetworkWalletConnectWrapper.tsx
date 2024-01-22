@@ -868,6 +868,7 @@ const registerEvents = (
     console.log(".on session_event - provider", provider);
 
     const [networkId, chainId] = args?.params?.chainId?.split(":");
+    console.log("[networkId, chainId]", [networkId, chainId]);
 
     // ToDo: do something about the hardcoded 'eip155' chainId'
     if (networkId === "eip155") {

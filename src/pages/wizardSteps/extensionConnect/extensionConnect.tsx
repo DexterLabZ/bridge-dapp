@@ -363,6 +363,16 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
         };
         await externalNetworkClient.init(externalNetworkProviderTypes.metamask);
         await externalNetworkClient.connect(externalNetworkProviderTypes.metamask);
+
+        const _provider = await externalNetworkClient.getProvider(
+          externalNetworkProviderTypes.metamask,
+          externalNetworkChainId
+        );
+        console.log("Web3Provider provider", _provider);
+
+        const eipInfo = await externalNetworkClient.getWalletInfo(_provider, externalNetworkProviderTypes.metamask);
+        console.log("eipInfo", eipInfo);
+
         // await externalNetworkClient.connectSyrius(externalNetworkProviderTypes.metamask, onModalDismiss);
         // zenonInfo = await externalNetworkClient.getWalletInfo(externalNetworkProviderTypes.metamask);
         // console.log("zenonInfo", zenonInfo);
