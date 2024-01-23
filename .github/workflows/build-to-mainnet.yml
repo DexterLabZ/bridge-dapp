@@ -11,6 +11,10 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+  
+    environment: 
+      name: production
+
     strategy:
       matrix:
         node-version: [18.x]
