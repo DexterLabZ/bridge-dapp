@@ -214,7 +214,15 @@ const constants = {
       multiplierLabel: "12x",
     },
   ],
-  GTM_ID: "GTM-TC768WT",
+
+  GTM_ID: 'GTM-TC768WT',
+  /**
+   * * @mehowbrainz twitter developer account
+   */
+  TWITTER_EVENT: {
+    PIXEL_ID: 'o3khw',
+    EVENT_ID: 'tw-o3khw-oi8v5'
+  }
 };
 
 //
