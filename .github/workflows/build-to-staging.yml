@@ -5,17 +5,16 @@ name: Build and deploy to staging
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
-    environment: 
+    environment:
       name: staging
 
     strategy:
@@ -24,32 +23,38 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
 
-    - name: Decode Environment Variables
-      run: |
-        echo "${{ secrets.BRIDGE_VARIABLES }}" | base64 -d > .env
-        while read line; do export "$line"; done < .env
+      - name: Decode Environment Variables
+        run: |
+          echo "${{ secrets.BRIDGE_VARIABLES }}" | base64 -d > .env
+          while IFS= read -r line; do
+            # Skip empty lines and lines starting with '#'
+            if [[ -z "$line" || "$line" =~ ^# ]]; then
+              continue
+            fi
+            export "$line"
+          done < .env
 
-    - run: npm ci
-    - run: npm run build-staging --if-present
-      env: 
-        CI: false
-    - name: Deploy to staging
-      uses: JamesIves/github-pages-deploy-action@v4
-      with:
-        token: ${{ secrets.STAGING_TOKEN }}
-        branch: main
-        git-config-name: github-actions[bot]
-        git-config-email: github-action[bot]@users.noreply.github.com
-        repository-name: DexterLabZ/bridge.staging.zenon.community
-        commit-message: Staging release
-        clean: true
-        single-commit: true
-        force: true
-        folder: build
+      - run: npm ci
+      - run: npm run build-staging --if-present
+        env:
+          CI: false
+      - name: Deploy to staging
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          token: ${{ secrets.STAGING_TOKEN }}
+          branch: main
+          git-config-name: github-actions[bot]
+          git-config-email: github-action[bot]@users.noreply.github.com
+          repository-name: DexterLabZ/bridge.staging.zenon.community
+          commit-message: Staging release
+          clean: true
+          single-commit: true
+          force: true
+          folder: build
