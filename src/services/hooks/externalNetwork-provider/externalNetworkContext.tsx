@@ -12,7 +12,7 @@ import {
   storeInternalNetworkNodeUrl,
 } from "../../redux/internalNetworkConnectionSlice";
 import { toast } from "react-toastify";
-import { resetZenonInfo, storeErcInfo, storeZenonInfo } from "../../redux/walletSlice";
+import { resetErcInfo, resetZenonInfo, storeErcInfo, storeZenonInfo } from "../../redux/walletSlice";
 import { extractAddressesFromNamespacesAccounts, getReferralAddress, getZenonWalletInfo } from "../../../utils/utils";
 import { addBeforeUnloadEvents, removeBeforeUnloadEvents } from "../../pageHandlers/pageHandlers";
 import { storeReferralCode } from "../../redux/referralSlice";
@@ -20,9 +20,11 @@ import { WalletConnectModal } from "@walletconnect/modal";
 import { ethers } from "ethers-ts";
 import { EthereumProvider } from "@walletconnect/ethereum-provider/dist/types/EthereumProvider";
 import {
+  resetExternalNetworkConnectionState,
   storeExternalNetworkChainIdentifier,
   storeExternalNetworkNodeUrl,
 } from "../../redux/externalNetworkConnectionSlice";
+import metamaskExtensionWrapper from "./metamaskExtensionWrapper";
 
 export enum externalNetworkProviderTypes {
   "walletConnect" = "walletConnect",
@@ -239,43 +241,57 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
     switch (_providerType) {
       case externalNetworkProviderTypes.walletConnect: {
         if (walletConnectClient.current) {
-          externalNetworkWalletConnectWrapper.disconnectAllPairings(walletConnectClient.current);
-          externalNetworkWalletConnectWrapper.disconnectAllSessions(walletConnectClient.current);
-          walletConnectSession.current = null;
-          walletConnectPairing.current = null;
+          if (walletConnectPairing.current) {
+            await externalNetworkWalletConnectWrapper.disconnectPairing(
+              walletConnectClient.current,
+              walletConnectPairing.current
+            );
+          } else {
+            await externalNetworkWalletConnectWrapper.disconnectAllPairings(walletConnectClient.current);
+          }
 
+          if (walletConnectSession.current) {
+            await externalNetworkWalletConnectWrapper.disconnectSession(
+              walletConnectClient.current,
+              walletConnectSession.current
+            );
+          } else {
+            await externalNetworkWalletConnectWrapper.disconnectAllSessions(walletConnectClient.current);
+          }
+
+          walletConnectPairing.current = null;
+          walletConnectSession.current = null;
           walletConnectClient.current = null;
           setProviderType(null);
+          setProvider(null);
 
-          dispatch(resetZenonInfo());
-          dispatch(resetInternalNetworkConnectionState());
+          dispatch(resetErcInfo());
+          dispatch(resetExternalNetworkConnectionState());
         }
         return true;
       }
       case externalNetworkProviderTypes.metamask: {
-        // ToDo: Treat this case
-
         if (metamaskEventHandlers.current) {
           metamaskWrapper.unregisterEvents(metamaskEventHandlers.current);
           metamaskEventHandlers.current = null;
         }
         setProviderType(null);
+        setProvider(null);
 
-        // dispatch(resetZenonInfo());
-        // dispatch(resetInternalNetworkConnectionState());
+        dispatch(resetErcInfo());
+        dispatch(resetExternalNetworkConnectionState());
 
         return true;
       }
       default: {
-        // ToDo: treat this case
-
-        syriusClient.current = null;
         walletConnectClient.current = null;
         walletConnectSession.current = null;
         walletConnectPairing.current = null;
+        setProviderType(null);
+        setProvider(null);
 
-        dispatch(resetZenonInfo());
-        dispatch(resetInternalNetworkConnectionState());
+        dispatch(resetErcInfo());
+        dispatch(resetExternalNetworkConnectionState());
 
         throw Error(`Unknown providerType: ${_providerType}`);
       }
@@ -925,7 +941,9 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
 
   const externalNetworkProvider = {
     coreClient:
-      providerType == externalNetworkProviderTypes.walletConnect ? walletConnectClient.current : syriusClient.current,
+      providerType == externalNetworkProviderTypes.walletConnect
+        ? walletConnectClient.current
+        : metamaskExtensionWrapper.getProvider(),
     providerType: providerType,
     displayedProviderType: displayedProviderType,
     init: init,

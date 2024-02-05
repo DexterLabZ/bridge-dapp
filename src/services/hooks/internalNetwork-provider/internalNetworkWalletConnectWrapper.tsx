@@ -254,15 +254,15 @@ const disconnectPairing = async (
 ) => {
   try {
     console.log("Disconnecting, ", signClient, pairing);
-    // await signClient.core.pairing.disconnect({topic: pairing.topic});
-    await signClient.disconnect({
-      topic: pairing.topic,
-      reason: {
-        code: 1,
-        message: reasonMessage || "Default Message",
-        data: reasonData || "Default Data",
-      },
-    });
+    await signClient.core.pairing.disconnect({ topic: pairing.topic });
+    // await signClient.disconnect({
+    //   topic: pairing.topic,
+    //   reason: {
+    //     code: 1,
+    //     message: reasonMessage || "Default Message",
+    //     data: reasonData || "Default Data",
+    //   },
+    // });
     console.log("localStorage", localStorage);
     return true;
   } catch (err: any) {
@@ -290,11 +290,20 @@ const disconnectSession = async (
   try {
     console.log("Disconnecting, ", signClient, session);
 
-    await signClient.session.delete(session.topic, {
-      code: 1,
-      message: reasonMessage || "Default Message",
-      data: reasonData || "Default Data",
+    await signClient.disconnect({
+      topic: session.topic,
+      reason: {
+        code: 1,
+        message: reasonMessage || "Default Message",
+        data: reasonData || "Default Data",
+      },
     });
+
+    // await signClient.session.delete(session.topic, {
+    //   code: 1,
+    //   message: reasonMessage || "Default Message",
+    //   data: reasonData || "Default Data",
+    // });
 
     return true;
   } catch (err: any) {
