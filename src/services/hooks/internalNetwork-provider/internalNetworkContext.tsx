@@ -171,11 +171,26 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
     switch (_providerType) {
       case internalNetworkProviderTypes.walletConnect: {
         if (walletConnectClient.current) {
-          internalNetworkWalletConnectWrapper.disconnectAllPairings(walletConnectClient.current);
-          internalNetworkWalletConnectWrapper.disconnectAllSessions(walletConnectClient.current);
-          walletConnectSession.current = null;
-          walletConnectPairing.current = null;
+          if (walletConnectPairing.current) {
+            await internalNetworkWalletConnectWrapper.disconnectPairing(
+              walletConnectClient.current,
+              walletConnectPairing.current
+            );
+          } else {
+            await internalNetworkWalletConnectWrapper.disconnectAllPairings(walletConnectClient.current);
+          }
 
+          if (walletConnectSession.current) {
+            await internalNetworkWalletConnectWrapper.disconnectSession(
+              walletConnectClient.current,
+              walletConnectSession.current
+            );
+          } else {
+            await internalNetworkWalletConnectWrapper.disconnectAllSessions(walletConnectClient.current);
+          }
+
+          walletConnectPairing.current = null;
+          walletConnectSession.current = null;
           walletConnectClient.current = null;
           setProviderType(null);
 

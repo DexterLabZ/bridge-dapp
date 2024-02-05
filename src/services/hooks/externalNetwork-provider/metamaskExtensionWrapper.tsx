@@ -15,7 +15,7 @@ const getConnectionInfo = async (): Promise<Partial<ExternalWalletInfo>> => {
 
 const getProvider = () => {
   checkMetamaskAvailability();
-  return new ethers.providers.Web3Provider(window.ethereum);
+  return new ethers.providers.Web3Provider(window?.ethereum);
 };
 
 const getConnectedAccounts = async (provider: ethers.providers.Web3Provider): Promise<string[]> => {
@@ -67,7 +67,7 @@ const estimateGas = async (
   console.log("params", params);
 
   const contract = new ethers.Contract(contractAddress, abi, provider);
-  const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
+  const signer = new ethers.providers.Web3Provider(window?.ethereum).getSigner();
   const signedContract = contract.connect(signer);
   console.log("contract", contract);
   console.log("signedContract", signedContract);
@@ -110,7 +110,7 @@ const callContract = async (
   console.log("params", params);
 
   const contract = new ethers.Contract(contractAddress, abi, provider);
-  const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
+  const signer = new ethers.providers.Web3Provider(window?.ethereum).getSigner();
   const signedContract = contract.connect(signer);
   console.log("contract", contract);
   console.log("signedContract", signedContract);

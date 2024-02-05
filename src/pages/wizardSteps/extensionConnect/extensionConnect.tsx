@@ -240,6 +240,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
 
   const getMetamaskAddress = async () => {
     const provider = await externalNetworkClient.getProvider(externalNetworkProviderTypes.metamask);
+    console.log("provider", provider);
 
     console.log("connectToExternalNetwork, globalConstants", globalConstants);
 
@@ -1309,10 +1310,21 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
     }
   };
 
-  const clearWallet = () => {
+  const clearInternalWallet = async () => {
     console.log("internalNetworkClient?.coreClient", internalNetworkClient?.coreClient);
     if (internalNetworkClient?.coreClient) {
-      internalNetworkClient.disconnect();
+      await internalNetworkClient.disconnect();
+    } else {
+      localStorage.removeItem("wc@2:core:0.3//pairing");
+      localStorage.removeItem("wc@2:client:0.3//session");
+      setHasParingsOrSessions(false);
+    }
+  };
+
+  const clearExternalWallet = async () => {
+    console.log("externalNetworkClient?.coreClient", externalNetworkClient?.coreClient);
+    if (externalNetworkClient?.coreClient) {
+      await externalNetworkClient.disconnect();
     } else {
       localStorage.removeItem("wc@2:core:0.3//pairing");
       localStorage.removeItem("wc@2:client:0.3//session");
@@ -1405,7 +1417,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
               <div
                 className="disconnect-button tooltip"
                 onClick={() => {
-                  clearWallet();
+                  clearInternalWallet();
                 }}>
                 <img src={closeIconRed} alt="disconnect"></img>
                 <span className="tooltip-text">
@@ -1481,7 +1493,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
               <div
                 className="disconnect-button tooltip"
                 onClick={() => {
-                  clearWallet();
+                  clearExternalWallet();
                 }}>
                 <img src={closeIconRed} alt="disconnect"></img>
                 <span className="tooltip-text">

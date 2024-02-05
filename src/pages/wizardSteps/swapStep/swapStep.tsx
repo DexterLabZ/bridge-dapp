@@ -299,7 +299,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
       console.log("ercToken, doAsyncUpdates");
       doAsyncUpdates();
     }
-  }, [ercToken]);
+  }, [ercToken, serializedWalletInfo]);
 
   useEffect(() => {
     if (wrapFeePercentage != 0 || wrapFeePercentage !== 0) {
@@ -1278,7 +1278,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
   /**
    * * TWITTER SERVICE
    */
-  const { sendEventToTwitter } = useTwitterEvent()
+  const { sendEventToTwitter } = useTwitterEvent();
 
   const onFormSubmit = async () => {
     const showSpinner = handleSpinner(
@@ -1308,20 +1308,20 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
           event_category: "bridge_tokens",
           event_label: `swap_wznn_znn_${ercAmount}`,
           event_value: ercAmount,
-          label: `swap_wznn_znn_${ercAmount}`, 
-          value: ercAmount, 
-        })
+          label: `swap_wznn_znn_${ercAmount}`,
+          value: ercAmount,
+        });
 
         /**
          * * TWITTER SERVICE
          * ? Sending data to twitter
          */
         const queryParams = new URLSearchParams(location.search);
-        
-        const twclid = queryParams.get('twclid'); 
+
+        const twclid = queryParams.get("twclid");
 
         if (twclid) {
-          await sendEventToTwitter(twclid)
+          await sendEventToTwitter(twclid);
         }
       }
 
