@@ -156,7 +156,6 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
   const referralCode = useSelector((state: any) => state.referral);
 
   const wizardStatus = useSelector((state: any) => state.wizardStatus);
-  // const externalNetworkConnectionInfo = useSelector((state: any) => state.internalNetworkConnection);
 
   useEffect(() => {
     const runAsyncTasks = async () => {
@@ -168,17 +167,6 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
         metamaskCurrentChainId = (await provider.getNetwork())?.chainId;
         await validateExternalNetwork(provider, globalConstants.externalAvailableNetworks, metamaskCurrentChainId);
         console.log("metamaskCurrentChainId", metamaskCurrentChainId);
-        // console.log(
-        //   "globalConstants.externalAvailableTokens",
-        //   Object.freeze(
-        //     Object.assign(
-        //       globalConstants.externalAvailableTokens.map((t: any) => {
-        //         return Object.freeze(Object.assign(t, {}));
-        //       }),
-        //       []
-        //     )
-        //   )
-        // );
         console.log(
           "JSON.stringify(globalConstants.externalAvailableTokens)",
           JSON.stringify(globalConstants.externalAvailableTokens)
@@ -231,10 +219,6 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
     };
 
     runAsyncTasks();
-    // const changeEventHandlers = detectExtensionsChanges();
-    // return () => {
-    //   removeWeb3ChangeListeners(changeEventHandlers);
-    // };
   }, []);
 
   useEffect(() => {
@@ -347,42 +331,11 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
     }
   }, [serializedWalletInfo]);
 
-  // const detectExtensionsChanges = () => {
-  //   const accountChangedHandler = async (accounts: any) => {
-  //     console.log("accountChangedHandler", accounts);
-  //     updateMetamaskInfoToFrontend(await getMetamaskWalletInfo(false));
-  //   };
-  //   window?.ethereum?.on("accountsChanged", accountChangedHandler);
-
-  //   const chainChangedHandler = async (chainId: any) => {
-  //     console.log("chainChangedHandler", ethers.BigNumber.from(chainId).toNumber());
-  //     updateMetamaskInfoToFrontend(await getMetamaskWalletInfo(false));
-  //   };
-  //   window?.ethereum?.on("chainChanged", chainChangedHandler);
-
-  //   return {
-  //     accountsChanged: accountChangedHandler,
-  //     chainChanged: chainChangedHandler,
-  //   };
-  // };
-
-  // const removeWeb3ChangeListeners = (changeEventHandlers: any) => {
-  //   console.log("Removing web3 change listeners", changeEventHandlers);
-  //   window?.ethereum?.removeListener("accountsChanged", changeEventHandlers.accountsChanged);
-  //   window?.ethereum?.removeListener("chainChanged", changeEventHandlers.chainChanged);
-  // };
-
   const getMetamaskWalletInfo = async (showToastNotification = true) => {
     try {
       const provider = await externalNetworkClient.getProvider();
       await validateExternalNetwork(provider, globalConstants.externalAvailableNetworks);
-      // const accounts = await provider.send("eth_requestAccounts", []);
 
-      // ToDo: Make this dynamic: externalNetworkProviderTypes.walletConnect
-      // Its a different implementation for .metamask
-      // const eipInfo = await externalNetworkClient.getWalletInfo(externalNetworkProviderTypes.walletConnect);
-
-      // console.log("eipInfo", JSONbig.stringify(eipInfo));
       console.log("ercToken", JSONbig.stringify(ercToken));
 
       const externalTokens = await getExternalTokensDetails(globalConstants.externalAvailableTokens, provider);
@@ -406,24 +359,8 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
       console.log("currentToken", JSONbig.stringify(currentToken));
 
       const contract = new ethers.Contract(currentToken.address, updatedConstants.wznnAbi, provider);
-      // const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
-      // const signedContract = contract.connect(signer);
 
       console.log("contract", contract);
-
-      // const firstAccount = Object.keys(eipInfo)[0];
-      // const firstAccountAddress = firstAccount.split(":")[2];
-      // const firstAccountChainId = parseInt(firstAccount.split(":")[1]);
-
-      // const rawErcBalance = await contract.balanceOf(firstAccountAddress);
-
-      // console.log("rawErcBalance", rawErcBalance);
-      // console.log("currentToken.decimals", currentToken.decimals);
-
-      // const formattedErcBalance = ethers.utils.formatUnits(rawErcBalance, currentToken.decimals);
-
-      // console.log("formattedErcBalance", formattedErcBalance);
-
       const walletInfo = await externalNetworkClient.getWalletInfo(provider);
       const rawBalance = await externalNetworkClient.getBalance(
         currentToken.address,
@@ -1185,90 +1122,8 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
 
         console.log("currentContractAddress", currentContractAddress);
 
-        // const provider = new ethers.providers.Web3Provider(window.ethereum);
-        // const contract = new ethers.Contract(currentContractAddress, globalConstants.abiContract, provider);
-        // const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
-        // const signedContract = contract.connect(signer);
-
-        // console.log("contract", contract);
-        // console.log("signedContract", signedContract);
-
-        // const token = new ethers.Contract(ercToken.address, globalConstants.abiToken, provider);
-
-        // console.log("token", token);
-
-        // const ercTokenCopy = {
-        //   ...ercToken,
-        //   decimals: await token.decimals(),
-        // };
-
-        // const t = token.connect(signer);
-
-        // console.log("ercAddress", ercAddress);
-        // console.log("currentContractAddress", currentContractAddress);
-
-        // const allowedAmount = await t.allowance(ercAddress, currentContractAddress);
-        // console.log(
-        //   "allowedAmount",
-        //   allowedAmount,
-        //   ethers.utils.formatUnits(allowedAmount, ethers.BigNumber.from(ercTokenCopy.decimals))
-        // );
-
-        // if (
-        //   ethers.BigNumber.from(allowedAmount).lt(
-        //     ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals))
-        //   )
-        // ) {
-        //   console.log(
-        //     "Approving with",
-        //     currentContractAddress,
-        //     ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals))
-        //   );
-        //   const approveResponse = await t.approve(
-        //     currentContractAddress,
-        //     ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals))
-        //   );
-        //   console.log("approveResponse", approveResponse);
-        //   await approveResponse.wait();
-        // }
-
-        // console.log(
-        //   "Swapping with ",
-        //   ercTokenCopy.address,
-        //   ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals)),
-        //   zenonAddress
-        // );
-
-        // const referralCode = referralInfo?.referralCode;
-        // let concatenatedAddresses = zenonAddress;
-
-        // if (referralCode) {
-        //   concatenatedAddresses = concatenatedAddresses + "&" + referralCode;
-        //   console.log("Using: ", referralCode);
-        // }
-        // console.log("concatenatedAddresses", concatenatedAddresses);
-
-        // const swapResponse = await signedContract.unwrap(
-        //   ercTokenCopy.address,
-        //   ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals)),
-        //   concatenatedAddresses
-        // );
-        // console.log("swapResponse", swapResponse);
-        // await swapResponse.wait();
-
-        // // This returns the unique id
-        // resolve({ hash: swapResponse?.hash || "", logIndex: swapResponse?.logIndex || 0 });
-
-        // Old Way ^^^
-
-        //
-        //
-        //
-        //
-
-        // New way vvv
-
         const provider = await externalNetworkClient.getProvider();
+        // const contract = new ethers.Contract(currentContractAddress, globalConstants.abiContract, provider);
         const token = new ethers.Contract(ercToken.address, globalConstants.abiToken, provider);
 
         const ercTokenCopy = {
@@ -1276,16 +1131,6 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
           decimals: await token.decimals(),
         };
         console.log("ercTokenCopy", ercTokenCopy);
-
-        // const tokenAllowanceParameters = [ercAddress, currentContractAddress];
-        // console.log("tokenAllowanceParameters", tokenAllowanceParameters);
-        // const tokenAllowance = await externalNetworkClient.callContract(
-        //   ercToken.address,
-        //   globalConstants.abiToken,
-        //   "allowance",
-        //   tokenAllowanceParameters
-        // );
-        // console.log("tokenAllowance", tokenAllowance);
 
         const tokenApprovalParameters = [
           currentContractAddress,
@@ -1299,10 +1144,6 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
           tokenApprovalParameters
         );
         console.log("tokenApproval", tokenApproval);
-        // await tokenApproval.wait();
-
-        // or
-        // await externalNetworkClient.callContract("wait");
 
         console.log(
           "Swaping with",
@@ -1319,15 +1160,6 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
           console.log("Using: ", referralCode);
         }
         console.log("concatenatedAddresses", concatenatedAddresses);
-
-        //
-        // Using old method (metamask)
-        //
-        // const swapResponse = await signedContract.unwrap(
-        //   ercTokenCopy.address,
-        //   ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals)),
-        //   concatenatedAddresses
-        // );
 
         const swapParameters = [
           ercTokenCopy.address,

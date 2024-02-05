@@ -196,10 +196,6 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
     };
 
     runAsyncTasks();
-    // const changeEventHandlers = detectExtensionsChanges();
-    // return () => {
-    //   removeWeb3ChangeListeners(changeEventHandlers);
-    // };
   }, []);
 
   useEffect(() => {
@@ -234,9 +230,6 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
     console.log("walletDetails - wallet changed");
     console.log("serializedWalletInfo", serializedWalletInfo);
 
-    // For some reason this doesn't get triggered or
-    // The new address is not properly updatedk
-
     const newZenonAddress = JSONbig.parse(serializedWalletInfo["zenonInfo"] || "{}")?.address || "";
     console.log("zenonAddress", zenonAddress);
     console.log("newZenonAddress", newZenonAddress);
@@ -270,36 +263,6 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
 
     return value.mul(slippagePercentageBN).div(oneBN);
   };
-
-  // const detectExtensionsChanges = () => {
-  //   const accountChangedHandler = async (accounts: any) => {
-  //     console.log("accountChangedHandler", accounts);
-  //     const metaInfo = await getInternalWalletInfo(false);
-  //     updateMetamaskInfoToFrontend(metaInfo?.ercInfo);
-  //     updateZenonInfoToFrontend(metaInfo?.zenonInfo);
-  //   };
-  //   window?.ethereum?.on("accountsChanged", accountChangedHandler);
-
-  //   const chainChangedHandler = async (chainId: any) => {
-  //     console.log("chainChangedHandler", ethers.BigNumber.from(chainId).toNumber());
-  //     const metaInfo = await getInternalWalletInfo(false);
-  //     updateMetamaskInfoToFrontend(metaInfo?.ercInfo);
-  //     updateZenonInfoToFrontend(metaInfo?.zenonInfo);
-  //     // window.location.reload();
-  //   };
-  //   window?.ethereum?.on("chainChanged", chainChangedHandler);
-
-  //   return {
-  //     accountsChanged: accountChangedHandler,
-  //     chainChanged: chainChangedHandler,
-  //   };
-  // };
-
-  // const removeWeb3ChangeListeners = (changeEventHandlers: any) => {
-  //   console.log("Removing web3 change listeners", changeEventHandlers);
-  //   window?.ethereum?.removeListener("accountsChanged", changeEventHandlers.accountsChanged);
-  //   window?.ethereum?.removeListener("chainChanged", changeEventHandlers.chainChanged);
-  // };
 
   const getInternalWalletInfo = async (showToastNotification = true) => {
     try {
@@ -359,7 +322,6 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
       console.log("updatedConstants after metamask data", updatedConstants);
       console.log("updatedConstants", updatedConstants);
 
-      // const metamaskCurrentChainId = (await provider.getNetwork())?.chainId;
       const walletInfo = await externalNetworkClient.getWalletInfo(provider);
 
       console.log("ercToken", JSONbig.stringify(ercToken));
@@ -381,16 +343,6 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
 
       console.log("currentZenonToken", JSONbig.stringify(currentZenonToken));
 
-      // const rawErcBalance = await externalNetworkClient.getBalance(
-      //   currentErcToken.address,
-      //   updatedConstants.wznnAbi,
-      //   provider
-      // );
-      // console.log("rawErcBalance", rawErcBalance);
-
-      // const formattedErcBalance = ethers.utils.formatUnits(rawErcBalance, currentErcToken.decimals);
-      // console.log("formattedErcBalance", formattedErcBalance);
-
       const ercInfo = {
         address: walletInfo.address?.toLowerCase(),
         balance: "0",
@@ -403,10 +355,6 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
       };
 
       if (currentErcToken.symbol == "ETH" && currentErcToken.address == "") {
-        // console.log("provider.getBalance", currentErcToken);
-        // const rawErcBalance = await provider.getBalance(walletInfo.address?.toLowerCase());
-        // console.log("rawErcBalance - ", currentErcToken.symbol, ":", rawErcBalance);
-
         const rawErcBalance = await externalNetworkClient.getBalance(null, null, provider);
 
         console.log("rawErcBalance - ", currentErcToken.symbol, ":", rawErcBalance);
@@ -414,12 +362,6 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
         console.log("eth - balance, decimals", ercInfo.balance, currentErcToken.decimals);
         ercInfo.rawBalance = rawErcBalance;
       } else {
-        // const contract = new ethers.Contract(currentErcToken.address, updatedConstants.wznnAbi, provider);
-        // const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
-        // const signedContract = contract.connect(signer);
-        // console.log("signedContract", signedContract);
-
-        // const rawErcBalance = await contract.balanceOf(walletInfo.address?.toLowerCase());
         const rawErcBalance = await externalNetworkClient.getBalance(
           currentErcToken.address,
           updatedConstants.wznnAbi,
@@ -432,33 +374,6 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
         ercInfo.rawBalance = rawErcBalance;
       }
       console.log("afterMetamaskUpdated - ercInfo", JSONbig.stringify(ercInfo));
-
-      // if (currentZenonToken.symbol == "ETH" && currentZenonToken.address == "") {
-      //   // console.log("Zenon.provider.getBalance", currentZenonToken);
-      //   // const rawErcBalance = await provider.getBalance(walletInfo.address?.toLowerCase());
-
-      //   const rawErcBalance = await externalNetworkClient.getBalance(null, null, provider);
-
-      //   console.log("rawErcBalance - ", currentZenonToken.symbol, ":", rawErcBalance);
-      //   zenonInfo.balance = ethers.utils.formatUnits(rawErcBalance, currentZenonToken.decimals);
-      //   zenonInfo.rawBalance = rawErcBalance;
-      // } else {
-      //   // const contract = new ethers.Contract(currentZenonToken.address, updatedConstants.wznnAbi, provider);
-      //   // const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
-      //   // const signedContract = contract.connect(signer);
-      //   // console.log("signedContract", signedContract);
-      //   // const rawErcBalance = await contract.balanceOf(walletInfo.address?.toLowerCase());
-
-      //   const rawWznnBalance = await externalNetworkClient.getBalance(
-      //     currentZenonToken.address,
-      //     updatedConstants.wznnAbi,
-      //     provider
-      //   );
-
-      //   console.log("rawWznnBalance - ", currentZenonToken.symbol, ":", rawWznnBalance);
-      //   zenonInfo.balance = ethers.utils.formatUnits(rawWznnBalance, currentZenonToken.decimals);
-      //   zenonInfo.rawBalance = rawWznnBalance;
-      // }
 
       const rawWznnBalance = await externalNetworkClient.getBalance(
         currentZenonToken.address,
@@ -862,12 +777,7 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
         const routerAddress = currentPair.routerContract;
         console.log("routerAddress", routerAddress);
         const provider = await externalNetworkClient.getProvider();
-        const contract = new ethers.Contract(routerAddress, globalConstants.routerAbi, provider);
-        // const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
-        // const signedContract = contract.connect(signer);
 
-        // console.log("contract", contract);
-        // console.log("signedContract", signedContract);
         console.log("zenonAmount", zenonAmount);
         console.log("ercAmount", ercAmount);
 
@@ -896,23 +806,7 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
           console.log("parsedZenonAmount", parsedZenonAmount.toString());
           console.log("parsedErcAmount", parsedErcAmount.toString());
 
-          // const t0 = token0.connect(signer);
-          // console.log("t0", t0);
-
-          // const allowance0Parameters = [ercAddress, routerAddress];
-          // console.log("allowance0Parameters", allowance0Parameters);
-
-          // const allowedAmountToken0 = await externalNetworkClient.callContract(
-          //   zenonToken.address,
-          //   globalConstants.abiToken,
-          //   "allowance",
-          //   allowance0Parameters
-          // );
-
           const allowedAmountToken0 = await token0.allowance(ercAddress, routerAddress);
-
-          // ToDo: remove this
-          // allowedAmountToken0 = ethers.BigNumber.from("0");
 
           console.log(
             "allowedAmountToken0",
@@ -941,12 +835,9 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
               zenonToken.address,
               globalConstants.abiToken,
               "approve",
-              approveParameters,
-              // ToDO: delete this
-              ethers.BigNumber.from("0")
+              approveParameters
             );
 
-            // const approve1Response = await t0.approve(routerAddress, parsedZenonAmount);
             console.log("approve1Response", approve1Response);
 
             console.log("Approved", zenonTokenCopy.address, parsedZenonAmount, ercAddress);
@@ -993,58 +884,18 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
             applySlippage(parsedErcAmount, maxSlippagePercentage),
             metamaskAddress,
             lastBlockTimestamp + 90,
-            // { from: metamaskAddress, value: parsedErcAmount },
           ];
           console.log("addLiquidityETHParameters", addLiquidityETHParameters);
 
-          // const contractEstimatedGas = await contract.estimateGas.addLiquidityETH(
-          //   zenonTokenCopy.address,
-          //   parsedZenonAmount,
-          //   applySlippage(parsedZenonAmount, maxSlippagePercentage),
-          //   applySlippage(parsedErcAmount, maxSlippagePercentage),
-          //   metamaskAddress,
-          //   lastBlockTimestamp + 90,
-          //   // { from: metamaskAddress, value: parsedErcAmount }
-          //   {
-          //     from: metamaskAddress,
-          //     value: ethers.utils.parseEther("0.001"),
-          //     gasLimit: ethers.BigNumber.from("999999"),
-          //   }
-          // );
-          // console.log("contractEstimatedGas", contractEstimatedGas);
-
-          // Example: Sending 1 Ether
-          // const valueInEther = "0.001"; // 0.01 Ether
-
-          // // Convert to Wei
-          // const valueInWei = ethers.utils.parseEther(valueInEther);
-
-          // // Ensure there are no leading zeros
-          // const estimationErcAmount = ethers.utils.hexStripZeros(ethers.utils.hexlify(valueInWei));
-
-          // const estimationErcAmount = parsedErcAmount.toHexString();
-          // console.log("estimationErcAmount", estimationErcAmount);
-
           const defaultGasLimit = ethers.BigNumber.from(1);
-
-          const valueField = parsedErcAmount;
-          // const valueField = parsedErcAmount.toString();
-          // const valueField = parsedErcAmount.toHexString();
-          // const valueField = "0.001";
-          // const valueField = "1000000000000";//-3z
-
-          // const valueField = parsedErcAmount.div(245).toString();
-
-          console.log("valueField", valueField);
 
           const estimatedGas = await externalNetworkClient.estimateGas(
             routerAddress,
             globalConstants.routerAbi,
             "addLiquidityETH",
             addLiquidityETHParameters,
-            valueField,
+            parsedErcAmount,
             defaultGasLimit
-            // ethers.utils.hexStripZeros(ethers.utils.hexlify(defaultGasLimit))
           );
           console.log("estimatedGas", estimatedGas);
 
@@ -1056,22 +907,9 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
             globalConstants.routerAbi,
             "addLiquidityETH",
             addLiquidityETHParameters,
-            valueField,
-            // estimationErcAmount,
-            // defaultGasLimit
+            parsedErcAmount,
             estimatedGas
           );
-
-          // Step 2. Call addLiquidityETH
-          // addLiquidityResponse = await signedContract.addLiquidityETH(
-          //   zenonTokenCopy.address,
-          //   parsedZenonAmount,
-          //   applySlippage(parsedZenonAmount, maxSlippagePercentage),
-          //   applySlippage(parsedErcAmount, maxSlippagePercentage),
-          //   metamaskAddress,
-          //   lastBlockTimestamp + 90,
-          //   { from: metamaskAddress, value: parsedErcAmount }
-          // );
         } else {
           // Step 1. Approve spending of internalToken == token0 == zenonToken
           const token0 = new ethers.Contract(zenonToken.address, globalConstants.abiToken, provider);
@@ -1087,19 +925,6 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
             zenonAmount,
             ethers.BigNumber.from(zenonTokenCopy.decimals)
           );
-
-          // const t0 = token0.connect(signer);
-          // console.log("t0", t0);
-
-          // const allowance0Parameters = [ercAddress, routerAddress];
-          // console.log("allowance0Parameters", allowance0Parameters);
-
-          // const allowedAmountToken0 = await externalNetworkClient.callContract(
-          //   zenonToken.address,
-          //   globalConstants.abiToken,
-          //   "allowance",
-          //   allowance0Parameters
-          // );
 
           const allowedAmountToken0 = await token0.allowance(ercAddress, routerAddress);
           console.log(
@@ -1138,10 +963,6 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
               approve0Parameters
             );
 
-            // const approve0Response = await t0.approve(
-            //   routerAddress,
-            //   ethers.utils.parseUnits(zenonAmount, ethers.BigNumber.from(zenonTokenCopy.decimals))
-            // );
             console.log("approve0Response", approve0Response);
 
             console.log(
@@ -1169,19 +990,6 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
           console.log("ercTokenCopy", ercTokenCopy);
 
           const parsedErcAmount = ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals));
-
-          // const t1 = token1.connect(signer);
-          // console.log("t1", t1);
-
-          // const allowance1Parameters = [ercAddress, routerAddress];
-          // console.log("allowance1Parameters", allowance1Parameters);
-
-          // const allowedAmountToken1 = await externalNetworkClient.callContract(
-          //   ercToken.address,
-          //   globalConstants.abiToken,
-          //   "allowance",
-          //   allowance1Parameters
-          // );
 
           const allowedAmountToken1 = await token1.allowance(ercAddress, routerAddress);
           console.log(
@@ -1213,12 +1021,7 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
               approve1Parameters
             );
 
-            // const approve1Response = await t1.approve(
-            //   routerAddress,
-            //   ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals))
-            // );
             console.log("approve1Response", approve1Response);
-            // await approve1Response.wait();
           }
 
           console.log(
@@ -1372,21 +1175,9 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
             "addLiquidity",
             addLiquidityParameters
           );
-
-          // addLiquidityResponse = await signedContract.addLiquidity(
-          //   tokenAParams.tokenAddress,
-          //   tokenBParams.tokenAddress,
-          //   tokenAParams.amountDesired,
-          //   tokenBParams.amountDesired,
-          //   tokenAParams.amountMin,
-          //   tokenBParams.amountMin,
-          //   metamaskAddress,
-          //   lastBlockTimestamp + 90
-          // );
         }
 
         console.log("addLiquidityResponse", addLiquidityResponse);
-        // await addLiquidityResponse.wait();
 
         toast(
           <div>

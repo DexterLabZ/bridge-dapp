@@ -293,47 +293,6 @@ export const getBalance = async (
   tokenAddress?: string,
   tokenAbi?: string
 ): Promise<ethers.BigNumber> => {
-  // console.log("[namespace, networkId]", [namespace, networkId]);
-
-  // const RPC_URL = getRandomRpcProviderByChainId(Number(networkId));
-  // console.log("RPC_URL", RPC_URL);
-
-  // const rpcProvider = new ethers.providers.JsonRpcProvider(RPC_URL);
-  // console.log("rpcProvider", rpcProvider);
-
-  // const contract = new ethers.Contract(token.address, tokenAbi, rpcProvider);
-  // console.log("contract", contract);
-
-  // const rawWznnBalance = await contract.balanceOf(account);
-  // tokenBalance = ethers.utils.formatUnits(rawWznnBalance, token.decimals);
-
-  // const token = rpcProvidersByChainId[Number(chainId)].token;
-  // console.log("provider", provider);
-  // console.log("account", account);
-  // console.log("chainId", chainId);
-  // console.log("token", token);
-  // const res = await provider.getBalance(account);
-  // const balance = ethers.utils.formatUnits(res, token.decimals);
-
-  // const api: AxiosInstance = axios.create({
-  //   baseURL: RPC_URL,
-  //   timeout: 10000, // 10 secs
-  //   headers: {
-  //     Accept: "application/json",
-  //     "Content-Type": "application/json",
-  //   },
-  // });
-
-  // const response = await api.post(RPC_URL, {
-  //   jsonrpc: "2.0",
-  //   method: "eth_getBalance",
-  //   params: [account, "latest"],
-  //   id: 1,
-  // });
-  // const { result } = response.data;
-  // const balance = parseInt(result, 16).toString();
-  // return { balance, ...token };
-
   if (tokenAddress && tokenAbi) {
     // Return the balance of the custom token
     const contract = new ethers.Contract(tokenAddress, tokenAbi, provider);
@@ -364,35 +323,6 @@ const getCurrentChainId = (session: SessionTypes.Struct): number => {
   return Number(getConnectedChains(session)?.[0]?.split(":")?.[1] || "");
 };
 
-// const getAllAccountsBalances = async (accounts: string[], tokenAddress?: string) => {
-//   // console.log("getBalance - session.topic", session.topic);
-
-//   // const accounts = session.namespaces.eip155.accounts;
-//   console.log("getBalance - accounts", accounts);
-//   // const addresses = extractAddressesFromNamespacesAccounts(accounts);
-//   // console.log("eth_requestAccounts addresses", addresses);
-//   const balances = await getAccountBalances(accounts);
-
-//   // const testAddress = accounts[0];
-//   // const req = {
-//   //   topic: session.topic,
-//   //   chainId: "eip155:11155111",
-//   //   request: {
-//   //     method: "eth_getBalance",
-//   //     params: [testAddress, "latest"],
-//   //   },
-//   // };
-//   // console.log("eth_getBalance req", req);
-
-//   // const result = await signClient.request(req);
-//   // console.log("eth_getBalance result", result);
-
-//   console.log("eth_requestAccounts balances", balances);
-
-//   // ToDo: RETURN ChainId Here and then pass it everywhere
-//   return balances;
-// };
-
 const signTransaction = async (signClient: Client, session: SessionTypes.Struct, params: any) => {
   console.log("signTransaction - params", params);
   console.log("signTransaction", signClient, session);
@@ -420,9 +350,7 @@ const estimateGas = async (
   params: any[] = [],
   currentUserAddress: string,
   transactionValue: ethers.BigNumber = ethers.BigNumber.from("0"),
-  // transactionValue: any = ethers.BigNumber.from("0"),
   transactionGasLimit: ethers.BigNumber = ethers.BigNumber.from("0")
-  // transactionGasLimit: any = 0
 ) => {
   console.log("estimateGas()");
   const currentChainId = (await provider.getNetwork())?.chainId;
@@ -441,8 +369,6 @@ const estimateGas = async (
   console.log("abi", abi);
   console.log("functionName - estimateGas.", functionName);
   console.log("params", params);
-
-  // const encodeParams = [params[0], params[1].toString()];
 
   const callData = contract.interface.encodeFunctionData(functionName, [...params]);
   console.log("callData", callData);
@@ -464,20 +390,14 @@ const estimateGas = async (
     data: callData,
   };
 
-  // trParams.value = transactionValue;
   if (!transactionValue.isZero()) {
-    // trParams.value = transactionValue.toHexString();
-    // trParams.value = transactionValue.toString();
     trParams.value = ethers.utils.hexStripZeros(ethers.utils.hexlify(transactionValue));
-    // trParams.value = ethers.utils.hexValue(ethers.utils.parseUnits(transactionValue.toString(), "ether")); // Example: 1 Ether, correctly formatted
-    // trParams.value = "10000"; // 0.01 ETH;
   } else {
     trParams.value = "0";
   }
 
   if (!transactionGasLimit.isZero()) {
     trParams.gas = ethers.utils.hexStripZeros(ethers.utils.hexlify(transactionGasLimit));
-    // trParams.gas = transactionGasLimit;
   }
 
   console.log("trParams", trParams);
@@ -512,164 +432,10 @@ const callContract = async (
   params: any[] = [],
   currentUserAddress: string,
   transactionValue: ethers.BigNumber = ethers.BigNumber.from("0"),
-  // transactionValue: any = ethers.BigNumber.from("0"),
   transactionGasLimit: ethers.BigNumber = ethers.BigNumber.from("0")
 ) => {
   console.log("callContract()");
-  // console.log("contractAddress", contractAddress);
-  // console.log("functionName", functionName);
-  // console.log("provider", provider);
-  // console.log("params", params);
-  // console.log("abi", abi);
-
-  //
-  // Version 1
-  // Using JSON RPC Provider
-  //
-  // const contract = new ethers.Contract(contractAddress, abi, provider);
-
-  // const signer = new ethers.providers.Web3Provider(provider).getSigner();
-  // const signedContract = contract.connect(signer);
-  // console.log("contract", contract);
-  // console.log("signedContract", signedContract);
-
-  // let res;
-  // if (params?.length) {
-  //   res = await signedContract[functionName](...params);
-  // } else {
-  //   res = await signedContract[functionName]();
-  // }
-  // // const res = await signedContract[functionName](...params);
-  // console.log("callContract res", res);
-  // return res;
-
-  //
-  // Version 2
-  // Using WalletConnect's Ethereum Provider method
-  //
   const currentChainId = (await provider.getNetwork())?.chainId;
-  const rpcMap = Object.entries(rpcProvidersByChainId).reduce((acc, [chainId, data]) => {
-    acc[chainId.toString()] = getRandomRpcProviderByChainId(Number(chainId));
-    return acc;
-  }, {} as { [chainId: string]: string }) as EthereumRpcMap;
-
-  console.log("rpcMap", rpcMap);
-  console.log("individualChains", individualChains);
-
-  // const _provider = await EthereumProvider.init({
-  //   // rpcMap?: EthereumRpcMap;
-  //   // metadata?: Metadata;
-  //   // qrModalOptions?: QrModalOptions;
-
-  //   projectId: projectId, // REQUIRED your projectId
-  //   chains: [11155111], // REQUIRED chain ids
-  //   optionalChains: undefined, // OPTIONAL chains
-  //   showQrModal: true, // REQUIRED set to "true" to use @walletconnect/modal
-  //   methods: allNamespaces.eip155.methods, // REQUIRED ethereum methods
-  //   optionalMethods: undefined, // OPTIONAL ethereum methods
-  //   events: allNamespaces.eip155.events, // REQUIRED ethereum events
-  //   optionalEvents: undefined, // OPTIONAL ethereum events
-  //   rpcMap: rpcMap,
-  //   // metadata, // OPTIONAL metadata of your app
-  //   // qrModalOptions: wcConfig,
-  // });
-
-  // console.log("ethereumProvider", _provider);
-
-  // //
-  // // These events are for logging and testing purposes only
-  // //
-  // _provider.on("display_uri", (uri: string) => {
-  //   // Handle the display of the QR code URI
-  //   console.log("On display url: ", uri);
-  // });
-  // _provider.on("chainChanged", (chainId: string) => {
-  //   // Handle chain change
-  // });
-  // _provider.on("accountsChanged", (accounts: string[]) => {
-  //   // Handle accounts change
-  // });
-
-  //
-  // End events
-  //
-
-  //
-  // Version 2 with connect
-  //
-  // const connected = _provider.connect();
-  // const connected = await _provider.connect({
-  //   chains: [11155111], // OPTIONAL chain ids
-  //   rpcMap: rpcMap, // OPTIONAL rpc urls
-  //   pairingTopic: pairing.topic, // OPTIONAL pairing topic
-  // });
-  // console.log("connected", connected);
-
-  //
-  // Version 2 with enable
-  //
-  // const enabled = await _provider.enable();
-  // console.log("enabled", enabled);
-
-  // const eth_requestAccounts = await _provider.request({method: "eth_requestAccounts"});
-  // console.log("eth_requestAccounts", eth_requestAccounts);
-
-  // const req = {
-  //   method: functionName,
-  //   params: params,
-  // };
-  // console.log("req", req);
-
-  // const result = await _provider.request(req);
-  // console.log("result", result);
-
-  // const req2 = {
-  //   method: "eth_call",
-  //   params: params,
-  // };
-  // console.log("req2", req2);
-
-  // const result2 = await _provider.request(req2);
-  // console.log("result2", result2);
-  // return result2;
-
-  // const req3 = {
-  //   method: "eth_call",
-  //   params: params,
-  // };
-
-  // const result3 = await _provider.signer.request(req3, "11155111");
-  // console.log("result3", result3);
-
-  //
-  // Version 3
-  // Using sign client
-  //
-
-  // const req = {
-  //   topic: session.topic,
-  //   chainId: "eip155:11155111",
-  //   request: {
-  //     method: functionName,
-  //     params: params,
-  //   },
-  // };
-  // console.log("req", req);
-
-  // const result: any = await signClient.request(req);
-  // console.log("result", result);
-  // return result;
-
-  //
-  // Version 4
-  //
-
-  // const RPC_URL = getRandomRpcProviderByChainId(currentChainId);
-  // console.log("RPC_URL", RPC_URL);
-
-  // const rpcProvider = new ethers.providers.JsonRpcProvider(RPC_URL);
-  // console.log("rpcProvider", rpcProvider);
-
   const contract = new ethers.Contract(contractAddress, abi, provider);
   console.log("contract", contract);
 
@@ -677,8 +443,6 @@ const callContract = async (
   console.log("abi", abi);
   console.log("functionName", functionName);
   console.log("params", params);
-
-  // const encodeParams = [params[0], params[1].toString()];
 
   const callData = contract.interface.encodeFunctionData(functionName, [...params]);
   console.log("callData", callData);
@@ -698,20 +462,9 @@ const callContract = async (
     from: currentUserAddress,
     to: contractAddress,
     data: callData,
-    // data: "0x",
-    // value: params[1].toHexString(),
-    // value: ethers.utils.parseUnits(transactionValue.toString(), "ether").toString(),
-    // value: ethers.utils.parseUnits(transactionValue.toString(), "ether").toHexString(),
-    // value: transactionValue.toHexString(),
   };
 
-  // ToDo: remove this
-  // trParams.value = transactionValue;
-
-  // ToDo: put this back v this worked
-  //
   if (!transactionValue.isZero()) {
-    // trParams.value = transactionValue.toHexString();
     trParams.value = ethers.utils.hexStripZeros(ethers.utils.hexlify(transactionValue));
   } else {
     trParams.value = "0";
@@ -722,21 +475,6 @@ const callContract = async (
   }
 
   console.log("trParams", trParams);
-
-  // const req4 = {
-  //   method: "eth_sendTransaction",
-  //   params: [trParams],
-  // };
-  // console.log("req4", req4);
-
-  // const result4 = await _provider.request(req4);
-  // console.log("result4", result4);
-  // return result4;
-
-  //
-  // Version 5
-  // Using sign client with different params
-  //
 
   const req = {
     topic: session.topic,

@@ -430,9 +430,7 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
     functionName: string,
     params: any[],
     transactionValue?: ethers.BigNumber,
-    // transactionValue?: any,
     transactionGasLimit?: ethers.BigNumber,
-    // transactionGasLimit?: any,
     _providerType: externalNetworkProviderTypes | null = providerType,
     _provider: anyProviderType | null = provider,
     maxRetries: number = maxRequestRetries
@@ -541,7 +539,6 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
     functionName: string,
     params: any[],
     transactionValue?: ethers.BigNumber,
-    // transactionValue?: any,
     transactionGasLimit?: ethers.BigNumber,
     _providerType: externalNetworkProviderTypes | null = providerType,
     _provider: anyProviderType | null = provider,
@@ -698,7 +695,6 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
           );
         }
         case externalNetworkProviderTypes.metamask: {
-          // if (!syriusClient.current) throw Error("Client was not initialized");
           return await metamaskWrapper.sendTransaction(params.transaction);
         }
         default: {
