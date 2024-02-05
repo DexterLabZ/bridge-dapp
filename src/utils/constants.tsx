@@ -217,7 +217,15 @@ const constants = {
       multiplierLabel: "12x",
     },
   ],
+
   GTM_ID: "GTM-TC768WT",
+  /**
+   * * @mehowbrainz twitter developer account
+   */
+  TWITTER_EVENT: {
+    PIXEL_ID: "o3khw",
+    EVENT_ID: "tw-o3khw-oi8v5",
+  },
 };
 
 //
@@ -354,6 +362,10 @@ const testConstants = {
     },
   ],
   GTM_ID: "GTM-XXXXXX",
+  TWITTER_EVENT: {
+    PIXEL_ID: "xxxxx",
+    EVENT_ID: "xx-xxxxx-xxxxxx",
+  },
 };
 
 //
@@ -490,6 +502,10 @@ const developmentConstants = {
     },
   ],
   GTM_ID: "GTM-XXXXXX",
+  TWITTER_EVENT: {
+    PIXEL_ID: "xxxxx",
+    EVENT_ID: "xx-xxxxx-xxxxxx",
+  },
 };
 
 let exportedConstants = constants;

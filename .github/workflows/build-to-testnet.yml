@@ -14,6 +14,9 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    
+    environment: 
+      name: test
 
     strategy:
       matrix:
@@ -27,6 +30,12 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+
+    - name: Decode Environment Variables
+      run: |
+        echo "${{ secrets.BRIDGE_VARIABLES }}" | base64 -d > .env
+        while read line; do export "$line"; done < .env
+        
     - run: npm ci
     - run: npm run build-test --if-present
       env: 

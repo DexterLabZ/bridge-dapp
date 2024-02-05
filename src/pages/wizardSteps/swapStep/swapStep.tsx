@@ -43,6 +43,12 @@ import { useGTMDispatch } from "@elgorditosalsero/react-gtm-hook";
 import useExternalNetwork from "../../../services/hooks/externalNetwork-provider/useExternalNetwork";
 import { externalNetworkProviderTypes } from "../../../services/hooks/externalNetwork-provider/externalNetworkContext";
 
+/**
+ * * TWITTER SERVICE
+ */
+import { useTwitterEvent } from "../../../services/hooks/twitter/useTwitterEvent";
+import { useLocation } from "react-router-dom";
+
 export type simpleTokenType = {
   icon: string;
   symbol: string;
@@ -72,6 +78,8 @@ export type simpleNetworkType = {
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
+  const location = useLocation();
+
   const {
     register,
     control,
@@ -1267,6 +1275,11 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
    */
   const sendDataToGTM = useGTMDispatch();
 
+  /**
+   * * TWITTER SERVICE
+   */
+  const { sendEventToTwitter } = useTwitterEvent()
+
   const onFormSubmit = async () => {
     const showSpinner = handleSpinner(
       <>
@@ -1295,9 +1308,21 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
           event_category: "bridge_tokens",
           event_label: `swap_wznn_znn_${ercAmount}`,
           event_value: ercAmount,
-          label: `swap_wznn_znn_${ercAmount}`,
-          value: ercAmount,
-        });
+          label: `swap_wznn_znn_${ercAmount}`, 
+          value: ercAmount, 
+        })
+
+        /**
+         * * TWITTER SERVICE
+         * ? Sending data to twitter
+         */
+        const queryParams = new URLSearchParams(location.search);
+        
+        const twclid = queryParams.get('twclid'); 
+
+        if (twclid) {
+          await sendEventToTwitter(twclid)
+        }
       }
 
       console.log("onFormSubmit");
