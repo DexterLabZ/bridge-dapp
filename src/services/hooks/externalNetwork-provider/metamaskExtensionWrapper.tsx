@@ -50,12 +50,58 @@ const getBalance = async (
   }
 };
 
+const estimateGas = async (
+  provider: any,
+  contractAddress: string,
+  abi: string,
+  functionName: string,
+  params: any = [],
+  currentUserAddress?: string,
+  transactionValue: ethers.BigNumber = ethers.BigNumber.from("0"),
+  transactionGasLimit: ethers.BigNumber = ethers.BigNumber.from("0")
+) => {
+  console.log("estimateGas()");
+  console.log("contractAddress", contractAddress);
+  console.log("functionName", functionName);
+  console.log("provider", provider);
+  console.log("params", params);
+
+  const contract = new ethers.Contract(contractAddress, abi, provider);
+  const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
+  const signedContract = contract.connect(signer);
+  console.log("contract", contract);
+  console.log("signedContract", signedContract);
+
+  type transactionExtraParameters = {
+    value?: ethers.BigNumber;
+    from?: string;
+    gasLimit?: ethers.BigNumber;
+  };
+  const extraParameters: transactionExtraParameters = {};
+
+  if (!transactionValue.isZero()) {
+    extraParameters.value = transactionValue;
+  } else {
+    extraParameters.value = ethers.BigNumber.from("0");
+  }
+
+  if (!transactionGasLimit.isZero()) {
+    extraParameters.gasLimit = transactionGasLimit;
+  }
+  const res = await signedContract.estimateGas[functionName](...params, extraParameters);
+
+  return res;
+};
+
 const callContract = async (
   provider: any,
   contractAddress: string,
   abi: string,
   functionName: string,
-  params: any = []
+  params: any = [],
+  currentUserAddress?: string,
+  transactionValue: ethers.BigNumber = ethers.BigNumber.from("0"),
+  transactionGasLimit: ethers.BigNumber = ethers.BigNumber.from("0")
 ) => {
   console.log("callContract()");
   console.log("contractAddress", contractAddress);
@@ -68,7 +114,26 @@ const callContract = async (
   const signedContract = contract.connect(signer);
   console.log("contract", contract);
   console.log("signedContract", signedContract);
-  const res = await signedContract[functionName](...params);
+
+  type transactionExtraParameters = {
+    value?: ethers.BigNumber;
+    from?: string;
+    gasLimit?: ethers.BigNumber;
+  };
+  const extraParameters: transactionExtraParameters = {};
+
+  if (!transactionValue.isZero()) {
+    extraParameters.value = transactionValue;
+  } else {
+    extraParameters.value = ethers.BigNumber.from("0");
+  }
+  console.log("trParams", params);
+  console.log("extraParameters", extraParameters);
+
+  if (!transactionGasLimit.isZero()) {
+    extraParameters.gasLimit = transactionGasLimit;
+  }
+  const res = await signedContract[functionName](...params, extraParameters);
   console.log("callContract res", res);
   await res.wait();
 
@@ -85,6 +150,17 @@ const sendTransaction = async (accountBlock: any) => {
   // return new Promise<TransactionReceiptResponse>(async (resolve, reject) => {
   // Unused at this moment
   // });
+};
+
+const requestNetworkSwitch = async (newChainId: number) => {
+  console.log("requestNetworkSwitch()");
+
+  const rawResult = await window?.ethereum?.request({
+    method: "wallet_switchEthereumChain",
+    params: [{ chainId: ethers.utils.hexValue(newChainId) }], // chainId must be in hexadecimal numbers
+  });
+
+  return rawResult;
 };
 
 const unregisterEvents = (changeEventHandlers: MetamaskChangeEventsHandler) => {
@@ -150,7 +226,9 @@ const metamaskExtensionWrapper = {
   getBalance,
   getProvider,
   callContract,
+  estimateGas,
   sendTransaction,
+  requestNetworkSwitch,
   registerEvents,
   unregisterEvents,
 };

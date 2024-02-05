@@ -375,6 +375,7 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
     }
   };
 
+  // ToDo: reorder parameters so that getBalance for eth doesn't need to be called with (null, null, provider)
   const getBalance = async (
     tokenAddress?: string,
     tokenAbi?: string,
@@ -423,11 +424,125 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
     }
   };
 
+  const estimateGas = async (
+    contractAddress: string,
+    abi: string,
+    functionName: string,
+    params: any[],
+    transactionValue?: ethers.BigNumber,
+    // transactionValue?: any,
+    transactionGasLimit?: ethers.BigNumber,
+    // transactionGasLimit?: any,
+    _providerType: externalNetworkProviderTypes | null = providerType,
+    _provider: anyProviderType | null = provider,
+    maxRetries: number = maxRequestRetries
+  ): Promise<ethers.BigNumber> => {
+    try {
+      removeBeforeUnloadEvents();
+      if (!_providerType) throw Error("No provider type selected");
+      console.log("externalNetworkContext - sendTransaction - params", params);
+      if (!_provider) throw Error("No provider initialized");
+
+      switch (_providerType) {
+        case externalNetworkProviderTypes.walletConnect: {
+          if (!walletConnectClient.current) throw Error("Client was not initialized");
+          if (!walletConnectSession.current) throw Error("Session was not established");
+          if (!walletConnectPairing.current) throw Error("Pairing was not established");
+          console.log("externalNetworkContext - sending - session", walletConnectSession.current);
+          console.log("externalNetworkContext - sending - pairing", walletConnectPairing.current);
+
+          const ercInfo = JSON.parse(walletInfo.ercInfo || "{}");
+          const currentUserAddress = ercInfo?.address;
+
+          const walletName = walletConnectSession.current?.peer?.metadata?.name;
+          toast(`Transaction sent to your wallet. Please check ${walletName} app`, {
+            position: "bottom-center",
+            autoClose: 10000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: false,
+            draggable: true,
+            type: "info",
+            theme: "dark",
+          });
+
+          return await externalNetworkWalletConnectWrapper.estimateGas(
+            _provider,
+            contractAddress,
+            abi,
+            functionName,
+            walletConnectClient.current,
+            walletConnectSession.current,
+            walletConnectPairing.current,
+            params,
+            currentUserAddress,
+            transactionValue,
+            transactionGasLimit
+          );
+        }
+        case externalNetworkProviderTypes.metamask: {
+          toast(`Transaction sent to your wallet. Please check MetaMask Extension`, {
+            position: "bottom-center",
+            autoClose: 10000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: false,
+            draggable: true,
+            type: "info",
+            theme: "dark",
+          });
+          const ercInfo = JSON.parse(walletInfo.ercInfo || "{}");
+          const currentUserAddress = ercInfo?.address;
+
+          const response = await metamaskWrapper.estimateGas(
+            _provider,
+            contractAddress,
+            abi,
+            functionName,
+            params,
+            currentUserAddress,
+            transactionValue,
+            transactionGasLimit
+          );
+          return response;
+        }
+        default: {
+          throw Error(`Unknown providerType: ${_providerType}`);
+        }
+      }
+    } catch (err: any) {
+      console.error("sendTransaction error", err);
+      const handledError = await handleError(err);
+      if (handledError.shouldRetry) {
+        console.log("Retrying request");
+        // Retry
+        if (maxRetries > 0) {
+          return await estimateGas(
+            contractAddress,
+            abi,
+            functionName,
+            params,
+            transactionValue,
+            transactionGasLimit,
+            _providerType,
+            _provider,
+            maxRetries - 1
+          );
+        } else throw Error(`Unable to make request after ${maxRequestRetries} retries.`);
+      } else throw Error(`Unable to make request and couldn't retry.`);
+    } finally {
+      addBeforeUnloadEvents();
+    }
+  };
+
   const callContract = async (
     contractAddress: string,
     abi: string,
     functionName: string,
     params: any[],
+    transactionValue?: ethers.BigNumber,
+    // transactionValue?: any,
+    transactionGasLimit?: ethers.BigNumber,
     _providerType: externalNetworkProviderTypes | null = providerType,
     _provider: anyProviderType | null = provider,
     maxRetries: number = maxRequestRetries
@@ -470,7 +585,9 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
             walletConnectSession.current,
             walletConnectPairing.current,
             params,
-            currentUserAddress
+            currentUserAddress,
+            transactionValue,
+            transactionGasLimit
           );
         }
         case externalNetworkProviderTypes.metamask: {
@@ -484,8 +601,19 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
             type: "info",
             theme: "dark",
           });
+          const ercInfo = JSON.parse(walletInfo.ercInfo || "{}");
+          const currentUserAddress = ercInfo?.address;
 
-          const response = await metamaskWrapper.callContract(_provider, contractAddress, abi, functionName, params);
+          const response = await metamaskWrapper.callContract(
+            _provider,
+            contractAddress,
+            abi,
+            functionName,
+            params,
+            currentUserAddress,
+            transactionValue,
+            transactionGasLimit
+          );
           return response;
         }
         default: {
@@ -504,6 +632,8 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
             abi,
             functionName,
             params,
+            transactionValue,
+            transactionGasLimit,
             _providerType,
             _provider,
             maxRetries - 1
@@ -583,6 +713,78 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         // Retry
         if (maxRetries > 0) {
           return await sendTransaction(params, _providerType, maxRetries - 1);
+        } else throw Error(`Unable to make request after ${maxRequestRetries} retries.`);
+      } else throw Error(`Unable to make request and couldn't retry.`);
+    } finally {
+      addBeforeUnloadEvents();
+    }
+  };
+
+  const requestNetworkSwitch = async (
+    newChainId: number,
+    _providerType: externalNetworkProviderTypes | null = providerType,
+    _provider: anyProviderType | null = provider,
+    maxRetries: number = maxRequestRetries
+  ): Promise<any> => {
+    try {
+      removeBeforeUnloadEvents();
+      if (!_providerType) throw Error("No provider type selected");
+      if (!_provider) throw Error("No provider initialized");
+
+      switch (_providerType) {
+        case externalNetworkProviderTypes.walletConnect: {
+          if (!walletConnectClient.current) throw Error("Client was not initialized");
+          if (!walletConnectSession.current) throw Error("Session was not established");
+          if (!walletConnectPairing.current) throw Error("Pairing was not established");
+          console.log("externalNetworkContext - sending - session", walletConnectSession.current);
+          console.log("externalNetworkContext - sending - pairing", walletConnectPairing.current);
+
+          const walletName = walletConnectSession.current?.peer?.metadata?.name;
+          toast(`Transaction sent to your wallet. Please check ${walletName} app`, {
+            position: "bottom-center",
+            autoClose: 10000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: false,
+            draggable: true,
+            type: "info",
+            theme: "dark",
+          });
+
+          return await externalNetworkWalletConnectWrapper.requestNetworkSwitch(
+            _provider,
+            newChainId,
+            walletConnectClient.current,
+            walletConnectSession.current
+          );
+        }
+        case externalNetworkProviderTypes.metamask: {
+          toast(`Transaction sent to your wallet. Please check MetaMask Extension`, {
+            position: "bottom-center",
+            autoClose: 10000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: false,
+            draggable: true,
+            type: "info",
+            theme: "dark",
+          });
+
+          const response = await metamaskWrapper.requestNetworkSwitch(newChainId);
+          return response;
+        }
+        default: {
+          throw Error(`Unknown providerType: ${_providerType}`);
+        }
+      }
+    } catch (err: any) {
+      console.error("sendTransaction error", err);
+      const handledError = await handleError(err);
+      if (handledError.shouldRetry) {
+        console.log("Retrying request");
+        // Retry
+        if (maxRetries > 0) {
+          return await requestNetworkSwitch(newChainId, _providerType, _provider, maxRetries);
         } else throw Error(`Unable to make request after ${maxRequestRetries} retries.`);
       } else throw Error(`Unable to make request and couldn't retry.`);
     } finally {
@@ -739,6 +941,8 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
     getBalance: getBalance,
     sendTransaction: sendTransaction,
     callContract: callContract,
+    estimateGas: estimateGas,
+    requestNetworkSwitch: requestNetworkSwitch,
   };
 
   return <ExternalNetworkContext.Provider value={externalNetworkProvider}>{children}</ExternalNetworkContext.Provider>;

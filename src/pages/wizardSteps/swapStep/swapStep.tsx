@@ -10,6 +10,7 @@ import infoIconBlue from "../../../assets/info-icon-blue.svg";
 import infoIconRed from "../../../assets/info-icon-red.svg";
 import infoIcon from "../../../assets/info-icon.svg";
 import warningIcon from "../../../assets/warning-icon.svg";
+import spinnerSvg from "./../../../assets/spinner.svg";
 import TokenDropdown from "../../../components/tokenDropdown/tokenDropdown";
 import { SimpleToken } from "../../../models/SimpleToken";
 import { UnwrapRequestItem, unwrapRequestStatus } from "../../../models/unwrapRequestItem";
@@ -31,7 +32,7 @@ import {
   subtractBigNumberStrings,
   updateTokenPairsWithNewExternalTokens,
   updateTokenPairsWithNewInternalTokens,
-  validateMetamaskNetwork,
+  validateExternalNetwork,
 } from "../../../utils/utils";
 import "./swapStep.scss";
 
@@ -92,6 +93,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
   const [zenonBalance, setZenonBalance] = useState("");
   const [plasmaBalance, setPlasmaBalance] = useState(0);
   const [zenonAddress, setZenonAddress] = useState("");
+  const [isZenonBalanceLoading, setIsZenonBalanceLoading] = useState(false);
   const [zenonToken, setZenonToken] = useState<simpleTokenType>({
     icon: "",
     symbol: "",
@@ -112,6 +114,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
   const [minErcAmount, setMinErcAmount] = useState("");
   const [ercAmount, setErcAmount] = useState("");
   const [ercBalance, setErcBalance] = useState("");
+  const [isErcBalanceLoading, setIsErcBalanceLoading] = useState(false);
   const [ercAddress, setErcAddress] = useState("");
   const [ercToken, setErcToken] = useState<simpleTokenType>({
     icon: "",
@@ -148,6 +151,8 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
   const { internalNetworkClient } = useInternalNetwork();
   const { externalNetworkClient } = useExternalNetwork();
 
+  const externalNetworkConnectionDetails = useSelector((state: any) => state.externalNetworkConnection);
+
   const referralCode = useSelector((state: any) => state.referral);
 
   const wizardStatus = useSelector((state: any) => state.wizardStatus);
@@ -161,7 +166,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
       try {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         metamaskCurrentChainId = (await provider.getNetwork())?.chainId;
-        await validateMetamaskNetwork(provider, globalConstants.externalAvailableNetworks, metamaskCurrentChainId);
+        await validateExternalNetwork(provider, globalConstants.externalAvailableNetworks, metamaskCurrentChainId);
         console.log("metamaskCurrentChainId", metamaskCurrentChainId);
         // console.log(
         //   "globalConstants.externalAvailableTokens",
@@ -280,8 +285,10 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
     console.log("useEffect, zenonToken", zenonToken);
     if (zenonToken.address) {
       const doAsyncUpdates = async () => {
+        setIsZenonBalanceLoading(true);
         updateZenonInfoToFrontend(await getZenonWalletInfo(false));
         await updatePair();
+        setIsZenonBalanceLoading(false);
       };
       console.log("zenonToken, doAsyncUpdates");
       doAsyncUpdates();
@@ -292,8 +299,10 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
     console.log("useEffect, ercToken", ercToken);
     if (ercToken.address) {
       const doAsyncUpdates = async () => {
+        setIsErcBalanceLoading(true);
         updateMetamaskInfoToFrontend(await getMetamaskWalletInfo(false));
         await updatePair();
+        setIsErcBalanceLoading(false);
       };
       console.log("ercToken, doAsyncUpdates");
       doAsyncUpdates();
@@ -319,8 +328,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
       updateMetamaskInfoToFrontend(await getMetamaskWalletInfo(false));
     };
     runAsyncTasks();
-    // ToDo: Store external chain info different from internal chain info and add it to dependencies
-  }, [ercAddress]);
+  }, [ercAddress, externalNetworkConnectionDetails.chainId]);
 
   useEffect(() => {
     console.log("walletDetails - wallet changed");
@@ -367,7 +375,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
   const getMetamaskWalletInfo = async (showToastNotification = true) => {
     try {
       const provider = await externalNetworkClient.getProvider();
-      await validateMetamaskNetwork(provider, globalConstants.externalAvailableNetworks);
+      await validateExternalNetwork(provider, globalConstants.externalAvailableNetworks);
       // const accounts = await provider.send("eth_requestAccounts", []);
 
       // ToDo: Make this dynamic: externalNetworkProviderTypes.walletConnect
@@ -1536,9 +1544,16 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
             </div>
 
             <div className="d-flex justify-content-end align-items-center height-30px">
-              <div className="mt-1 text-right">
+              <div className="mt-1 d-flex text-right">
                 {"Balance: "}
-                {zenonBalance + " " + zenonToken?.symbol}
+                {isZenonBalanceLoading ? (
+                  <div className="contextual-spinner-container mr-1 ml-1">
+                    <img alt="" src={spinnerSvg} className="spinner" />
+                  </div>
+                ) : (
+                  zenonBalance
+                )}
+                {" " + zenonToken?.symbol}
               </div>
             </div>
 
@@ -1654,9 +1669,16 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
                   src={require("./../../../assets/logos/metamask.png")}></img>
               </div>
 
-              <div className="mt-1 text-right">
+              <div className="mt-1 d-flex text-right">
                 {"Balance: "}
-                {ercBalance + " " + ercToken?.symbol}
+                {isErcBalanceLoading ? (
+                  <div className="contextual-spinner-container mr-1 ml-1">
+                    <img alt="" src={spinnerSvg} className="spinner" />
+                  </div>
+                ) : (
+                  ercBalance
+                )}
+                {" " + ercToken?.symbol}
               </div>
             </div>
 

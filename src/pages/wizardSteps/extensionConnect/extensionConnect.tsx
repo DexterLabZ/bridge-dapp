@@ -26,7 +26,7 @@ import {
   updateInternalLiquidityTokensBasedOnTokenPairs,
   updateTokenPairsWithNewExternalTokens,
   updateTokenPairsWithNewInternalTokens,
-  validateMetamaskNetwork,
+  validateExternalNetwork,
 } from "../../../utils/utils";
 import { simpleNetworkType, simpleTokenType } from "../swapStep/swapStep";
 import closeIconRed from "./../../../assets/icons/close-red.svg";
@@ -244,7 +244,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
     console.log("connectToExternalNetwork, globalConstants", globalConstants);
 
     const metamaskCurrentChainId = (await provider.getNetwork())?.chainId;
-    await validateMetamaskNetwork(
+    await validateExternalNetwork(
       provider,
       [...globalConstants.externalAvailableNetworks, ...globalConstants.liquidityInternalNetworks],
       metamaskCurrentChainId
@@ -568,7 +568,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
   //     console.log("connectMetamask, globalConstants", globalConstants);
 
   //     const metamaskCurrentChainId = (await provider.getNetwork())?.chainId;
-  //     await validateMetamaskNetwork(
+  //     await validateExternalNetwork(
   //       provider,
   //       [...globalConstants.externalAvailableNetworks, ...globalConstants.liquidityInternalNetworks],
   //       metamaskCurrentChainId

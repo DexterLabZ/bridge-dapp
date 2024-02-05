@@ -6,7 +6,7 @@ import defaultZtsIcon from "./../assets/tokens/zts.svg";
 import constants from "./constants";
 import { mangle, unmangle } from "./mangling";
 
-export const validateMetamaskNetwork = async (
+export const validateExternalNetwork = async (
   provider: ethers.providers.Web3Provider | ethers.providers.JsonRpcProvider,
   validNetworks: simpleNetworkType[],
   currentChainId = -1
@@ -16,7 +16,7 @@ export const validateMetamaskNetwork = async (
   if (currentChainId == -1) {
     currentChainId = (await provider.getNetwork()).chainId;
   }
-  console.log("Metamask network info", currentChainId);
+  console.log("Wallet network info", currentChainId);
 
   const validChainsString = validNetworks
     .filter((v) => v.isAvailable)
@@ -26,17 +26,17 @@ export const validateMetamaskNetwork = async (
 
   if (constants.isDevNet) {
     if (!validNetworks.find((net: simpleNetworkType) => net.chainId == currentChainId)) {
-      throw `Please select one of these chains from Metamask: ${validChainsString}`;
+      throw `Please select one of these chains from your Wallet: ${validChainsString}`;
     }
   }
   if (constants.isTestNet) {
     if (!validNetworks.find((net: simpleNetworkType) => net.chainId == currentChainId)) {
-      throw `Please select one of these chains from Metamask: ${validChainsString}`;
+      throw `Please select one of these chains from your Wallet: ${validChainsString}`;
     }
   }
   if (constants.isMainNet) {
     if (!validNetworks.find((net: simpleNetworkType) => net.chainId == currentChainId)) {
-      throw `Please select one of these chains from Metamask: ${validChainsString}`;
+      throw `Please select one of these chains from your Wallet: ${validChainsString}`;
     }
   }
 };
@@ -113,11 +113,11 @@ export const getExternalTokensDetails = async (
       const newTok = {
         ...tok,
       };
-      const metamaskCurrentChainId = (await provider.getNetwork())?.chainId;
+      const externalNetworkChainId = (await provider.getNetwork())?.chainId;
 
       if (
         newTok.isAvailable &&
-        metamaskCurrentChainId === newTok.network.chainId &&
+        externalNetworkChainId === newTok.network.chainId &&
         newTok.address &&
         newTok.symbol !== "ETH"
       ) {
@@ -180,10 +180,10 @@ export const getLiquidityPairsDetails = async (
       const newPair = {
         ...pair,
       };
-      const metamaskCurrentChainId = (await provider.getNetwork())?.chainId;
+      const externalNetworkChainId = (await provider.getNetwork())?.chainId;
 
       // External token network and internal token network should be the same network.
-      if (newPair.pairAddress && metamaskCurrentChainId === newPair.pairNetwork.chainId) {
+      if (newPair.pairAddress && externalNetworkChainId === newPair.pairNetwork.chainId) {
         console.log("getLiquidityPairsDetails-newPair", JSON.parse(JSON.stringify(newPair)));
         const contract = new ethers.Contract(newPair.pairAddress, constants.pairAbi, provider);
 

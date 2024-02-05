@@ -409,6 +409,98 @@ const signTransaction = async (signClient: Client, session: SessionTypes.Struct,
   return signature;
 };
 
+const estimateGas = async (
+  provider: any,
+  contractAddress: string,
+  abi: string,
+  functionName: string,
+  signClient: Client,
+  session: SessionTypes.Struct,
+  pairing: PairingTypes.Struct,
+  params: any[] = [],
+  currentUserAddress: string,
+  transactionValue: ethers.BigNumber = ethers.BigNumber.from("0"),
+  // transactionValue: any = ethers.BigNumber.from("0"),
+  transactionGasLimit: ethers.BigNumber = ethers.BigNumber.from("0")
+  // transactionGasLimit: any = 0
+) => {
+  console.log("estimateGas()");
+  const currentChainId = (await provider.getNetwork())?.chainId;
+  const rpcMap = Object.entries(rpcProvidersByChainId).reduce((acc, [chainId, data]) => {
+    acc[chainId.toString()] = getRandomRpcProviderByChainId(Number(chainId));
+    return acc;
+  }, {} as { [chainId: string]: string }) as EthereumRpcMap;
+
+  console.log("rpcMap", rpcMap);
+  console.log("individualChains", individualChains);
+
+  const contract = new ethers.Contract(contractAddress, abi, provider);
+  console.log("contract", contract);
+
+  console.log("contractAddress", contractAddress);
+  console.log("abi", abi);
+  console.log("functionName - estimateGas.", functionName);
+  console.log("params", params);
+
+  // const encodeParams = [params[0], params[1].toString()];
+
+  const callData = contract.interface.encodeFunctionData(functionName, [...params]);
+  console.log("callData", callData);
+  console.log("ethers", ethers);
+  console.log("transactionValue", transactionValue);
+
+  type transactionParams = {
+    from: string;
+    to: string;
+    data: string;
+    value?: string;
+    gasLimit?: string;
+    gas?: string;
+    nonce?: number;
+  };
+  const trParams: transactionParams = {
+    from: currentUserAddress,
+    to: contractAddress,
+    data: callData,
+  };
+
+  // trParams.value = transactionValue;
+  if (!transactionValue.isZero()) {
+    // trParams.value = transactionValue.toHexString();
+    // trParams.value = transactionValue.toString();
+    trParams.value = ethers.utils.hexStripZeros(ethers.utils.hexlify(transactionValue));
+    // trParams.value = ethers.utils.hexValue(ethers.utils.parseUnits(transactionValue.toString(), "ether")); // Example: 1 Ether, correctly formatted
+    // trParams.value = "10000"; // 0.01 ETH;
+  } else {
+    trParams.value = "0";
+  }
+
+  if (!transactionGasLimit.isZero()) {
+    trParams.gas = ethers.utils.hexStripZeros(ethers.utils.hexlify(transactionGasLimit));
+    // trParams.gas = transactionGasLimit;
+  }
+
+  console.log("trParams", trParams);
+
+  const req = {
+    topic: session.topic,
+    chainId: `eip155:${currentChainId}`,
+    request: {
+      method: "eth_estimateGas",
+      params: [trParams],
+    },
+  };
+  console.log("req", req);
+
+  const rawResult: any = await signClient.request(req);
+  console.log("rawResult", rawResult);
+
+  const bnResult = ethers.BigNumber.from(rawResult);
+  console.log("bnResult", bnResult);
+
+  return bnResult;
+};
+
 const callContract = async (
   provider: any,
   contractAddress: string,
@@ -418,7 +510,10 @@ const callContract = async (
   session: SessionTypes.Struct,
   pairing: PairingTypes.Struct,
   params: any[] = [],
-  currentUserAddress: string
+  currentUserAddress: string,
+  transactionValue: ethers.BigNumber = ethers.BigNumber.from("0"),
+  // transactionValue: any = ethers.BigNumber.from("0"),
+  transactionGasLimit: ethers.BigNumber = ethers.BigNumber.from("0")
 ) => {
   console.log("callContract()");
   // console.log("contractAddress", contractAddress);
@@ -587,17 +682,45 @@ const callContract = async (
 
   const callData = contract.interface.encodeFunctionData(functionName, [...params]);
   console.log("callData", callData);
+  console.log("ethers", ethers);
+  console.log("transactionValue", transactionValue);
 
-  const transactionValue = 0;
-
-  const trParams = {
+  type transactionParams = {
+    from: string;
+    to: string;
+    data: string;
+    value?: string;
+    gasLimit?: string;
+    gas?: string;
+    nonce?: number;
+  };
+  const trParams: transactionParams = {
     from: currentUserAddress,
     to: contractAddress,
     data: callData,
     // data: "0x",
     // value: params[1].toHexString(),
-    value: transactionValue,
+    // value: ethers.utils.parseUnits(transactionValue.toString(), "ether").toString(),
+    // value: ethers.utils.parseUnits(transactionValue.toString(), "ether").toHexString(),
+    // value: transactionValue.toHexString(),
   };
+
+  // ToDo: remove this
+  // trParams.value = transactionValue;
+
+  // ToDo: put this back v this worked
+  //
+  if (!transactionValue.isZero()) {
+    // trParams.value = transactionValue.toHexString();
+    trParams.value = ethers.utils.hexStripZeros(ethers.utils.hexlify(transactionValue));
+  } else {
+    trParams.value = "0";
+  }
+
+  if (!transactionGasLimit.isZero()) {
+    trParams.gas = transactionGasLimit.toString();
+  }
+
   console.log("trParams", trParams);
 
   // const req4 = {
@@ -662,6 +785,33 @@ const sendTransaction = async (signClient: Client, session: SessionTypes.Struct,
 
   console.log("sendTransaction - accountBlock", accountBlock);
   return accountBlock;
+};
+
+const requestNetworkSwitch = async (
+  provider: any,
+  newChainId: number,
+  signClient: Client,
+  session: SessionTypes.Struct
+) => {
+  console.log("requestNetworkSwitch()");
+  const currentChainId = (await provider.getNetwork())?.chainId;
+
+  const trParams = { chainId: ethers.utils.hexValue(newChainId) }; // chainId must be in hexadecimal numbers
+
+  const req = {
+    topic: session.topic,
+    chainId: `eip155:${currentChainId}`,
+    request: {
+      method: "wallet_switchEthereumChain",
+      params: [trParams],
+    },
+  };
+  console.log("req", req);
+
+  const rawResult: any = await signClient.request(req);
+  console.log("rawResult", rawResult);
+
+  return rawResult;
 };
 
 const disconnectPairing = async (
@@ -929,8 +1079,10 @@ const externalNetworkWalletConnectWrapper = {
   getAccountsBalances,
   getBalance,
   signTransaction,
+  estimateGas,
   callContract,
   sendTransaction,
+  requestNetworkSwitch,
   disconnectAllPairings,
   disconnectAllSessions,
   disconnectPairing,

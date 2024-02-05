@@ -22,6 +22,7 @@ export const allNamespaces = {
       "eth_requestAccounts",
       "eth_chainId",
       "eth_getBalance",
+      "eth_estimateGas",
     ],
     chains: [`eip155:${exportedConstants.defaultExternalChainId}`],
     events: ["chainChanged", "accountsChanged"],
