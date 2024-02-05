@@ -33,6 +33,9 @@ const constants = {
     "3": "https://explorer.zenon.network/transaction/",
   },
 
+  defaultInternalChainId: 1,
+  defaultExternalChainId: 1,
+
   defaultNodeToConnect: "wss://syrius-mainnet.zenon.community",
   uniswapPoolLink: "https://v2.info.uniswap.org/pair/0xdac866A3796F85Cb84A914d98fAeC052E3b5596D",
 
@@ -234,6 +237,9 @@ const testConstants = {
   isDevNet: false,
   isTestNet: true,
 
+  defaultInternalChainId: 3,
+  defaultExternalChainId: 11155111,
+
   defaultNodeToConnect: "wss://syrius-testnet.zenon.community",
   officialBridgeCommunityUrl: "https://bridge.testnet.zenon.community",
 
@@ -370,6 +376,9 @@ const developmentConstants = {
   isMainNet: false,
   isDevNet: true,
   isTestNet: false,
+
+  defaultInternalChainId: 3,
+  defaultExternalChainId: 11155111,
 
   defaultNodeToConnect: "wss://syrius-testnet.zenon.community",
   officialBridgeCommunityUrl: "https://bridge.testnet.zenon.community",

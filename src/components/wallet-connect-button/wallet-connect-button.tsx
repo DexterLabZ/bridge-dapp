@@ -1,9 +1,9 @@
 import { FC, useEffect } from "react";
-import useZenon from "../../services/hooks/zenon-provider/useZenon";
-import { zenonProviderTypes } from "../../services/hooks/zenon-provider/zenonContext";
+import useInternalNetwork from "../../services/hooks/internalNetwork-provider/useInternalNetwork";
+import { internalNetworkProviderTypes } from "../../services/hooks/internalNetwork-provider/internalNetworkContext";
 
 const WalletConnectButton: FC = () => {
-  const { zenonClient } = useZenon();
+  const { internalNetworkClient } = useInternalNetwork();
 
   useEffect(() => {
     console.log("WalletConnectButton");
@@ -12,12 +12,12 @@ const WalletConnectButton: FC = () => {
   const connectWallet = async () => {
     try {
       console.log("connectWallet");
-      await zenonClient.connect(zenonProviderTypes.walletConnect);
-      console.log("zenonClient", zenonClient);
-      const zenonInfo = await zenonClient.getWalletInfo();
+      await internalNetworkClient.connect(internalNetworkProviderTypes.walletConnect);
+      console.log("internalNetworkClient", internalNetworkClient);
+      const zenonInfo = await internalNetworkClient.getWalletInfo();
       console.log("zenonInfo", zenonInfo);
     } catch (err) {
-      console.error("ZenonClient error", err);
+      console.error("internalNetworkClient error", err);
     }
   };
 

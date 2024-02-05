@@ -1,14 +1,24 @@
-import { WalletConnectModal } from "@walletconnect/modal";
-import Client, { SignClient } from "@walletconnect/sign-client";
-import { PairingTypes, SessionTypes } from "@walletconnect/types";
-import { toast } from "react-toastify";
-import { Primitives } from "znn-ts-sdk";
-import constants from "../../../utils/constants";
 import syriusLogo from "./../../../assets/logos/syrius-logo-padded.svg";
+import Client, { SignClient } from "@walletconnect/sign-client";
+import { WalletConnectModal, WalletConnectModalConfig } from "@walletconnect/modal";
+import { SessionTypes, PairingTypes } from "@walletconnect/types";
+import { Primitives } from "znn-ts-sdk";
+import { toast } from "react-toastify";
 import logoIcon from "./../../../assets/logos/zenon-big.png";
+import { ConfigCtrl } from "@walletconnect/modal-core";
+import { deleteRecentWalletsFromLocalStorage } from "../../../utils/utils";
+import {
+  addToNamespacePairings,
+  allNamespaces,
+  defaultModalConfigCtrlState,
+  getLatestActivePairing,
+  getLatestActivePairingWithNoNamespaceAssigned,
+  getLatestActiveSession,
+} from "../../../utils/wcUtils";
+import constants from "../../../utils/constants";
+import { InternalWalletInfo, internalNetworkProviderTypes } from "./internalNetworkContext";
 
 const walletConnectProjectId = "6106aa8c2f308b338f31465bef999a1f";
-
 const desktopWallets = [
   {
     id: "syrius",
@@ -19,19 +29,9 @@ const desktopWallets = [
     },
   },
 ];
-
 const walletImages = {
   syrius: syriusLogo,
 };
-const zenonNamespace = {
-  zenon: {
-    id: "syrius",
-    chains: ["zenon:1"],
-    methods: ["znn_sign", "znn_info", "znn_send"],
-    events: ["chainIdChange", "addressChange"],
-  },
-};
-
 const themeVariables = {
   "--wcm-font-family": `-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif`,
   "--wcm-background-color": "#26BA3F",
@@ -43,7 +43,7 @@ const themeVariables = {
 
 const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
-const init = async () => {
+const initClient = async () => {
   const signClient = await SignClient.init({
     projectId: walletConnectProjectId,
     metadata: {
@@ -57,28 +57,45 @@ const init = async () => {
   });
   return signClient;
 };
-
-const connect = async (signClient: Client, onModalClose?: (reason: { [key: string]: any }) => unknown) => {
-  console.log("Connecting wallet");
-
-  const wcModal: any = new WalletConnectModal({
-    // walletConnectVersion: 2,
+const initModal = async () => {
+  ConfigCtrl.state = { ...defaultModalConfigCtrlState };
+  const wcConfig: WalletConnectModalConfig = {
+    // ...ConfigCtrl.state,
     projectId: walletConnectProjectId,
-    chains: ["zenon:1"],
+    chains: allNamespaces.zenon.chains,
     themeVariables: themeVariables,
     mobileWallets: [],
-    // mobileWallets: mobileWallets,
-    // desktopWallets: [],
     desktopWallets: desktopWallets,
     walletImages: walletImages,
-    explorerRecommendedWalletIds: "NONE",
+    explorerRecommendedWalletIds: [],
+    explorerExcludedWalletIds: [
+      "c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96",
+      "1ae92b26df02f0abca6304df07debccd18262fdf5fe82daa81593582dac9a369",
+      "4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0",
+    ],
     enableExplorer: false,
     themeMode: "light",
-  });
+  };
+
+  ConfigCtrl.state = wcConfig;
+
+  deleteRecentWalletsFromLocalStorage();
+  const wcModal: WalletConnectModal = new WalletConnectModal(wcConfig);
+  console.log("3. ConfigCtrl.state", { ...ConfigCtrl.state });
+  ConfigCtrl.setConfig(wcConfig);
+  await delay(1000);
+  console.log("4. ConfigCtrl.state", { ...ConfigCtrl.state });
+
+  return wcModal;
+};
+
+const connect = async (signClient: Client, onDismiss?: (reason: string) => unknown) => {
+  console.log("Connecting wallet");
+  const wcModal: WalletConnectModal = await initModal();
 
   wcModal.subscribeModal((state: any) => console.log("wcModal.subscribeModal", state));
 
-  const latestPairing = getLatestActivePairing(signClient);
+  const latestPairing = getLatestActivePairing(signClient, "zenon");
   //
   // First step is to find out if we are already paired with a Wallet
   //
@@ -87,10 +104,10 @@ const connect = async (signClient: Client, onModalClose?: (reason: { [key: strin
     // If we are paired we search for an available session.
     // Sessions can expire and we need to make sure they are still available
     //
-    const latestSession = getLatestActiveSession(signClient);
+    const latestSession = getLatestActiveSession(signClient, "zenon");
     if (latestSession) {
       //
-      //  Old Pairing, Old Session
+      // If we are paired we search for an available session.
       //
       console.log("[CONNECTED] Found pairing and session. Already connected on ", latestPairing, latestSession);
       return { session: latestSession, pairing: latestPairing };
@@ -99,16 +116,15 @@ const connect = async (signClient: Client, onModalClose?: (reason: { [key: strin
       //  Old Pairing, New Session
       //
       console.log("[CONNECTED] Creating new session on pairing", latestPairing);
-
-      await signClient.connect({
+      const retrievedSession = await signClient.connect({
         pairingTopic: latestPairing.topic,
-        requiredNamespaces: zenonNamespace,
+        requiredNamespaces: { zenon: allNamespaces.zenon },
       });
+      console.log("retrievedSession", retrievedSession);
 
-      // We usually get some errors if not adding this delay. Sessions were not updated as soon as the await finished
+      // We usually got some errors if not adding the delay. Sessions were not updated as soon as the await finished
       await delay(5000);
-
-      const newSession = getLatestActiveSession(signClient);
+      const newSession = getLatestActiveSession(signClient, "zenon");
       console.log("[CONNECTED] New session", newSession);
       return { session: newSession, pairing: latestPairing };
     }
@@ -118,84 +134,71 @@ const connect = async (signClient: Client, onModalClose?: (reason: { [key: strin
     //
     console.log("[CONNECTED] Creating new pairing and session");
     const { uri, approval } = await signClient.connect({
-      requiredNamespaces: zenonNamespace,
+      requiredNamespaces: { zenon: allNamespaces.zenon },
     });
-    console.log("Generated URI", uri);
+    console.log("Generated uri", uri);
     if (uri) {
       try {
-        await wcModal.openModal({ uri });
+        await wcModal.openModal({
+          requiredNamespaces: { zenon: allNamespaces.zenon },
+          walletConnectChainIds: [],
+          // optionalNamespaces: allNamespaces,
+          uri: uri,
+        });
+
+        // await wcModal.openModal({standaloneChains: ["zenon:1"], uri: uri});
         wcModal.subscribeModal((state: any) => {
           if (state.open == false) {
             console.log("state", state);
-            if (onModalClose) {
-              onModalClose({ message: "User closed modal" });
+            if (onDismiss) {
+              onDismiss("User closed modal");
             }
           }
         });
-
         const session = await approval();
         console.log("[CONNECTED] Session", session);
-
-        // We usually get some errors if not adding the delay.
-        // The new pairings are not in the list as soon as the await finishes
+        wcModal.closeModal();
+        //
+        // We usually got some errors if not adding the delay.
+        // The new pairings was not in the list as soon as the await finished
+        //
         await delay(5000);
 
-        wcModal.closeModal();
-        const newPairing = getLatestActivePairing(signClient);
+        // Important !!!
+        //
+        // For now, we assume that the latest active pairing is from the current namespace
+        // And that the user didn't trigger another pairing creation meanwhile.
+        //
+        // const newPairing = getLatestActivePairing(signClient);
+        const newPairing = getLatestActivePairingWithNoNamespaceAssigned(signClient);
+
+        // We save this latest pairing as being from this namespace and treat it as that
+        //
+        addToNamespacePairings("zenon", newPairing);
+
         console.log("[CONNECTED] newPairing", newPairing);
         return { session: session, pairing: newPairing };
       } catch (err) {
         console.error("Error approving", err);
         wcModal.closeModal();
         throw err;
+      } finally {
+        wcModal.closeModal();
       }
     } else {
+      wcModal.closeModal();
       throw Error("Couldn't generate URI on new session or topic");
     }
   }
 };
 
-const getLatestActivePairing = (signClient: Client) => {
-  const allPairings = signClient.pairing.getAll();
-  console.log("allPairings", allPairings);
-
-  const activePairings = allPairings.filter((p) => p.active);
-  console.log("activePairings", activePairings);
-
-  const latestPairingIndex = activePairings.length - 1;
-  const latestPairing = activePairings[latestPairingIndex];
-  console.log("latestPairing", latestPairing);
-
-  return latestPairing;
-};
-
-const getLatestActiveSession = (signClient: Client) => {
-  const filteredSessions = signClient.find({
-    requiredNamespaces: zenonNamespace,
-  });
-
-  const activeSessions = filteredSessions.filter((s) => s.expiry > Date.now() / 1000);
-  console.log("activeSessions", activeSessions);
-
-  const latestSessionIndex = activeSessions.length - 1;
-  const latestSession = activeSessions[latestSessionIndex];
-  console.log("latestSession", latestSession);
-
-  return latestSession;
-};
-
 const getInfo = async (signClient: Client, session: SessionTypes.Struct) => {
   console.log("getInfo", signClient, session);
   console.log("getInfo - session.topic", session.topic);
-  type getInfoType = {
-    address: string;
-    chainId: number;
-    nodeUrl: string;
-  };
 
-  const result: getInfoType = await signClient.request({
+  const result: InternalWalletInfo = await signClient.request({
     topic: session.topic,
-    chainId: "zenon:1",
+    chainId: allNamespaces.zenon.chains[0],
     request: {
       method: "znn_info",
       params: undefined,
@@ -210,7 +213,7 @@ const signTransaction = async (signClient: Client, session: SessionTypes.Struct,
   console.log("signTransaction", signClient, session);
   const signature = await signClient.request({
     topic: session.topic,
-    chainId: "zenon:1",
+    chainId: allNamespaces.zenon.chains[0],
     request: {
       method: "znn_sign",
       params: JSON.stringify(params.accountBlock),
@@ -226,7 +229,7 @@ const sendTransaction = async (signClient: Client, session: SessionTypes.Struct,
   console.log("sendTransaction", signClient, session);
   const result = await signClient.request({
     topic: session.topic,
-    chainId: "zenon:1",
+    chainId: allNamespaces.zenon.chains[0],
     request: {
       method: "znn_send",
       params: {
@@ -251,6 +254,7 @@ const disconnectPairing = async (
 ) => {
   try {
     console.log("Disconnecting, ", signClient, pairing);
+    // await signClient.core.pairing.disconnect({topic: pairing.topic});
     await signClient.disconnect({
       topic: pairing.topic,
       reason: {
@@ -359,10 +363,11 @@ const disconnectAllSessions = async (signClient: Client, reasonMessage?: string,
 
 const registerEvents = (
   signClient: Client,
-  onAddressChange: (newAddress: string) => unknown,
-  onChainIdChange: (newChainId: string) => unknown,
-  onNodeChange: (newChainId: string) => unknown
+  onAddressChange: (newAddress: string, providerType: internalNetworkProviderTypes) => unknown,
+  onChainIdChange: (newChainId: string, providerType: internalNetworkProviderTypes) => unknown,
+  onNodeChange: (newChainId: string, providerType: internalNetworkProviderTypes) => unknown
 ) => {
+  console.log("internalNetwork - registerEvents");
   // Subscribe to events
 
   // Available events
@@ -434,43 +439,60 @@ const registerEvents = (
 
   signClient.on("session_event", (args: any) => {
     // This is where chainIdChange and addressChange happens
-    console.log(".on session_event", args);
+    console.log(".on internal network session_event", args);
+    const [networkId, chainId] = args?.params?.chainId?.split(":");
+    console.log("networkId", networkId);
+    console.log("chainId", chainId);
 
-    switch (args?.params?.event?.name) {
-      case "addressChange": {
-        const newAddress = args?.params?.event?.data;
-        console.log("addressChanged to", newAddress);
-        onAddressChange(newAddress);
-        break;
-      }
-      case "chainIdChange": {
-        const newChainId = args?.params?.event?.data;
-        console.log("chainIdChanged to", newChainId);
-        onChainIdChange(newChainId);
-        break;
-      }
-      case "nodeChange": {
-        const newChainId = args?.params?.event?.data;
-        console.log("nodeChanged to", newChainId);
-        onNodeChange(newChainId);
-        break;
-      }
+    // ToDo: do something about the hardcoded 'zenon' chainId'
+    if (networkId === "zenon") {
+      console.log("args?.params?.event?.name", args?.params?.event?.name);
+      switch (args?.params?.event?.name) {
+        case "addressChange": {
+          const newAddress = args?.params?.event?.data?.toLowerCase();
+          console.log("addressChanged to", newAddress);
+          onAddressChange(newAddress, internalNetworkProviderTypes.walletConnect);
+          break;
+        }
+        case "chainIdChange": {
+          const newChainId = args?.params?.event?.data;
+          console.log("chainIdChanged to", newChainId);
+          onChainIdChange(newChainId, internalNetworkProviderTypes.walletConnect);
+          break;
+        }
+        case "nodeChange": {
+          const newChainId = args?.params?.event?.data;
+          console.log("nodeChanged to", newChainId);
+          onNodeChange(newChainId, internalNetworkProviderTypes.walletConnect);
+          break;
+        }
 
-      default: {
-        console.log("Unhandled event triggered", args?.params?.event?.name);
-        break;
+        default: {
+          console.log("Unhandled event triggered", args?.params?.event?.name);
+          break;
+        }
       }
     }
   });
 
+  signClient.on("session_event", (args: any) => {
+    // Because of a weird walletConnect bug, we need to register this event twice
+    // Otherwise, registering the externalNetwork session event won't work
+    //
+    // Might be because of the internal implementation of signClient.on()
+    // and the way it registers multiple callbacks for the same event
+    console.log(".on internal network session_event 2", args);
+  });
+
   signClient.on("proposal_expire", (args: any) => {
-    // TODO: Implement this
+    // ToDo: Implement this
     console.log(".on proposal_expire", args);
   });
 };
 
-const walletConnectWrapper = {
-  init,
+const internalNetworkWalletConnectWrapper = {
+  initClient,
+  initModal,
   connect,
   getInfo,
   signTransaction,
@@ -482,4 +504,4 @@ const walletConnectWrapper = {
   registerEvents,
 };
 
-export default walletConnectWrapper;
+export default internalNetworkWalletConnectWrapper;

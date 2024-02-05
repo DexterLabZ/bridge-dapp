@@ -6,12 +6,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { Primitives, Zenon } from "znn-ts-sdk";
 import infoIcon from "../../../assets/info-icon.svg";
+import spinnerSvg from "./../../../assets/spinner.svg";
 import warningIcon from "../../../assets/warning-icon.svg";
 import SimpleDropdown from "../../../components/simpleDropdown/simpleDropdown";
 import TokenDropdown from "../../../components/tokenDropdown/tokenDropdown";
 import { LiquidityStakingItem, liquidityStakingStatus } from "../../../models/LiquidityStakingItem";
 import { SimpleToken } from "../../../models/SimpleToken";
-import useZenon from "../../../services/hooks/zenon-provider/useZenon";
+import useInternalNetwork from "../../../services/hooks/internalNetwork-provider/useInternalNetwork";
 import { storeGlobalConstants } from "../../../services/redux/globalConstantsSlice";
 import { storeActiveStakingEntry, storeSuccessInfo } from "../../../services/redux/liquidityStakingEntriesSlice";
 import { findInObject, hasLowPlasma, multiplyBigNumberStrings } from "../../../utils/utils";
@@ -56,8 +57,9 @@ const LiquidityStakingStep = ({ onStepSubmit = () => {} }) => {
   const [plasmaBalance, setPlasmaBalance] = useState(0);
   const zenon = Zenon.getSingleton();
   const dispatch = useDispatch();
-  const { zenonClient } = useZenon();
+  const { internalNetworkClient } = useInternalNetwork();
   const walletInfo = useSelector((state: any) => state.wallet);
+  const [isBalanceLoading, setIsBalanceLoading] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -142,6 +144,7 @@ const LiquidityStakingStep = ({ onStepSubmit = () => {} }) => {
     // We update tokenTuples here because in the previous step we might already be connected to syrius (in the swap flow)
     // eslint-disable-next-line prefer-const
     let updatedConstants: any = {};
+    setIsBalanceLoading(true);
     Object.assign(updatedConstants, { ...globalConstants });
 
     const getLiquidityInfo = await zenon.embedded.liquidity.getLiquidityInfo();
@@ -196,6 +199,7 @@ const LiquidityStakingStep = ({ onStepSubmit = () => {} }) => {
     console.log("updatedConstants - updatedTuples", updatedConstants);
 
     setGlobalConstants(updatedConstants);
+    setIsBalanceLoading(false);
     return updatedConstants;
   };
 
@@ -232,7 +236,7 @@ const LiquidityStakingStep = ({ onStepSubmit = () => {} }) => {
           fromAddress: JSONbig.parse(walletInfo.zenonInfo || "{}")?.address,
           accountBlock: liquidityStakeAccountBlock.toJson(),
         };
-        const accountBlock = await zenonClient.sendTransaction(transaction);
+        const accountBlock = await internalNetworkClient.sendTransaction(transaction);
 
         console.log("final accountBlock", accountBlock);
 
@@ -353,7 +357,16 @@ const LiquidityStakingStep = ({ onStepSubmit = () => {} }) => {
         <div className="d-flex justify-content-end align-items-center height-30px">
           <div className="mt-1 text-right">
             {"Balance: "}
-            {selectedToken?.balanceWithDecimals + " " + selectedToken?.symbol}
+            {isBalanceLoading ? (
+              <div className="contextual-spinner-container mr-1 ml-1">
+                <img alt="" src={spinnerSvg} className="spinner" />
+              </div>
+            ) : (
+              selectedToken?.balanceWithDecimals
+            )}
+            {" " + selectedToken?.symbol}
+
+            {/* {selectedToken?.balanceWithDecimals + " " + selectedToken?.symbol} */}
           </div>
 
           <div className="mt-1 ml-1">
@@ -366,7 +379,7 @@ const LiquidityStakingStep = ({ onStepSubmit = () => {} }) => {
                   <img alt="fees-info" className="switch-arrow mr-1" src={warningIcon} />
 
                   <span className="tooltip-text">
-                    {`If you've already added liquidity please open the Syrius extension in order to receive the ${selectedToken?.symbol} tokens`}
+                    {`If you've already added liquidity please open the Syrius Wallet in order to receive the ${selectedToken?.symbol} tokens`}
                   </span>
                 </div>
               </>

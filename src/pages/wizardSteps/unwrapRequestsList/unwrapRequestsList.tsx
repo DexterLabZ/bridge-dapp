@@ -9,7 +9,7 @@ import Paginator from "../../../components/paginator/paginator";
 import UnwrapRequestItemComponent from "../../../components/unwrapRequestItemComponent/unwrapRequestItemComponent";
 import { UnwrapRequestItem, unwrapRequestStatus } from "../../../models/unwrapRequestItem";
 import { SpinnerContext } from "../../../services/hooks/spinner/spinnerContext";
-import useZenon from "../../../services/hooks/zenon-provider/useZenon";
+import useInternalNetwork from "../../../services/hooks/internalNetwork-provider/useInternalNetwork";
 import { clearActiveUnwrapRequest, storeSuccessInfo } from "../../../services/redux/requestsSlice";
 import { storeCurrentWizardFlowStep, swapFlowSteps } from "../../../services/redux/wizardStatusSlice";
 import { simpleTokenType } from "../swapStep/swapStep";
@@ -18,6 +18,7 @@ import discordLogo from "./../../../assets/logos/discord-logo.svg";
 import forumLogo from "./../../../assets/logos/forum-logo.svg";
 import telegramLogo from "./../../../assets/logos/telegram.svg";
 import twitterLogo from "./../../../assets/logos/twitter.svg";
+import useExternalNetwork from "../../../services/hooks/externalNetwork-provider/useExternalNetwork";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
@@ -34,7 +35,8 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
   const [isLoading, setIsLoading] = useState(false);
   const globalConstants = useSelector((state: any) => state.globalConstants);
   const refreshInterval = 30000;
-  const { zenonClient } = useZenon();
+  const { internalNetworkClient } = useInternalNetwork();
+  const { externalNetworkClient } = useExternalNetwork();
 
   useEffect(() => {
     getRequests(currentPage, itemsPerPage);
@@ -141,7 +143,8 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
     };
 
     if (request.logIndex < globalConstants.maxLogIndex) {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = await externalNetworkClient.getProvider();
+      // const provider = new ethers.providers.Web3Provider(window.ethereum);
       console.log("request.transactionHash", request.transactionHash);
 
       const evmTransaction = await provider.getTransaction("0x" + request.transactionHash);
@@ -164,6 +167,7 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
         request.amount = request.amount.toString();
       }
     } else {
+      console.log("evmTransaction not found");
       request.amount = request.amount.toString();
     }
 
@@ -304,7 +308,7 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
           accountBlock: unwrap.toJson(),
         };
 
-        const accountBlock = await zenonClient.sendTransaction(transaction);
+        const accountBlock = await internalNetworkClient.sendTransaction(transaction);
         console.log("final accountBlock", accountBlock);
 
         const hash = accountBlock?.hash.toString();

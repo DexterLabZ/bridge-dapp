@@ -25,7 +25,7 @@ const UnwrapRequestItemComponent: FC<{
   const serializedWalletInfo = useSelector((state: any) => state.wallet);
   const [plasmaBalance, setPlasmaBalance] = useState(0);
   const globalConstants = useSelector((state: any) => state.globalConstants);
-  const networkDetailsState = useSelector((state: any) => state.connection);
+  const internalNetworkConnectionDetails = useSelector((state: any) => state.internalNetworkConnection);
 
   useEffect(() => {
     const zenonInfo = JSONbig.parse(serializedWalletInfo?.["zenonInfo"] || "{}");
@@ -84,7 +84,8 @@ const UnwrapRequestItemComponent: FC<{
       // Unwrap finished, last transaction is on external network (Ethereum)
       await copyTransactionHash(request?.id || request?.transactionHash);
       const explorerURL =
-        globalConstants.internalNetworkExplorerURLbyChainId[networkDetailsState.chainIdentifier] + request?.id;
+        globalConstants.internalNetworkExplorerURLbyChainId[internalNetworkConnectionDetails.chainIdentifier] +
+        request?.id;
       openSafelyInNewTab(explorerURL);
     } else {
       // Unwrap not finished, still on internal network (zenon)
@@ -117,12 +118,14 @@ const UnwrapRequestItemComponent: FC<{
 
   return (
     <div
-      className={`request-item-container mb-2 ${isSelected ? " item-is-selected " : ""} ${canBeRedeemedAgain() ? " is-redeemable-again " : ""
-        }`}>
+      className={`request-item-container mb-2 ${isSelected ? " item-is-selected " : ""} ${
+        canBeRedeemedAgain() ? " is-redeemable-again " : ""
+      }`}>
       <div
         onClick={() => onSelect(requestItem.transactionHash)}
-        className={`request-item ${requestItem?.isActiveRequest ? " active-request " : ""} ${requestItem?.status == unwrapRequestStatus.Signing ? " moving-green-shadow " : ""
-          }`}>
+        className={`request-item ${requestItem?.isActiveRequest ? " active-request " : ""} ${
+          requestItem?.status == unwrapRequestStatus.Signing ? " moving-green-shadow " : ""
+        }`}>
         <div>
           <div className="d-flex align-items-center">
             <div>

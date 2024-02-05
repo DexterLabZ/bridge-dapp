@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import walletReducer from "./walletSlice";
-import connectionReducer from "./connectionSlice";
+import internalNetworkConnection from "./internalNetworkConnectionSlice";
+import externalNetworkConnection from "./externalNetworkConnectionSlice";
 import referralReducer from "./referralSlice";
 import requestsReducer from "./requestsSlice";
 import globalConstantsReducer from "./globalConstantsSlice";
@@ -11,7 +12,8 @@ import agreementItemsReducer from "./agreementItemsSlice";
 export const store = configureStore({
   reducer: {
     wallet: walletReducer,
-    connection: connectionReducer,
+    internalNetworkConnection: internalNetworkConnection,
+    externalNetworkConnection: externalNetworkConnection,
     referral: referralReducer,
     requests: requestsReducer,
     globalConstants: globalConstantsReducer,

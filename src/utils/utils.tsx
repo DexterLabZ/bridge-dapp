@@ -6,8 +6,8 @@ import defaultZtsIcon from "./../assets/tokens/zts.svg";
 import constants from "./constants";
 import { mangle, unmangle } from "./mangling";
 
-export const validateMetamaskNetwork = async (
-  provider: ethers.providers.Web3Provider,
+export const validateExternalNetwork = async (
+  provider: ethers.providers.Web3Provider | ethers.providers.JsonRpcProvider,
   validNetworks: simpleNetworkType[],
   currentChainId = -1
 ) => {
@@ -16,7 +16,7 @@ export const validateMetamaskNetwork = async (
   if (currentChainId == -1) {
     currentChainId = (await provider.getNetwork()).chainId;
   }
-  console.log("Metamask network info", currentChainId);
+  console.log("Wallet network info", currentChainId);
 
   const validChainsString = validNetworks
     .filter((v) => v.isAvailable)
@@ -26,17 +26,17 @@ export const validateMetamaskNetwork = async (
 
   if (constants.isDevNet) {
     if (!validNetworks.find((net: simpleNetworkType) => net.chainId == currentChainId)) {
-      throw `Please select one of these chains from Metamask: ${validChainsString}`;
+      throw `Please select one of these chains from your Wallet: ${validChainsString}`;
     }
   }
   if (constants.isTestNet) {
     if (!validNetworks.find((net: simpleNetworkType) => net.chainId == currentChainId)) {
-      throw `Please select one of these chains from Metamask: ${validChainsString}`;
+      throw `Please select one of these chains from your Wallet: ${validChainsString}`;
     }
   }
   if (constants.isMainNet) {
     if (!validNetworks.find((net: simpleNetworkType) => net.chainId == currentChainId)) {
-      throw `Please select one of these chains from Metamask: ${validChainsString}`;
+      throw `Please select one of these chains from your Wallet: ${validChainsString}`;
     }
   }
 };
@@ -105,7 +105,7 @@ export const getInternalTokensDetails = (currentInternalTokens: any, zenon: any)
 
 export const getExternalTokensDetails = async (
   currentExternalTokens: simpleTokenType[],
-  provider: ethers.providers.Web3Provider
+  provider: ethers.providers.Web3Provider | ethers.providers.JsonRpcProvider
 ) => {
   return await Promise.all(
     currentExternalTokens.map(async (tok) => {
@@ -113,27 +113,27 @@ export const getExternalTokensDetails = async (
       const newTok = {
         ...tok,
       };
-      const metamaskCurrentChainId = (await provider.getNetwork())?.chainId;
+      const externalNetworkChainId = (await provider.getNetwork())?.chainId;
 
       if (
         newTok.isAvailable &&
-        metamaskCurrentChainId === newTok.network.chainId &&
+        externalNetworkChainId === newTok.network.chainId &&
         newTok.address &&
         newTok.symbol !== "ETH"
       ) {
         console.log("newTok", JSON.parse(JSON.stringify(newTok)));
         const contract = new ethers.Contract(newTok.address, constants.wznnAbi, provider);
-        const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
-        const signedContract = contract.connect(signer);
+        // const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
+        // const signedContract = contract.connect(signer);
 
         if (!newTok.icon) {
           newTok.icon = defaultZtsIcon;
         }
 
         [newTok.decimals, newTok.symbol, newTok.name] = await Promise.all([
-          signedContract.decimals(),
-          signedContract.symbol(),
-          signedContract.name(),
+          contract.decimals(),
+          contract.symbol(),
+          contract.name(),
         ]);
 
         console.log("updatedTok", newTok);
@@ -171,26 +171,30 @@ export const updateTokenPairsWithNewInternalTokens = (currentPairs: any[], newIn
   });
 };
 
-export const getLiquidityPairsDetails = async (liquidityTokenPairs: any[], provider: ethers.providers.Web3Provider) => {
+export const getLiquidityPairsDetails = async (
+  liquidityTokenPairs: any[],
+  provider: ethers.providers.Web3Provider | ethers.providers.JsonRpcProvider
+) => {
   return await Promise.all(
     liquidityTokenPairs.map(async (pair) => {
       const newPair = {
         ...pair,
       };
-      const metamaskCurrentChainId = (await provider.getNetwork())?.chainId;
+      const externalNetworkChainId = (await provider.getNetwork())?.chainId;
 
       // External token network and internal token network should be the same network.
-      if (newPair.pairAddress && metamaskCurrentChainId === newPair.pairNetwork.chainId) {
+      if (newPair.pairAddress && externalNetworkChainId === newPair.pairNetwork.chainId) {
         console.log("getLiquidityPairsDetails-newPair", JSON.parse(JSON.stringify(newPair)));
         const contract = new ethers.Contract(newPair.pairAddress, constants.pairAbi, provider);
-        const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
-        const signedContract = contract.connect(signer);
+
+        // const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
+        // const signedContract = contract.connect(signer);
 
         [newPair.token0, newPair.token1, newPair.symbol, newPair.reserves] = await Promise.all([
-          signedContract.token0(),
-          signedContract.token1(),
-          signedContract.symbol(),
-          signedContract.getReserves(),
+          contract.token0(),
+          contract.token1(),
+          contract.symbol(),
+          contract.getReserves(),
         ]);
 
         console.log("getLiquidityPairsDetails-newPair-after-calls", JSON.parse(JSON.stringify(newPair)));
@@ -530,4 +534,22 @@ export const setReferralCodeAddress = (address: string) => {
 export const openSafelyInNewTab = (url: string): void => {
   const newWindow = window.open(url, "_blank", "noopener,noreferrer");
   if (newWindow) newWindow.opener = null;
+};
+
+export const deleteRecentWalletsFromLocalStorage = () => {
+  localStorage.removeItem("WCM_RECENT_WALLET_DATA");
+};
+
+export const extractAddressesFromNamespacesAccounts = (namespacesAccounts: string[]) => {
+  return namespacesAccounts.map((namespacesAccount) => {
+    const [namespace, chainId, address] = namespacesAccount.split(":");
+    return address;
+  });
+};
+
+export const extractChainIdsFromNamespacesAccounts = (namespacesAccounts: string[]) => {
+  return namespacesAccounts.map((namespacesAccount) => {
+    const [namespace, chainId, address] = namespacesAccount.split(":");
+    return chainId;
+  });
 };

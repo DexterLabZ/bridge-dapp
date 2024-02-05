@@ -19,6 +19,7 @@ import discordLogo from "./../../../assets/logos/discord-logo.svg";
 import forumLogo from "./../../../assets/logos/forum-logo.svg";
 import telegramLogo from "./../../../assets/logos/telegram.svg";
 import twitterLogo from "./../../../assets/logos/twitter.svg";
+import useExternalNetwork from "../../../services/hooks/externalNetwork-provider/useExternalNetwork";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
@@ -37,13 +38,17 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
   const [isLoading, setIsLoading] = useState(false);
   const globalConstants = useSelector((state: any) => state.globalConstants);
   const refreshInterval = 30000;
+  const { externalNetworkClient } = useExternalNetwork();
 
   useEffect(() => {
     getRequests(currentPage, itemsPerPage);
     interval.current = setInterval(getRequests, refreshInterval);
 
     const updateMetamaskChainId = async () => {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      // const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = await externalNetworkClient.getProvider();
+
+      // ToDo: maybe this will not work with jsonRpcProvider
       setMetamaskChainId((await provider.getNetwork())?.chainId);
     };
     updateMetamaskChainId();
@@ -249,7 +254,8 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
   const getWrapRequestStatus = async (wrapRequest: WrapRequestItem) => {
     try {
       console.log("getWrapRequestStatus");
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = await externalNetworkClient.getProvider();
+      // const provider = new ethers.providers.Web3Provider(window.ethereum);
       console.log("provider", provider);
 
       const currentContractAddress = wrapRequest?.toToken?.network?.contractAddress || "";
@@ -258,11 +264,11 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
       const contract = new ethers.Contract(currentContractAddress, globalConstants.abiContract, provider);
       console.log("contract", contract);
 
-      const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
-      console.log("signer", signer);
+      // const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
+      // console.log("signer", signer);
 
-      const signedContract = contract.connect(signer);
-      console.log("signedContract", signedContract);
+      // const signedContract = contract.connect(signer);
+      // console.log("signedContract", signedContract);
 
       const tokenAddress = wrapRequest.tokenAddress;
       console.log("tokenAddress", tokenAddress);
@@ -289,7 +295,7 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
           wrapRequest.status = wrapRequestStatus.Redeemable;
         }
 
-        const redeemsInfo = await signedContract.redeemsInfo("0x" + id);
+        const redeemsInfo = await contract.redeemsInfo("0x" + id);
         console.log("redeemsInfo", redeemsInfo);
 
         const blockNumber = ethers.BigNumber.from(redeemsInfo.blockNumber);
@@ -384,26 +390,27 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
   const updateRedeemDelayAndStatus = async (wrapRequest: WrapRequestItem) => {
     try {
       console.log("updateRedeemDelayAndStatus");
-      const web3Instance = new ethers.providers.Web3Provider(window.ethereum);
-      const provider = web3Instance;
+      // const web3Instance = new ethers.providers.Web3Provider(window.ethereum);
+      // const provider = web3Instance;
+      const provider = await externalNetworkClient.getProvider();
       const currentContractAddress = wrapRequest?.toToken?.network?.contractAddress || "";
       console.log("currentContractAddress", currentContractAddress);
 
       const contract = new ethers.Contract(currentContractAddress, globalConstants.abiContract, provider);
-      const signer = web3Instance.getSigner();
-      const signedContract = contract.connect(signer);
+      // const signer = web3Instance.getSigner();
+      // const signedContract = contract.connect(signer);
 
-      const redeemDelay = (await signedContract.tokensInfo(wrapRequest.toToken?.address))?.redeemDelay || 1;
+      const redeemDelay = (await contract.tokensInfo(wrapRequest.toToken?.address))?.redeemDelay || 1;
       console.log(
-        "(await signedContract.tokensInfo(ercToken.address))",
-        await signedContract.tokensInfo(wrapRequest.toToken?.address)
+        "(await contract.tokensInfo(ercToken.address))",
+        await contract.tokensInfo(wrapRequest.toToken?.address)
       );
       console.log("redeemDelay", redeemDelay);
 
-      const estimatedBlockTimeInSeconds = await signedContract.estimatedBlockTime();
+      const estimatedBlockTimeInSeconds = await provider.estimatedBlockTime();
       console.log("_estimatedBlockTimeInSeconds", estimatedBlockTimeInSeconds.toNumber());
 
-      const redeemsInfo = await signedContract.redeemsInfo("0x" + wrapRequest.id);
+      const redeemsInfo = await contract.redeemsInfo("0x" + wrapRequest.id);
       console.log("_redeemsInfo", redeemsInfo);
 
       const blockNumber = ethers.BigNumber.from(redeemsInfo.blockNumber);
@@ -418,7 +425,7 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
       console.log("wrapRequest before updating redeemDelayInSeconds", wrapRequest);
 
       if (wrapRequest.transactionBlockNumber && wrapRequest.id && wrapRequest.timestamp) {
-        const currentBlockNumber = await web3Instance.getBlockNumber();
+        const currentBlockNumber = await provider.getBlockNumber();
         const elapsedBlocks = currentBlockNumber - wrapRequest.transactionBlockNumber;
         console.log("elapsedBlocks", elapsedBlocks);
         const elapsedSeconds = elapsedBlocks * estimatedBlockTimeInSeconds;
@@ -448,15 +455,19 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
   };
 
   const redeemRequest = async (wrapRequest: WrapRequestItem) => {
+    // ToDo: Should we add the spinner here?
+
     try {
-      const web3Instance = new ethers.providers.Web3Provider(window.ethereum);
-      const provider = web3Instance;
+      // const web3Instance = new ethers.providers.Web3Provider(window.ethereum);
+      // const provider = web3Instance;
+      const provider = await externalNetworkClient.getProvider();
+      console.log("Provider", provider);
       const currentContractAddress = wrapRequest?.toToken?.network?.contractAddress || "";
       console.log("currentContractAddress", currentContractAddress);
 
       const contract = new ethers.Contract(currentContractAddress, globalConstants.abiContract, provider);
-      const signer = web3Instance.getSigner();
-      const signedContract = contract.connect(signer);
+      // const signer = web3Instance.getSigner();
+      // const signedContract = contract.connect(signer);
 
       const tokenAddress = wrapRequest.tokenAddress;
       const amount = ethers.BigNumber.from(wrapRequest.amount).sub(ethers.BigNumber.from(wrapRequest.feeAmount || 0));
@@ -467,32 +478,33 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
       const newSig = signature.toString("hex");
 
       console.log("Redeem params", wrapRequest.toAddress, tokenAddress, amount, "0x" + id, "0x" + newSig);
-      console.log("signedContract", signedContract);
-      const redeemResponse = await signedContract.redeem(
-        wrapRequest.toAddress,
-        tokenAddress,
-        amount,
-        "0x" + id,
-        "0x" + newSig
+      console.log("contract", contract);
+      // const redeemResponse = await signedContract.redeem(
+      //   wrapRequest.toAddress,
+      //   tokenAddress,
+      //   amount,
+      //   "0x" + id,
+      //   "0x" + newSig
+      // );
+
+      const redeemTransactionParams = [wrapRequest.toAddress, tokenAddress, amount, "0x" + id, "0x" + newSig];
+      console.log("redeemTransactionParams", redeemTransactionParams);
+      const redeemResponse = await externalNetworkClient.callContract(
+        currentContractAddress,
+        globalConstants.abiContract,
+        "redeem",
+        redeemTransactionParams
       );
-      toast("Transaction initialized. Waiting for confirmations", {
-        position: "bottom-center",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: false,
-        draggable: true,
-        type: "success",
-        theme: "dark",
-      });
       console.log("redeemResponse", redeemResponse);
-      await redeemResponse.wait();
+
+      console.log("redeemResponse", redeemResponse);
+      // await redeemResponse.wait();
 
       // Remove the 0x. We add it later
       wrapRequest.transactionHash = redeemResponse.hash.substr(2);
-      console.log("redeemResponse.hash", redeemResponse.hash);
+      console.log("redeemResponse", redeemResponse);
 
-      const redeemTransaction = await web3Instance.getTransaction(redeemResponse.hash);
+      const redeemTransaction = await provider.getTransaction(redeemResponse.hash);
       console.log("redeemTransaction", redeemTransaction);
 
       const blockNumber = redeemTransaction?.blockNumber;
@@ -500,7 +512,7 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
 
       if (blockNumber) {
         console.log("blockNumber", blockNumber);
-        const block = await web3Instance.getBlock(blockNumber);
+        const block = await provider.getBlock(blockNumber);
         console.log("block", block);
         blockTimestamp = block.timestamp;
 

@@ -25,7 +25,7 @@ const WrapRequestItemComponent: FC<{
   );
   const interval = useRef<any>();
   const globalConstants = useSelector((state: any) => state.globalConstants);
-  const networkDetailsState = useSelector((state: any) => state.connection);
+  const internalNetworkConnectionDetails = useSelector((state: any) => state.internalNetworkConnection);
 
   useEffect(() => {
     setRequestItem(originalRequestItem);
@@ -138,7 +138,8 @@ const WrapRequestItemComponent: FC<{
       // Wrap not finished, still on external network (Ethereum)
       await copyTransactionHash(request?.id);
       const explorerURL =
-        globalConstants.internalNetworkExplorerURLbyChainId[networkDetailsState.chainIdentifier] + request.id;
+        globalConstants.internalNetworkExplorerURLbyChainId[internalNetworkConnectionDetails.chainIdentifier] +
+        request.id;
       openSafelyInNewTab(explorerURL);
     }
   };

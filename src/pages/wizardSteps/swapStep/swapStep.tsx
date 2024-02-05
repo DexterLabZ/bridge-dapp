@@ -10,12 +10,13 @@ import infoIconBlue from "../../../assets/info-icon-blue.svg";
 import infoIconRed from "../../../assets/info-icon-red.svg";
 import infoIcon from "../../../assets/info-icon.svg";
 import warningIcon from "../../../assets/warning-icon.svg";
+import spinnerSvg from "./../../../assets/spinner.svg";
 import TokenDropdown from "../../../components/tokenDropdown/tokenDropdown";
 import { SimpleToken } from "../../../models/SimpleToken";
 import { UnwrapRequestItem, unwrapRequestStatus } from "../../../models/unwrapRequestItem";
 import { WrapRequestItem, wrapRequestStatus } from "../../../models/wrapRequestItem";
 import { SpinnerContext } from "../../../services/hooks/spinner/spinnerContext";
-import useZenon from "../../../services/hooks/zenon-provider/useZenon";
+import useInternalNetwork from "../../../services/hooks/internalNetwork-provider/useInternalNetwork";
 import { storeGlobalConstants } from "../../../services/redux/globalConstantsSlice";
 import { storeActiveUnwrapRequest, storeActiveWrapRequest } from "../../../services/redux/requestsSlice";
 import { storeErcInfo, storeZenonInfo } from "../../../services/redux/walletSlice";
@@ -31,7 +32,7 @@ import {
   subtractBigNumberStrings,
   updateTokenPairsWithNewExternalTokens,
   updateTokenPairsWithNewInternalTokens,
-  validateMetamaskNetwork,
+  validateExternalNetwork,
 } from "../../../utils/utils";
 import "./swapStep.scss";
 
@@ -39,6 +40,8 @@ import "./swapStep.scss";
  * * GTM SERVICE
  */
 import { useGTMDispatch } from "@elgorditosalsero/react-gtm-hook";
+import useExternalNetwork from "../../../services/hooks/externalNetwork-provider/useExternalNetwork";
+import { externalNetworkProviderTypes } from "../../../services/hooks/externalNetwork-provider/externalNetworkContext";
 
 /**
  * * TWITTER SERVICE
@@ -98,6 +101,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
   const [zenonBalance, setZenonBalance] = useState("");
   const [plasmaBalance, setPlasmaBalance] = useState(0);
   const [zenonAddress, setZenonAddress] = useState("");
+  const [isZenonBalanceLoading, setIsZenonBalanceLoading] = useState(false);
   const [zenonToken, setZenonToken] = useState<simpleTokenType>({
     icon: "",
     symbol: "",
@@ -118,6 +122,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
   const [minErcAmount, setMinErcAmount] = useState("");
   const [ercAmount, setErcAmount] = useState("");
   const [ercBalance, setErcBalance] = useState("");
+  const [isErcBalanceLoading, setIsErcBalanceLoading] = useState(false);
   const [ercAddress, setErcAddress] = useState("");
   const [ercToken, setErcToken] = useState<simpleTokenType>({
     icon: "",
@@ -151,7 +156,11 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
   const [wrapFeePercentage, setWrapFeePercentage] = useState(0);
   const [unwrapFeePercentage, setUnwrapFeePercentage] = useState(0);
 
-  const { zenonClient } = useZenon();
+  const { internalNetworkClient } = useInternalNetwork();
+  const { externalNetworkClient } = useExternalNetwork();
+
+  const externalNetworkConnectionDetails = useSelector((state: any) => state.externalNetworkConnection);
+
   const referralCode = useSelector((state: any) => state.referral);
 
   const wizardStatus = useSelector((state: any) => state.wizardStatus);
@@ -164,19 +173,8 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
       try {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         metamaskCurrentChainId = (await provider.getNetwork())?.chainId;
-        await validateMetamaskNetwork(provider, globalConstants.externalAvailableNetworks, metamaskCurrentChainId);
+        await validateExternalNetwork(provider, globalConstants.externalAvailableNetworks, metamaskCurrentChainId);
         console.log("metamaskCurrentChainId", metamaskCurrentChainId);
-        // console.log(
-        //   "globalConstants.externalAvailableTokens",
-        //   Object.freeze(
-        //     Object.assign(
-        //       globalConstants.externalAvailableTokens.map((t: any) => {
-        //         return Object.freeze(Object.assign(t, {}));
-        //       }),
-        //       []
-        //     )
-        //   )
-        // );
         console.log(
           "JSON.stringify(globalConstants.externalAvailableTokens)",
           JSON.stringify(globalConstants.externalAvailableTokens)
@@ -229,10 +227,6 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
     };
 
     runAsyncTasks();
-    const changeEventHandlers = detectExtensionsChanges();
-    return () => {
-      removeWeb3ChangeListeners(changeEventHandlers);
-    };
   }, []);
 
   useEffect(() => {
@@ -283,8 +277,10 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
     console.log("useEffect, zenonToken", zenonToken);
     if (zenonToken.address) {
       const doAsyncUpdates = async () => {
+        setIsZenonBalanceLoading(true);
         updateZenonInfoToFrontend(await getZenonWalletInfo(false));
         await updatePair();
+        setIsZenonBalanceLoading(false);
       };
       console.log("zenonToken, doAsyncUpdates");
       doAsyncUpdates();
@@ -295,8 +291,10 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
     console.log("useEffect, ercToken", ercToken);
     if (ercToken.address) {
       const doAsyncUpdates = async () => {
+        setIsErcBalanceLoading(true);
         updateMetamaskInfoToFrontend(await getMetamaskWalletInfo(false));
         await updatePair();
+        setIsErcBalanceLoading(false);
       };
       console.log("ercToken, doAsyncUpdates");
       doAsyncUpdates();
@@ -317,37 +315,35 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
     }
   }, [wrapFeePercentage, unwrapFeePercentage]);
 
-  const detectExtensionsChanges = () => {
-    const accountChangedHandler = async (accounts: any) => {
-      console.log("accountChangedHandler", accounts);
+  useEffect(() => {
+    const runAsyncTasks = async () => {
       updateMetamaskInfoToFrontend(await getMetamaskWalletInfo(false));
     };
-    window?.ethereum?.on("accountsChanged", accountChangedHandler);
+    runAsyncTasks();
+  }, [ercAddress, externalNetworkConnectionDetails.chainId]);
 
-    const chainChangedHandler = async (chainId: any) => {
-      console.log("chainChangedHandler", ethers.BigNumber.from(chainId).toNumber());
-      updateMetamaskInfoToFrontend(await getMetamaskWalletInfo(false));
-    };
-    window?.ethereum?.on("chainChanged", chainChangedHandler);
+  useEffect(() => {
+    console.log("walletDetails - wallet changed");
+    console.log("serializedWalletInfo", serializedWalletInfo);
 
-    return {
-      accountsChanged: accountChangedHandler,
-      chainChanged: chainChangedHandler,
-    };
-  };
+    const newZenonAddress = JSONbig.parse(serializedWalletInfo["zenonInfo"] || "{}")?.address || "";
+    console.log("newZenonAddress", newZenonAddress);
+    if (newZenonAddress?.toLowerCase() !== zenonAddress?.toLowerCase()) {
+      setZenonAddress(newZenonAddress);
+    }
 
-  const removeWeb3ChangeListeners = (changeEventHandlers: any) => {
-    console.log("Removing web3 change listeners", changeEventHandlers);
-    window?.ethereum?.removeListener("accountsChanged", changeEventHandlers.accountsChanged);
-    window?.ethereum?.removeListener("chainChanged", changeEventHandlers.chainChanged);
-  };
+    const newErcAddress = JSONbig.parse(serializedWalletInfo["ercInfo"] || "{}")?.address || "";
+    console.log("newErcAddress", newErcAddress);
+    if (newErcAddress?.toLowerCase() !== ercAddress?.toLowerCase()) {
+      setErcAddress(newErcAddress);
+    }
+  }, [serializedWalletInfo]);
 
   const getMetamaskWalletInfo = async (showToastNotification = true) => {
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await validateMetamaskNetwork(provider, globalConstants.externalAvailableNetworks);
-      const accounts = await provider.send("eth_requestAccounts", []);
-      console.log("accounts", JSONbig.stringify(accounts));
+      const provider = await externalNetworkClient.getProvider();
+      await validateExternalNetwork(provider, globalConstants.externalAvailableNetworks);
+
       console.log("ercToken", JSONbig.stringify(ercToken));
 
       const externalTokens = await getExternalTokensDetails(globalConstants.externalAvailableTokens, provider);
@@ -371,21 +367,24 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
       console.log("currentToken", JSONbig.stringify(currentToken));
 
       const contract = new ethers.Contract(currentToken.address, updatedConstants.wznnAbi, provider);
-      const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
-      const signedContract = contract.connect(signer);
 
-      console.log("signedContract", signedContract);
+      console.log("contract", contract);
+      const walletInfo = await externalNetworkClient.getWalletInfo(provider);
+      const rawBalance = await externalNetworkClient.getBalance(
+        currentToken.address,
+        updatedConstants.wznnAbi,
+        provider
+      );
+      console.log("rawBalance", rawBalance);
 
-      const rawErcBalance = await signedContract.balanceOf(accounts[0]);
-
-      console.log("rawErcBalance", rawErcBalance);
-      console.log("currentToken.decimals", currentToken.decimals);
-
-      const formattedErcBalance = ethers.utils.formatUnits(rawErcBalance, currentToken.decimals);
-
+      const formattedErcBalance = ethers.utils.formatUnits(rawBalance, currentToken.decimals);
       console.log("formattedErcBalance", formattedErcBalance);
 
-      const ercInfo = { address: accounts[0], balance: formattedErcBalance, rawBalance: rawErcBalance };
+      const ercInfo = {
+        address: walletInfo.address?.toLowerCase(),
+        balance: formattedErcBalance,
+        rawBalance: rawBalance,
+      };
       dispatch(storeErcInfo(JSONbig.stringify(ercInfo)));
 
       if (showToastNotification) {
@@ -550,7 +549,8 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
     console.log("zenonToken", zenonToken);
 
     if (ercToken.address && zenonToken.address) {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = await externalNetworkClient.getProvider();
+      console.log("externalNetworkClient.getProvider()", provider);
       const currentContractAddress = globalConstants.externalAvailableNetworks.find(
         (net: any) => net.chainId == ercToken.network.chainId
       ).contractAddress;
@@ -558,13 +558,19 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
       console.log("currentContractAddress", currentContractAddress);
 
       const contract = new ethers.Contract(currentContractAddress, globalConstants.abiContract, provider);
-      const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
-      const c = contract.connect(signer);
+      // const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
+      // const c = contract.connect(signer);
 
       console.log("contract", contract);
       console.log("ercToken.address", ercToken.address);
 
-      const tokensInfo = await c.tokensInfo(ercToken.address);
+      const tokensInfo = await contract.tokensInfo(ercToken.address);
+      // const tokensInfo = await externalNetworkClient.callContract(
+      //   currentContractAddress,
+      //   globalConstants.abiContract,
+      //   "tokensInfo",
+      //   [ercToken.address]
+      // );
 
       console.log("tokensInfo of ercToken", tokensInfo, ercToken);
 
@@ -999,24 +1005,29 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
         ethers.utils.parseUnits(zenonAmount, ethers.BigNumber.from(zenonToken.decimals)).toString(),
         tokenStandard
       );
+      console.log("JSON.stringify(ercToken)", JSON.stringify(ercToken));
+      console.log("JSON.stringify(zenonToken)", JSON.stringify(zenonToken));
 
       if (ercToken.network.networkClass && ercToken.network.chainId) {
         const wrap = zenon.embedded.bridge.wrapToken(
           ercToken.network.networkClass,
+          // zenonToken.network.chainId,
           ercToken.network.chainId,
           ercAddress,
           ethers.utils.parseUnits(zenonAmount, ethers.BigNumber.from(zenonToken.decimals)),
           tokenStandard
         );
         console.log("wrap", wrap);
+        console.log("JSON.stringify(wrap)", JSON.stringify(wrap));
 
         const transaction = {
           fromAddress: zenonAddress,
           accountBlock: wrap.toJson(),
         };
+        console.log("JSON.stringify(transaction)", JSON.stringify(transaction));
 
         try {
-          const accountBlock = await zenonClient.sendTransaction(transaction);
+          const accountBlock = await internalNetworkClient.sendTransaction(transaction);
           console.log("final accountBlock", accountBlock);
           resolve(accountBlock?.hash.toString());
         } catch (err) {
@@ -1032,25 +1043,22 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
   const addCurrentWrapRequestToList = async (hash: string) => {
     console.log("zenonAddress", zenonAddress);
 
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const provider = await externalNetworkClient.getProvider();
     const currentContractAddress = globalConstants.externalAvailableNetworks.find(
       (net: any) => net.chainId == ercToken.network.chainId
     ).contractAddress;
     console.log("currentContractAddress", currentContractAddress);
     const contract = new ethers.Contract(currentContractAddress, globalConstants.abiContract, provider);
-    const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
-    const signedContract = contract.connect(signer);
+    // const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
+    // const signedContract = contract.connect(signer);
 
     // Adding one more block to be certain that the conditions passed
-    const redeemDelay = ((await signedContract.tokensInfo(ercToken.address))?.redeemDelay || 1) + 1;
+    const redeemDelay = ((await contract.tokensInfo(ercToken.address))?.redeemDelay || 1) + 1;
 
-    console.log(
-      "(await signedContract.tokensInfo(ercToken.address))",
-      await signedContract.tokensInfo(ercToken.address)
-    );
+    console.log("(await contract.tokensInfo(ercToken.address))", await contract.tokensInfo(ercToken.address));
     console.log("redeemDelay", redeemDelay);
 
-    const estimatedBlockTimeInSeconds = await signedContract.estimatedBlockTime();
+    const estimatedBlockTimeInSeconds = await contract.estimatedBlockTime();
 
     console.log("estimatedBlockTimeInSeconds", estimatedBlockTimeInSeconds.toNumber());
     console.log("ethers.BigNumber.from(zenonToken.decimals)", ethers.BigNumber.from(zenonToken.decimals));
@@ -1122,55 +1130,31 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
 
         console.log("currentContractAddress", currentContractAddress);
 
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const contract = new ethers.Contract(currentContractAddress, globalConstants.abiContract, provider);
-        const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
-        const signedContract = contract.connect(signer);
-
-        console.log("contract", contract);
-        console.log("signedContract", signedContract);
-
+        const provider = await externalNetworkClient.getProvider();
+        // const contract = new ethers.Contract(currentContractAddress, globalConstants.abiContract, provider);
         const token = new ethers.Contract(ercToken.address, globalConstants.abiToken, provider);
-
-        console.log("token", token);
 
         const ercTokenCopy = {
           ...ercToken,
           decimals: await token.decimals(),
         };
+        console.log("ercTokenCopy", ercTokenCopy);
 
-        const t = token.connect(signer);
-
-        console.log("ercAddress", ercAddress);
-        console.log("currentContractAddress", currentContractAddress);
-
-        const allowedAmount = await t.allowance(ercAddress, currentContractAddress);
-        console.log(
-          "allowedAmount",
-          allowedAmount,
-          ethers.utils.formatUnits(allowedAmount, ethers.BigNumber.from(ercTokenCopy.decimals))
+        const tokenApprovalParameters = [
+          currentContractAddress,
+          ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals)),
+        ];
+        console.log("tokenApprovalParameters", tokenApprovalParameters);
+        const tokenApproval = await externalNetworkClient.callContract(
+          ercToken.address,
+          globalConstants.abiToken,
+          "approve",
+          tokenApprovalParameters
         );
-
-        if (
-          ethers.BigNumber.from(allowedAmount).lt(
-            ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals))
-          )
-        ) {
-          console.log(
-            "Approving with",
-            currentContractAddress,
-            ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals))
-          );
-          const approveResponse = await t.approve(
-            currentContractAddress,
-            ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals))
-          );
-          console.log("approveResponse", approveResponse);
-          await approveResponse.wait();
-        }
+        console.log("tokenApproval", tokenApproval);
 
         console.log(
-          "Swapping with ",
+          "Swaping with",
           ercTokenCopy.address,
           ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals)),
           zenonAddress
@@ -1185,15 +1169,21 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
         }
         console.log("concatenatedAddresses", concatenatedAddresses);
 
-        const swapResponse = await signedContract.unwrap(
+        const swapParameters = [
           ercTokenCopy.address,
           ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals)),
-          concatenatedAddresses
+          concatenatedAddresses,
+        ];
+        console.log("swapParameters", swapParameters);
+
+        const swapResponse = await externalNetworkClient.callContract(
+          currentContractAddress,
+          globalConstants.abiContract,
+          "unwrap",
+          swapParameters
         );
         console.log("swapResponse", swapResponse);
-        await swapResponse.wait();
 
-        // This returns the unique id
         resolve({ hash: swapResponse?.hash || "", logIndex: swapResponse?.logIndex || 0 });
       } catch (err: any) {
         console.error(err);
@@ -1299,6 +1289,8 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
     );
     setIsNextDisabled(true);
     try {
+      console.log("showSpinner", showSpinner);
+      showSpinner(true);
       if (!isUnwrapDirection) {
         // ZNN => WZNN
         await znnToWznn();
@@ -1333,16 +1325,10 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
         }
       }
 
-      showSpinner(false);
-      setIsNextDisabled(false);
-
       console.log("onFormSubmit");
 
       onStepSubmit();
     } catch (err: any) {
-      setIsNextDisabled(false);
-      showSpinner(false);
-
       console.error(err);
 
       toast((err?.message || err) + "", {
@@ -1355,6 +1341,9 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
         type: "error",
         theme: "dark",
       });
+    } finally {
+      setIsNextDisabled(false);
+      showSpinner(false);
     }
   };
 
@@ -1412,9 +1401,16 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
             </div>
 
             <div className="d-flex justify-content-end align-items-center height-30px">
-              <div className="mt-1 text-right">
+              <div className="mt-1 d-flex text-right">
                 {"Balance: "}
-                {zenonBalance + " " + zenonToken?.symbol}
+                {isZenonBalanceLoading ? (
+                  <div className="contextual-spinner-container mr-1 ml-1">
+                    <img alt="" src={spinnerSvg} className="spinner" />
+                  </div>
+                ) : (
+                  zenonBalance
+                )}
+                {" " + zenonToken?.symbol}
               </div>
             </div>
 
@@ -1530,9 +1526,16 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
                   src={require("./../../../assets/logos/metamask.png")}></img>
               </div>
 
-              <div className="mt-1 text-right">
+              <div className="mt-1 d-flex text-right">
                 {"Balance: "}
-                {ercBalance + " " + ercToken?.symbol}
+                {isErcBalanceLoading ? (
+                  <div className="contextual-spinner-container mr-1 ml-1">
+                    <img alt="" src={spinnerSvg} className="spinner" />
+                  </div>
+                ) : (
+                  ercBalance
+                )}
+                {" " + ercToken?.symbol}
               </div>
             </div>
 

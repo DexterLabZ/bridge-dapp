@@ -8,7 +8,8 @@ import NetworkDetails from "../../components/network-details/network-details";
 import ReferralCodeInterpreter from "../../components/referralCodeInterpreter/referralCodeInterpreter";
 import WalletDetails from "../../components/wallet-details/wallet-details";
 import { SpinnerProvider } from "../../services/hooks/spinner/spinnerContext";
-import { ZenonProvider } from "../../services/hooks/zenon-provider/zenonContext";
+import { InternalNetworkProvider } from "../../services/hooks/internalNetwork-provider/internalNetworkContext";
+import { ExternalNetworkProvider } from "../../services/hooks/externalNetwork-provider/externalNetworkContext";
 import { addBeforeUnloadEvents, removeBeforeUnloadEvents } from "../../services/pageHandlers/pageHandlers";
 import WizardLayout from "../wizardLayout/wizardLayout";
 import swirl from "./../../assets/swirl.svg";
@@ -19,7 +20,7 @@ import "./mainLayout.scss";
  */
 import { useSelector } from "react-redux";
 
-import { GTMProvider } from '@elgorditosalsero/react-gtm-hook'
+import { GTMProvider } from "@elgorditosalsero/react-gtm-hook";
 
 const MainLayout = () => {
   /**
@@ -28,7 +29,7 @@ const MainLayout = () => {
    */
   const globalConstants = useSelector((state: any) => state.globalConstants);
 
-  const gtmParams = { id: globalConstants.GTM_ID }
+  const gtmParams = { id: globalConstants.GTM_ID };
 
   useEffect(() => {
     addBeforeUnloadEvents();
@@ -41,22 +42,24 @@ const MainLayout = () => {
     <div className="main-layout">
       <GTMProvider state={gtmParams}>
         <SpinnerProvider>
-          <ZenonProvider>
-            <NavBreadcrumbsMenu />
-            <div className="bg-shapes-container">
-              <img alt="bg-shapes" className="bg-shapes" src={require("./../../assets/bg-shapes.png")}></img>
-              <img alt="bg-swirl" className="bg-swirl" src={swirl}></img>
-            </div>
-            <CustomCursor></CustomCursor>
-            <div className="responsive-container">
-              <WizardLayout />
-              <ToastContainer />
-              <InfoBanner />
-              <WalletDetails />
-              <NetworkDetails />
-              <ReferralCodeInterpreter />
-            </div>
-          </ZenonProvider>
+          <InternalNetworkProvider>
+            <ExternalNetworkProvider>
+              <NavBreadcrumbsMenu />
+              <div className="bg-shapes-container">
+                <img alt="bg-shapes" className="bg-shapes" src={require("./../../assets/bg-shapes.png")}></img>
+                <img alt="bg-swirl" className="bg-swirl" src={swirl}></img>
+              </div>
+              <CustomCursor></CustomCursor>
+              <div className="responsive-container">
+                <WizardLayout />
+                <ToastContainer />
+                <InfoBanner />
+                <WalletDetails />
+                <NetworkDetails />
+                <ReferralCodeInterpreter />
+              </div>
+            </ExternalNetworkProvider>
+          </InternalNetworkProvider>
         </SpinnerProvider>
         <div id="spinner-root"></div>
       </GTMProvider>
