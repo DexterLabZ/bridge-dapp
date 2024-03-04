@@ -302,7 +302,7 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
           // Keep the beforeUnload event that asks the user if he wants to leave the page.
           removeBeforeUnloadEvents();
 
-          toast(`Transaction sent to your wallet. Please check Syrius Wallet app`, {
+          toast(`Transaction sent to your wallet. Please check Zenon Wallet app`, {
             position: "bottom-center",
             autoClose: 10000,
             hideProgressBar: false,
@@ -324,7 +324,7 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         case internalNetworkProviderTypes.syriusExtension: {
           if (!syriusClient.current) throw Error("Client was not initialized");
 
-          toast(`Transaction sent to your wallet. Please check Syrius Extension`, {
+          toast(`Transaction sent to your wallet. Please check Zenon Extension`, {
             position: "bottom-center",
             autoClose: 10000,
             hideProgressBar: false,
