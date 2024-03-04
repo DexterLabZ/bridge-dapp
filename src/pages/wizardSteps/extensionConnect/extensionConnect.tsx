@@ -79,6 +79,10 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
   const [isSyriusExtensionEnabled, setIsSyriusExtensionEnabled] = useState(false);
 
   useEffect(() => {
+    setIsReferralCodeApplied(!!referralInfo.referralCode);
+  }, [referralInfo.referralCode]);
+
+  useEffect(() => {
     console.log("extensionConnect - serializedWalletInfo", serializedWalletInfo);
     const zenonInfo = JSONbig.parse(serializedWalletInfo?.["zenonInfo"] || "{}");
     if (zenonInfo && zenonInfo?.address) {
@@ -1339,30 +1343,42 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
   return (
     <div className="pl-3 pr-3 mt-4">
       <div className="d-flex justify-content-left align-items-center">
-        {!isReferralCodeApplied && (
-          <a
-            className="no-decoration d-flex justify-content-start align-items-center text-sm"
-            href="https://twitter.com/hashtag/HyperGrowth"
-            target="_blank"
-            rel="noreferrer">
-            <img alt="fees-info" className="mr-1" src={infoIcon}></img>
-            <div className="d-flex justify-items-center align-items-center">
-              <div className="tooltip clickable-info text-bold pt-1 pb-1">
-                {`Click here to find a referral link and get 1% bonus`}
-                <div className="tooltip-text background-clip-fix">
-                  Use referral code to get 1% bonus cashback for
-                  <br></br>
-                  every unwrap from wZNN to ZNN and wQSR to QSR
-                </div>
-              </div>
-              <img
-                alt="step-logo"
-                className="ml-1"
-                style={{ maxWidth: "32px", maxHeight: "32px" }}
-                src={twitterLogo}></img>
+        <a
+          className="no-decoration d-flex justify-content-start align-items-center text-sm"
+          href="https://twitter.com/hashtag/HyperGrowth"
+          target="_blank"
+          rel="noreferrer">
+          <img alt="fees-info" className="mr-1" src={infoIcon}></img>
+          <div className="d-flex justify-items-center align-items-center">
+            <div className="tooltip clickable-info text-bold pt-1 pb-1">
+              {isReferralCodeApplied ? (
+                <>
+                  {`Click here to see more referral links`}
+                  <div className="tooltip-text background-clip-fix">
+                    You successfully used a referral code to get 1% bonus cashback
+                    <br></br>
+                    for every unwrap from wZNN to ZNN and wQSR to QSR
+                  </div>
+                </>
+              ) : (
+                <>
+                  {`Click here to find a referral link and get 1% bonus`}
+                  <div className="tooltip-text background-clip-fix">
+                    Use referral code to get 1% bonus cashback for
+                    <br></br>
+                    every unwrap from wZNN to ZNN and wQSR to QSR
+                  </div>
+                </>
+              )}
             </div>
-          </a>
-        )}
+            <img
+              alt="step-logo"
+              className="ml-1"
+              style={{ maxWidth: "32px", maxHeight: "32px" }}
+              src={twitterLogo}></img>
+          </div>
+        </a>
+
         <a
           className="no-decoration d-flex justify-content-start align-items-center text-sm"
           href="https://forum.zenon.org/t/perpetual-ecosystem-growth/1417/17"
