@@ -28,40 +28,6 @@ const WalletDetails: FC = () => {
     setErcAddress(JSONbig.parse(serializedWalletInfo["ercInfo"] || "{}")?.address || "");
   }, [serializedWalletInfo]);
 
-  useEffect(() => {
-    const changeEventHandlers = detectExtensionsChanges();
-    return () => {
-      removeWeb3ChangeListeners(changeEventHandlers);
-    };
-  }, []);
-
-  const detectExtensionsChanges = () => {
-    const accountChangedHandler = async (accounts: any) => {
-      console.log("accountChangedHandler", accounts);
-
-      const oldErcInfo = JSONbig.parse(serializedWalletInfo["ercInfo"] || "{}");
-      dispatch(storeErcInfo(JSONbig.stringify({ ...oldErcInfo, address: accounts[0]?.toLowerCase() })));
-    };
-    window?.ethereum?.on("accountsChanged", accountChangedHandler);
-
-    const chainChangedHandler = async (chainId: any) => {
-      console.log("chainChangedHandler", ethers.BigNumber.from(chainId).toNumber());
-      // window.location.reload();
-    };
-    window?.ethereum?.on("chainChanged", chainChangedHandler);
-
-    return {
-      accountsChanged: accountChangedHandler,
-      chainChanged: chainChangedHandler,
-    };
-  };
-
-  const removeWeb3ChangeListeners = (changeEventHandlers: any) => {
-    console.log("Removing web3 change listeners", changeEventHandlers);
-    window?.ethereum?.removeListener("accountsChanged", changeEventHandlers.accountsChanged);
-    window?.ethereum?.removeListener("chainChanged", changeEventHandlers.chainChanged);
-  };
-
   return (
     <div className="wallet-details">
       {internalNetworkConnectionDetails?.nodeUrl ? (

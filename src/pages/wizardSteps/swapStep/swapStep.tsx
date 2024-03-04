@@ -1518,13 +1518,17 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
             </div>
 
             <div className="d-flex justify-content-between align-items-center height-30px">
-              <div className="text-button" onClick={addTokenToMetamask}>
-                <span className="mr-1 text-nowrap">Add token to metamask</span>
-                <img
-                  alt="text-button-icon"
-                  className="text-button-icon"
-                  src={require("./../../../assets/logos/metamask.png")}></img>
-              </div>
+              {externalNetworkClient.providerType == externalNetworkProviderTypes.metamask ? (
+                <div className="text-button" onClick={addTokenToMetamask}>
+                  <span className="mr-1 text-nowrap">Add token to metamask</span>
+                  <img
+                    alt="text-button-icon"
+                    className="text-button-icon"
+                    src={require("./../../../assets/logos/metamask.png")}></img>
+                </div>
+              ) : (
+                <div></div>
+              )}
 
               <div className="mt-1 d-flex text-right">
                 {"Balance: "}

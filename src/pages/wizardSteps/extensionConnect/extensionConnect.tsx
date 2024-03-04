@@ -22,6 +22,7 @@ import {
   getReferralAddress,
   getZenonTokenInfo,
   mapObject,
+  openSafelyInNewTab,
   updateExternalLiquidityTokensBasedOnTokenPairs,
   updateInternalLiquidityTokensBasedOnTokenPairs,
   updateTokenPairsWithNewExternalTokens,
@@ -34,6 +35,8 @@ import infoIcon from "./../../../assets/info-icon.svg";
 import metamaskLogo from "./../../../assets/logos/metamask.svg";
 import syriusLogo from "./../../../assets/logos/syrius-logo.svg";
 import twitterLogo from "./../../../assets/logos/twitter.svg";
+import zenonLogo from "./../../../assets/networks/zenon.svg";
+import ethLogo from "./../../../assets/networks/eth.svg";
 import walletConnectLogo from "./../../../assets/logos/walletConnect.svg";
 import bnbNetworkIcon from "./../../../assets/networks/bnb.svg";
 import znnNetworkIcon from "./../../../assets/networks/zenon.svg";
@@ -73,6 +76,11 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
   const { externalNetworkClient } = useExternalNetwork();
 
   const [hasParingsOrSessions, setHasParingsOrSessions] = useState(false);
+  const [isSyriusExtensionEnabled, setIsSyriusExtensionEnabled] = useState(false);
+
+  useEffect(() => {
+    setIsReferralCodeApplied(!!referralInfo.referralCode);
+  }, [referralInfo.referralCode]);
 
   useEffect(() => {
     console.log("extensionConnect - serializedWalletInfo", serializedWalletInfo);
@@ -1333,22 +1341,35 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
   };
 
   return (
-    <div className="pl-3 pr-3">
-      {!isReferralCodeApplied && (
+    <div className="pl-3 pr-3 mt-4">
+      <div className="d-flex justify-content-left align-items-center">
         <a
-          className="no-decoration d-flex justify-content-start align-items-center mt-4 text-sm"
+          className="no-decoration d-flex justify-content-start align-items-center text-sm"
           href="https://twitter.com/hashtag/HyperGrowth"
           target="_blank"
           rel="noreferrer">
           <img alt="fees-info" className="mr-1" src={infoIcon}></img>
           <div className="d-flex justify-items-center align-items-center">
             <div className="tooltip clickable-info text-bold pt-1 pb-1">
-              {`Click here to find a referral link and get 1% bonus`}
-              <div className="tooltip-text background-clip-fix">
-                Use referral code to get 1% bonus cashback for
-                <br></br>
-                every unwrap from wZNN to ZNN and wQSR to QSR
-              </div>
+              {isReferralCodeApplied ? (
+                <>
+                  {`Click here to see more referral links`}
+                  <div className="tooltip-text background-clip-fix">
+                    You successfully used a referral code to get 1% bonus cashback
+                    <br></br>
+                    for every unwrap from wZNN to ZNN and wQSR to QSR
+                  </div>
+                </>
+              ) : (
+                <>
+                  {`Click here to find a referral link and get 1% bonus`}
+                  <div className="tooltip-text background-clip-fix">
+                    Use referral code to get 1% bonus cashback for
+                    <br></br>
+                    every unwrap from wZNN to ZNN and wQSR to QSR
+                  </div>
+                </>
+              )}
             </div>
             <img
               alt="step-logo"
@@ -1357,7 +1378,19 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
               src={twitterLogo}></img>
           </div>
         </a>
-      )}
+
+        <a
+          className="no-decoration d-flex justify-content-start align-items-center text-sm"
+          href="https://forum.zenon.org/t/perpetual-ecosystem-growth/1417/17"
+          target="_blank"
+          rel="noreferrer">
+          <div className={`button secondary text-white ml-2 text-sm tooltip d-flex align-items-center`}>
+            {/* <img alt="fees-info" className="mr-2" src={infoIcon}></img> */}
+            About referral
+            <span className="tooltip-text">Find out more about the referral program.</span>
+          </div>
+        </a>
+      </div>
 
       <div className={`extension-item mb-5 mt-4`}>
         <div className={`step-counter ${isSyriusConnected && "completed"}`}>1</div>
@@ -1373,28 +1406,48 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
                   </span>
                 </div>
               ) : (
-                <>{`Connect Syrius Wallet`}</>
+                <div className="d-flex align-items-center justify-content-center">
+                  {`Connect Zenon Wallet`}
+                  <div className="tooltip" onClick={() => setIsSyriusExtensionEnabled((v) => !v)}>
+                    <img
+                      alt="step-logo"
+                      className="ml-1"
+                      style={{ maxWidth: "32px", maxHeight: "32px" }}
+                      src={zenonLogo}></img>
+                    <span className="tooltip-text">
+                      {`Click here to ${
+                        isSyriusExtensionEnabled ? "disable" : "enable"
+                      } Syrius Extension connection method (advanced)`}
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
             <div className="d-flex gap-2 flex-wrap w-100 justify-content-center align-items-center">
-              <div
-                onClick={() => connectToInternalNetwork(internalNetworkProviderTypes.syriusExtension)}
-                className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${
-                  isSyriusConnected && internalNetworkClient.providerType ? "disabled" : ""
-                }
-               ${
-                 isSyriusConnected && internalNetworkClient.providerType == internalNetworkProviderTypes.syriusExtension
-                   ? "primary soft-disabled"
-                   : "secondary"
-               }`}>
-                <img
-                  alt="step-logo"
-                  className="mr-1"
-                  style={{ maxWidth: "24px", maxHeight: "24px" }}
-                  src={syriusLogo}></img>
-                <div>Extension</div>
-              </div>
-              <div className="">or</div>
+              {isSyriusExtensionEnabled ? (
+                <>
+                  <div
+                    onClick={() => connectToInternalNetwork(internalNetworkProviderTypes.syriusExtension)}
+                    className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${
+                      isSyriusConnected && internalNetworkClient.providerType ? "disabled" : ""
+                    }
+ ${
+   isSyriusConnected && internalNetworkClient.providerType == internalNetworkProviderTypes.syriusExtension
+     ? "primary soft-disabled"
+     : "secondary"
+ }`}>
+                    <img
+                      alt="step-logo"
+                      className="mr-1"
+                      style={{ maxWidth: "24px", maxHeight: "24px" }}
+                      src={syriusLogo}></img>
+                    <div>Extension</div>
+                  </div>
+                  <div className="">or</div>
+                </>
+              ) : (
+                <></>
+              )}
               <div
                 onClick={() => connectToInternalNetwork(internalNetworkProviderTypes.walletConnect)}
                 className={`p-relative pr-3 pl-3 pt-1 pb-1 button d-flex align-items-center primary-on-hover ${
@@ -1449,7 +1502,14 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
                   </span>
                 </div>
               ) : (
-                <>{`Connect Ethereum Wallet`}</>
+                <div className="d-flex align-items-center justify-content-center">
+                  {`Connect Ethereum Wallet`}
+                  <img
+                    alt="step-logo"
+                    className="ml-1"
+                    style={{ maxWidth: "32px", maxHeight: "32px" }}
+                    src={ethLogo}></img>
+                </div>
               )}
             </div>
             <div className="d-flex gap-2 flex-wrap w-100 justify-content-center align-items-center">

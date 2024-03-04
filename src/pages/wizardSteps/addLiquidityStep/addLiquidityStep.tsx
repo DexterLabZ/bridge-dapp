@@ -23,6 +23,7 @@ import {
   validateExternalNetwork,
 } from "../../../utils/utils";
 import useExternalNetwork from "../../../services/hooks/externalNetwork-provider/useExternalNetwork";
+import { externalNetworkProviderTypes } from "../../../services/hooks/externalNetwork-provider/externalNetworkContext";
 
 export type simpleTokenType = {
   icon: string;
@@ -1333,13 +1334,17 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
             </div>
 
             <div className="d-flex justify-content-between align-items-center height-30px">
-              <div className="text-button" onClick={() => addTokenToMetamask(zenonToken)}>
-                <span className="mr-1 text-nowrap">Add token to metamask</span>
-                <img
-                  alt="text-button-icon"
-                  className="text-button-icon"
-                  src={require("./../../../assets/logos/metamask.png")}></img>
-              </div>
+              {externalNetworkClient.providerType == externalNetworkProviderTypes.metamask ? (
+                <div className="text-button" onClick={() => addTokenToMetamask(ercToken)}>
+                  <span className="mr-1 text-nowrap">Add token to metamask</span>
+                  <img
+                    alt="text-button-icon"
+                    className="text-button-icon"
+                    src={require("./../../../assets/logos/metamask.png")}></img>
+                </div>
+              ) : (
+                <div></div>
+              )}
 
               <div className="d-flex text-right">
                 {"Balance: "}
@@ -1409,13 +1414,17 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
             </div>
 
             <div className="d-flex justify-content-between align-items-center height-30px">
-              <div className="text-button" onClick={() => addTokenToMetamask(ercToken)}>
-                <span className="mr-1 text-nowrap">Add token to metamask</span>
-                <img
-                  alt="text-button-icon"
-                  className="text-button-icon"
-                  src={require("./../../../assets/logos/metamask.png")}></img>
-              </div>
+              {externalNetworkClient.providerType == externalNetworkProviderTypes.metamask ? (
+                <div className="text-button" onClick={() => addTokenToMetamask(ercToken)}>
+                  <span className="mr-1 text-nowrap">Add token to metamask</span>
+                  <img
+                    alt="text-button-icon"
+                    className="text-button-icon"
+                    src={require("./../../../assets/logos/metamask.png")}></img>
+                </div>
+              ) : (
+                <div></div>
+              )}
 
               <div className="d-flex text-right">
                 {"Balance: "}
