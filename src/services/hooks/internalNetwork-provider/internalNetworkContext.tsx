@@ -17,6 +17,13 @@ import { getReferralAddress, getZenonWalletInfo } from "../../../utils/utils";
 import { addBeforeUnloadEvents, removeBeforeUnloadEvents } from "../../pageHandlers/pageHandlers";
 import { storeReferralCode } from "../../redux/referralSlice";
 import { WalletConnectModal } from "@walletconnect/modal";
+import {
+  flowTypes,
+  liquidityFlowSteps,
+  stepsDisplayNames,
+  storeCurrentWizardFlowStep,
+  swapFlowSteps,
+} from "../../redux/wizardStatusSlice";
 
 export enum internalNetworkProviderTypes {
   "walletConnect" = "walletConnect",
@@ -47,6 +54,7 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
   const maxRequestRetries = 3;
   const zenonSingleton = Zenon.getSingleton();
   const [globalConstants, setGlobalConstants] = useState(useSelector((state: any) => state.globalConstants));
+  const wizardStatus = useSelector((state: any) => state.wizardStatus);
   const dispatch = useDispatch();
 
   // Initialize the internalNetworkProvider when the component mounts
@@ -137,6 +145,12 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
 
         internalNetworkWalletConnectWrapper.registerEvents(
           walletClient,
+          () => {
+            console.log("disconnect", internalNetworkProviderTypes.walletConnect);
+            return disconnect(internalNetworkProviderTypes.walletConnect);
+          },
+
+          // () => disconnect(internalNetworkProviderTypes.walletConnect),
           onAddressChange,
           onChainIdChange,
           onConnectedNodeChange
@@ -157,6 +171,24 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
     }
   };
 
+  const goToExtensionConnectStep = () => {
+    // Because this event is registered after Meta flow is set
+    // We can't know if the user connected for a liquidity flow
+    // and then disconnected and changed for a swap flow
+    // Problem: Next time it will be disconnected
+    // it will redirect to the wrong meta flow
+    console.log("wizardStatus.currentFlowType", wizardStatus.currentFlowType);
+    console.log("wizardStatus.currentFlowStep", wizardStatus.currentFlowStep);
+    if (wizardStatus.currentFlowType == flowTypes.LiquidityStaking) {
+      dispatch(storeCurrentWizardFlowStep(liquidityFlowSteps?.["ExtensionConnect"]));
+    } else {
+      // Swap flow
+      dispatch(storeCurrentWizardFlowStep(swapFlowSteps?.["ExtensionConnect"]));
+    }
+
+    // dispatch(storeCurrentWizardFlowStep(swapFlowSteps?.["ExtensionConnect"]));
+  };
+
   const disconnect = async (_providerType: internalNetworkProviderTypes): Promise<boolean> => {
     if (_providerType) {
       setProviderType(_providerType);
@@ -167,6 +199,18 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         throw Error("No provider type selected");
       }
     }
+    console.log("disconnect _providerType", _providerType);
+
+    toast(`Disconnected from wallet !`, {
+      position: "bottom-center",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: false,
+      draggable: true,
+      type: "error",
+      theme: "dark",
+    });
 
     switch (_providerType) {
       case internalNetworkProviderTypes.walletConnect: {
@@ -194,6 +238,8 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
           walletConnectClient.current = null;
           setProviderType(null);
 
+          goToExtensionConnectStep();
+
           dispatch(resetZenonInfo());
           dispatch(resetInternalNetworkConnectionState());
         }
@@ -207,6 +253,8 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         dispatch(resetZenonInfo());
         dispatch(resetInternalNetworkConnectionState());
 
+        goToExtensionConnectStep();
+
         return true;
       }
       default: {
@@ -214,6 +262,8 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         walletConnectClient.current = null;
         walletConnectSession.current = null;
         walletConnectPairing.current = null;
+
+        goToExtensionConnectStep();
 
         dispatch(resetZenonInfo());
         dispatch(resetInternalNetworkConnectionState());
@@ -274,7 +324,7 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         if (maxRetries > 0) {
           return await getWalletInfo(_providerType, maxRetries - 1);
         } else throw Error(`Unable to make request after ${maxRequestRetries} retries.`);
-      } else throw Error(`Unable to make request and couldn't retry.`);
+      } else throw Error(`Error: ${handledError.message}`);
     }
   };
 
@@ -350,7 +400,7 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         if (maxRetries > 0) {
           return await sendTransaction(params, _providerType, maxRetries - 1);
         } else throw Error(`Unable to make request after ${maxRequestRetries} retries. Error: ${handledError.message}`);
-      } else throw Error(`Unable to make request and couldn't retry. Error: ${handledError.message}`);
+      } else throw Error(`Error: ${handledError.message}`);
     }
   };
 
@@ -361,10 +411,21 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
     };
     try {
       console.warn("error.message", error.message);
+      handledError.message = error.message;
+
       if (error.code == -32602 && error.message?.toLowerCase()?.includes(`Bad state: No element`.toLowerCase())) {
-        if (!walletConnectClient.current) throw Error("Client was not initialized");
-        if (!walletConnectSession.current) throw Error("Session was not established");
-        if (!walletConnectPairing.current) throw Error("Pairing was not established");
+        if (!walletConnectClient.current) {
+          handledError.message = "Client was not initialized!";
+          throw Error(handledError.message);
+        }
+        if (!walletConnectSession.current) {
+          handledError.message = "Session was not established!";
+          throw Error(handledError.message);
+        }
+        if (!walletConnectPairing.current) {
+          handledError.message = "Pairing was not established!";
+          throw Error(handledError.message);
+        }
 
         // Disconnect current pair and reconnect with new pair
         await walletConnectClient.current.disconnect({
@@ -383,18 +444,27 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         walletConnectSession.current = session;
         walletConnectPairing.current = pairing;
         handledError.shouldRetry = true;
-        handledError.message = error.message;
       }
 
       if (error.code == 9000 && error.message?.toLowerCase()?.includes(`Wallet is locked`.toLowerCase())) {
         handledError.shouldRetry = false;
-        throw Error("Your wallet is locked. Please unlock!");
+        handledError.message = "Your wallet is locked. Please unlock!";
+        throw Error(handledError.message);
       }
 
       if (error.code == -32602 && error.message?.toLowerCase()?.includes(`No matching key`.toLowerCase())) {
-        if (!walletConnectClient.current) throw Error("Client was not initialized");
-        if (!walletConnectSession.current) throw Error("Session was not established");
-        if (!walletConnectPairing.current) throw Error("Pairing was not established");
+        if (!walletConnectClient.current) {
+          handledError.message = "Client was not initialized!";
+          throw Error(handledError.message);
+        }
+        if (!walletConnectSession.current) {
+          handledError.message = "Session was not established!";
+          throw Error(handledError.message);
+        }
+        if (!walletConnectPairing.current) {
+          handledError.message = "Pairing was not established!";
+          throw Error(handledError.message);
+        }
 
         console.log("Retrying...");
         handledError.shouldRetry = true;
@@ -428,6 +498,7 @@ export const InternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
       }
     } catch (err) {
       console.error("Error handling error", err);
+      handledError.message = "Unknown error!";
     } finally {
       return handledError;
     }

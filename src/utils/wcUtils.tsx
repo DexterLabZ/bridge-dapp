@@ -259,6 +259,7 @@ export const getLatestActiveSession = (signClient: Client, namespace?: "zenon" |
   const filteredSessions = signClient.find({
     requiredNamespaces: namespaceFilter,
   });
+  console.log("SessionsOfNamespace (", namespace, ") ", filteredSessions);
 
   const activeSessions = filteredSessions?.filter((s) => s.expiry > Date.now() / 1000);
   console.log("activeSessions", activeSessions);

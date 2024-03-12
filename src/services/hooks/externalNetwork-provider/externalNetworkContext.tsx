@@ -25,6 +25,12 @@ import {
   storeExternalNetworkNodeUrl,
 } from "../../redux/externalNetworkConnectionSlice";
 import metamaskExtensionWrapper from "./metamaskExtensionWrapper";
+import {
+  flowTypes,
+  liquidityFlowSteps,
+  storeCurrentWizardFlowStep,
+  swapFlowSteps,
+} from "../../redux/wizardStatusSlice";
 
 export enum externalNetworkProviderTypes {
   "walletConnect" = "walletConnect",
@@ -64,6 +70,7 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
   const maxRequestRetries = 3;
   const zenonSingleton = Zenon.getSingleton();
   const [globalConstants, setGlobalConstants] = useState(useSelector((state: any) => state.globalConstants));
+  const wizardStatus = useSelector((state: any) => state.wizardStatus);
   const dispatch = useDispatch();
   const walletInfo = useSelector((state: any) => state.wallet);
 
@@ -193,6 +200,10 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         externalNetworkWalletConnectWrapper.registerEvents(
           walletClient,
           provider as ethers.providers.JsonRpcProvider,
+          () => {
+            console.log("disconnect", externalNetworkProviderTypes.walletConnect);
+            return disconnect(externalNetworkProviderTypes.walletConnect);
+          },
           onAddressChange,
           onChainIdChange,
           onAccountsChange
@@ -206,14 +217,18 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         //   zenon: zenonSingleton,
         //   eventsHandler: metamaskWrapper.registerEvents(onAddressChange, onChainIdChange),
         // };
+        const connectionInfo = await metamaskWrapper.getConnectionInfo();
+        const provider = await getProvider(_providerType, connectionInfo.chainId);
 
         metamaskEventHandlers.current = metamaskWrapper.registerEvents(
           provider as ethers.providers.Web3Provider,
+          () => {
+            console.log("disconnect", externalNetworkProviderTypes.metamask);
+            return disconnect(externalNetworkProviderTypes.metamask);
+          },
           onAddressChange,
           onChainIdChange
         );
-
-        const connectionInfo = await metamaskWrapper.getConnectionInfo();
 
         // const connectionInfo: Partial<ExternalWalletInfo> = {
         //   address: session?.namespaces?.eip155?.chains?.[0]?.split(":")?.[0] || "",
@@ -227,6 +242,24 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
     }
   };
 
+  const goToExtensionConnectStep = () => {
+    // Because this event is registered after Meta flow is set
+    // We can't know if the user connected for a liquidity flow
+    // and then disconnected and changed for a swap flow
+    // Problem: Next time it will be disconnected
+    // it will redirect to the wrong meta flow
+    console.log("wizardStatus.currentFlowType", wizardStatus.currentFlowType);
+    console.log("wizardStatus.currentFlowStep", wizardStatus.currentFlowStep);
+    if (wizardStatus.currentFlowType == flowTypes.LiquidityStaking) {
+      dispatch(storeCurrentWizardFlowStep(liquidityFlowSteps?.["ExtensionConnect"]));
+    } else {
+      // Swap flow
+      dispatch(storeCurrentWizardFlowStep(swapFlowSteps?.["ExtensionConnect"]));
+    }
+
+    // dispatch(storeCurrentWizardFlowStep(swapFlowSteps?.["ExtensionConnect"]));
+  };
+
   const disconnect = async (_providerType: externalNetworkProviderTypes): Promise<boolean> => {
     if (_providerType) {
       setProviderType(_providerType);
@@ -237,6 +270,18 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         throw Error("No provider type selected");
       }
     }
+    console.log("disconnect _providerType", _providerType);
+
+    toast(`Disconnected from wallet !`, {
+      position: "bottom-center",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: false,
+      draggable: true,
+      type: "error",
+      theme: "dark",
+    });
 
     switch (_providerType) {
       case externalNetworkProviderTypes.walletConnect: {
@@ -265,6 +310,8 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
           setProviderType(null);
           setProvider(null);
 
+          goToExtensionConnectStep();
+
           dispatch(resetErcInfo());
           dispatch(resetExternalNetworkConnectionState());
         }
@@ -278,9 +325,10 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         setProviderType(null);
         setProvider(null);
 
+        goToExtensionConnectStep();
+
         dispatch(resetErcInfo());
         dispatch(resetExternalNetworkConnectionState());
-
         return true;
       }
       default: {
@@ -289,6 +337,8 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         walletConnectPairing.current = null;
         setProviderType(null);
         setProvider(null);
+
+        goToExtensionConnectStep();
 
         dispatch(resetErcInfo());
         dispatch(resetExternalNetworkConnectionState());
@@ -386,8 +436,8 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         // Retry
         if (maxRetries > 0) {
           return await getWalletInfo(_provider, _providerType, maxRetries - 1);
-        } else throw Error(`Unable to make request after ${maxRequestRetries} retries.`);
-      } else throw Error(`Unable to make request and couldn't retry.`);
+        } else throw Error(`Unable to make request after ${maxRequestRetries} retries. Error: ${handledError.message}`);
+      } else throw Error(`Error: ${handledError.message}`);
     }
   };
 
@@ -435,8 +485,8 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         // Retry
         if (maxRetries > 0) {
           return await getBalance(tokenAddress, tokenAbi, _provider, _providerType, maxRetries - 1);
-        } else throw Error(`Unable to make request after ${maxRequestRetries} retries.`);
-      } else throw Error(`Unable to make request and couldn't retry.`);
+        } else throw Error(`Unable to make request after ${maxRequestRetries} retries. Error: ${handledError.message}`);
+      } else throw Error(`Error: ${handledError.message}`);
     }
   };
 
@@ -542,8 +592,8 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
             _provider,
             maxRetries - 1
           );
-        } else throw Error(`Unable to make request after ${maxRequestRetries} retries.`);
-      } else throw Error(`Unable to make request and couldn't retry.`);
+        } else throw Error(`Unable to make request after ${maxRequestRetries} retries. Error: ${handledError.message}`);
+      } else throw Error(`Error: ${handledError.message}`);
     } finally {
       addBeforeUnloadEvents();
     }
@@ -651,8 +701,8 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
             _provider,
             maxRetries - 1
           );
-        } else throw Error(`Unable to make request after ${maxRequestRetries} retries.`);
-      } else throw Error(`Unable to make request and couldn't retry.`);
+        } else throw Error(`Unable to make request after ${maxRequestRetries} retries. Error: ${handledError.message}`);
+      } else throw Error(`Error: ${handledError.message}`);
     } finally {
       addBeforeUnloadEvents();
     }
@@ -725,8 +775,8 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         // Retry
         if (maxRetries > 0) {
           return await sendTransaction(params, _providerType, maxRetries - 1);
-        } else throw Error(`Unable to make request after ${maxRequestRetries} retries.`);
-      } else throw Error(`Unable to make request and couldn't retry.`);
+        } else throw Error(`Unable to make request after ${maxRequestRetries} retries. Error: ${handledError.message}`);
+      } else throw Error(`Error: ${handledError.message}`);
     } finally {
       addBeforeUnloadEvents();
     }
@@ -797,8 +847,8 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         // Retry
         if (maxRetries > 0) {
           return await requestNetworkSwitch(newChainId, _providerType, _provider, maxRetries);
-        } else throw Error(`Unable to make request after ${maxRequestRetries} retries.`);
-      } else throw Error(`Unable to make request and couldn't retry.`);
+        } else throw Error(`Unable to make request after ${maxRequestRetries} retries. Error: ${handledError.message}`);
+      } else throw Error(`Error: ${handledError.message}`);
     } finally {
       addBeforeUnloadEvents();
     }
@@ -807,13 +857,26 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
   const handleError = async (error: any) => {
     const handledError = {
       shouldRetry: false,
+      message: "",
     };
     try {
+      console.warn("error.message", error.message);
+      handledError.message = error.message;
+
       if (error?.code == -32602 && error?.message?.toLowerCase()?.includes(`Bad state: No element`.toLowerCase())) {
         // error.message = 'Bad state: No element';
-        if (!walletConnectClient.current) throw Error("Client was not initialized");
-        if (!walletConnectSession.current) throw Error("Session was not established");
-        if (!walletConnectPairing.current) throw Error("Pairing was not established");
+        if (!walletConnectClient.current) {
+          handledError.message = "Client was not initialized!";
+          throw Error(handledError.message);
+        }
+        if (!walletConnectSession.current) {
+          handledError.message = "Session was not established!";
+          throw Error(handledError.message);
+        }
+        if (!walletConnectPairing.current) {
+          handledError.message = "Pairing was not established!";
+          throw Error(handledError.message);
+        }
 
         // Disconnect current pair and reconnect with new pair
         await walletConnectClient.current.disconnect({
@@ -834,28 +897,25 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         handledError.shouldRetry = true;
       }
 
-      console.warn("error?.message", error?.message);
-      if (
-        error?.code == -32602 &&
-        // error?.message?.toLowerCase()?.includes(`"No matching key. session topic doesn't exist:`.toLowerCase())
-        error?.message?.toLowerCase()?.includes(`No matching key`.toLowerCase())
-      ) {
-        if (!walletConnectClient.current) throw Error("Client was not initialized");
-        if (!walletConnectSession.current) throw Error("Session was not established");
-        if (!walletConnectPairing.current) throw Error("Pairing was not established");
+      if (error.code == 9000 && error.message?.toLowerCase()?.includes(`Wallet is locked`.toLowerCase())) {
+        handledError.shouldRetry = false;
+        handledError.message = "Your wallet is locked. Please unlock!";
+        throw Error(handledError.message);
+      }
 
-        // console.log("Reconnecting...");
-        // await walletConnectClient.current.disconnect({
-        //   topic: walletConnectPairing.current.topic,
-        //   reason: {
-        //     code: error.code,
-        //     message: error.message || "Socket error",
-        //     data: error.message || "Socket error",
-        //   },
-        // });
-        // const {session, pairing} = await externalNetworkWalletConnectWrapper.connect(walletConnectClient.current);
-        // walletConnectSession.current = session;
-        // walletConnectPairing.current = pairing;
+      if (error.code == -32602 && error.message?.toLowerCase()?.includes(`No matching key`.toLowerCase())) {
+        if (!walletConnectClient.current) {
+          handledError.message = "Client was not initialized!";
+          throw Error(handledError.message);
+        }
+        if (!walletConnectSession.current) {
+          handledError.message = "Session was not established!";
+          throw Error(handledError.message);
+        }
+        if (!walletConnectPairing.current) {
+          handledError.message = "Pairing was not established!";
+          throw Error(handledError.message);
+        }
 
         console.log("Retrying...");
         handledError.shouldRetry = true;
@@ -888,6 +948,7 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
       }
     } catch (err) {
       console.error("Error handling error", err);
+      handledError.message = "Unknown error!";
     } finally {
       return handledError;
     }
@@ -940,10 +1001,7 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
   };
 
   const externalNetworkProvider = {
-    coreClient:
-      providerType == externalNetworkProviderTypes.walletConnect
-        ? walletConnectClient.current
-        : metamaskExtensionWrapper.getProvider(),
+    coreClient: providerType == externalNetworkProviderTypes.walletConnect ? walletConnectClient.current : provider,
     providerType: providerType,
     displayedProviderType: displayedProviderType,
     init: init,

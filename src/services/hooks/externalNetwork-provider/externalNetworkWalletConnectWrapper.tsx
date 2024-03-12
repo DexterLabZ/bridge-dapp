@@ -56,37 +56,46 @@ const initClient = async () => {
 };
 
 const initModal = async () => {
-  ConfigCtrl.state = { ...defaultModalConfigCtrlState };
+  try {
+    ConfigCtrl.state = { ...defaultModalConfigCtrlState };
 
-  const wcConfig: WalletConnectModalConfig = {
-    // ...ConfigCtrl.state,
-    projectId: projectId,
-    chains: allNamespaces.eip155.chains,
-    themeVariables: themeVariables,
-    // mobileWallets: [],
-    // mobileWallets: mobileWallets,
-    desktopWallets: [],
-    // desktopWallets: desktopWallets,
-    // walletImages: walletImages,
-    // explorerRecommendedWalletIds: "NONE",
-    explorerRecommendedWalletIds: [
-      "c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96",
-      "1ae92b26df02f0abca6304df07debccd18262fdf5fe82daa81593582dac9a369",
-      "4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0",
-    ],
-    explorerExcludedWalletIds: [],
-    enableExplorer: true,
-    themeMode: "light",
-  };
+    const wcConfig: WalletConnectModalConfig = {
+      // ...ConfigCtrl.state,
+      projectId: projectId,
+      chains: allNamespaces.eip155.chains,
+      themeVariables: themeVariables,
+      // mobileWallets: [],
+      // mobileWallets: mobileWallets,
+      desktopWallets: [],
+      // desktopWallets: desktopWallets,
+      // walletImages: walletImages,
+      // explorerRecommendedWalletIds: "NONE",
+      explorerRecommendedWalletIds: [
+        "c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96",
+        "1ae92b26df02f0abca6304df07debccd18262fdf5fe82daa81593582dac9a369",
+        "4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0",
+      ],
+      explorerExcludedWalletIds: [],
+      enableExplorer: true,
+      themeMode: "light",
+    };
 
-  ConfigCtrl.state = wcConfig;
+    ConfigCtrl.state = wcConfig;
 
-  deleteRecentWalletsFromLocalStorage();
-  const wcModal: WalletConnectModal = new WalletConnectModal(wcConfig);
-  // ConfigCtrl.setConfig(wcConfig);
-  await delay(1000);
+    deleteRecentWalletsFromLocalStorage();
+    const wcModal: WalletConnectModal = new WalletConnectModal(wcConfig);
+    // ConfigCtrl.setConfig(wcConfig);
+    await delay(1000);
 
-  return wcModal;
+    return wcModal;
+  } catch (err) {
+    //
+    // Bug in the WalletConnect package
+    // https://github.com/WalletConnect/walletconnect-monorepo/issues/4257
+    //
+    console.error("Error initializing WalletConnectModal", err);
+    throw new Error("Error initializing WalletConnectModal");
+  }
 };
 
 const initProvider = async (externalNetworkChainId: number) => {
@@ -574,22 +583,22 @@ const disconnectPairing = async (
   } catch (err: any) {
     console.error(err);
     const readableError = err?.message || JSON.stringify(err);
-    toast(`Error: ${readableError}`, {
-      position: "bottom-center",
-      autoClose: 5000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: false,
-      draggable: true,
-      type: "error",
-      theme: "dark",
-    });
+    // toast(`Error: ${readableError}`, {
+    //   position: "bottom-center",
+    //   autoClose: 5000,
+    //   hideProgressBar: false,
+    //   closeOnClick: true,
+    //   pauseOnHover: false,
+    //   draggable: true,
+    //   type: "error",
+    //   theme: "dark",
+    // });
   }
 };
 
 const disconnectSession = async (
   signClient: Client,
-  session: SessionTypes.Struct,
+  session: SessionTypes.Struct | { topic: string },
   reasonMessage?: string,
   reasonData?: string
 ) => {
@@ -615,16 +624,16 @@ const disconnectSession = async (
   } catch (err: any) {
     console.error(err);
     const readableError = err?.message || JSON.stringify(err);
-    toast(`Error: ${readableError}`, {
-      position: "bottom-center",
-      autoClose: 5000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: false,
-      draggable: true,
-      type: "error",
-      theme: "dark",
-    });
+    // toast(`Error: ${readableError}`, {
+    //   position: "bottom-center",
+    //   autoClose: 5000,
+    //   hideProgressBar: false,
+    //   closeOnClick: true,
+    //   pauseOnHover: false,
+    //   draggable: true,
+    //   type: "error",
+    //   theme: "dark",
+    // });
   }
 };
 
@@ -639,16 +648,16 @@ const disconnectAllPairings = async (signClient: Client, reasonMessage?: string,
   } catch (err: any) {
     console.error(err);
     const readableError = err?.message || JSON.stringify(err);
-    toast(`Error: ${readableError}`, {
-      position: "bottom-center",
-      autoClose: 5000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: false,
-      draggable: true,
-      type: "error",
-      theme: "dark",
-    });
+    // toast(`Error: ${readableError}`, {
+    //   position: "bottom-center",
+    //   autoClose: 5000,
+    //   hideProgressBar: false,
+    //   closeOnClick: true,
+    //   pauseOnHover: false,
+    //   draggable: true,
+    //   type: "error",
+    //   theme: "dark",
+    // });
   }
 };
 
@@ -663,22 +672,23 @@ const disconnectAllSessions = async (signClient: Client, reasonMessage?: string,
   } catch (err: any) {
     console.error(err);
     const readableError = err?.message || JSON.stringify(err);
-    toast(`Error: ${readableError}`, {
-      position: "bottom-center",
-      autoClose: 5000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: false,
-      draggable: true,
-      type: "error",
-      theme: "dark",
-    });
+    // toast(`Error: ${readableError}`, {
+    //   position: "bottom-center",
+    //   autoClose: 5000,
+    //   hideProgressBar: false,
+    //   closeOnClick: true,
+    //   pauseOnHover: false,
+    //   draggable: true,
+    //   type: "error",
+    //   theme: "dark",
+    // });
   }
 };
 
 const registerEvents = (
   signClient: Client,
   provider: ethers.providers.JsonRpcProvider,
+  onDisconnect: () => Promise<boolean>,
   onAddressChange: (
     newAddress: string,
     provider: ethers.providers.JsonRpcProvider,
@@ -699,65 +709,70 @@ const registerEvents = (
 
   // Available events
   // type Event = "session_proposal" | "session_update" | "session_extend" | "session_ping" | "session_delete" | "session_expire" | "session_request" | "session_request_sent" | "session_event" | "proposal_expire";
+  console.log("externalNetwork - registerEvents");
 
   signClient.core.on("disconnect", (args: any) => {
-    console.log(".on disconnect", args);
+    console.log(".on external disconnect", args);
+    // disconnectSession(signClient, { topic: args?.topic }, "Disconnected from the Wallet App");
+    onDisconnect();
   });
 
   signClient.core.on("wc_pairingDelete", (args: any) => {
-    console.log(".on wc_pairingDelete", args);
+    console.log(".on external wc_pairingDelete", args);
   });
 
   signClient.core.on("wc_sessionUpdate", (args: any) => {
-    console.log(".on wc_sessionUpdate", args);
+    console.log(".on external wc_sessionUpdate", args);
   });
 
   signClient.core.on("wc_sessionUpdate", (args: any) => {
-    console.log(".on wc_sessionUpdate", args);
+    console.log(".on external wc_sessionUpdate", args);
   });
 
   signClient.core.on("addressChange", (args: any) => {
-    console.log(".on addressChange", args);
+    console.log(".on external addressChange", args);
   });
 
   signClient.core.on("chainIdChange", (args: any) => {
-    console.log(".on chainIdChange", args);
+    console.log(".on external chainIdChange", args);
   });
 
   signClient.core.relayer.on("onRelayDisconnected", (args: any) => {
-    console.log(".on onRelayDisconnected", args);
+    console.log(".on external onRelayDisconnected", args);
   });
 
   signClient.on("session_proposal", (args: any) => {
-    console.log(".on session_proposal (should only be listened by the wallet)", args);
+    console.log(".on external session_proposal (should only be listened by the wallet)", args);
   });
 
   signClient.on("session_update", (args: any) => {
-    console.log(".on session_update (should only be listened by the wallet)", args);
+    console.log(".on external session_update (should only be listened by the wallet)", args);
   });
 
   signClient.on("session_extend", (args: any) => {
-    console.log(".on session_extend", args);
+    console.log(".on external session_extend", args);
   });
 
   signClient.on("session_ping", (args: any) => {
-    console.log(".on session_ping", args);
+    console.log(".on external session_ping", args);
   });
 
   signClient.on("session_delete", (args: any) => {
-    console.log(".on session_delete", args);
+    console.log(".on external session_delete", args);
+    // disconnectSession(signClient, { topic: args?.topic }, "Disconnected from the Wallet App");
+    onDisconnect();
   });
 
   signClient.on("session_expire", (args: any) => {
-    console.log(".on session_expire", args);
+    console.log(".on external session_expire", args);
   });
 
   signClient.on("session_request", (args: any) => {
-    console.log(".on session_request", args);
+    console.log(".on external session_request", args);
   });
 
   signClient.on("session_request_sent", (args: any) => {
-    console.log(".on session_request_sent", args);
+    console.log(".on external session_request_sent", args);
   });
 
   console.log("registeringEvents");
@@ -777,10 +792,19 @@ const registerEvents = (
           console.log("addressChanged to", newAccounts);
 
           const newAddress = newAccounts[0].split(":")[2]?.toLowerCase();
-          onAddressChange(newAddress, provider, externalNetworkProviderTypes.walletConnect);
+          if (!newAddress?.length) {
+            onDisconnect();
+          } else {
+            onAddressChange(newAddress, provider, externalNetworkProviderTypes.walletConnect);
+          }
+
           const formattedChainId = newAccounts[0].split(":")[1];
           onChainIdChange(formattedChainId, provider, externalNetworkProviderTypes.walletConnect);
-          onAccountsChange(newAccounts, provider, externalNetworkProviderTypes.walletConnect);
+          if (!newAccounts?.length) {
+            onDisconnect();
+          } else {
+            onAccountsChange(newAccounts, provider, externalNetworkProviderTypes.walletConnect);
+          }
           break;
         }
         case "chainChanged": {
