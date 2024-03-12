@@ -58,35 +58,44 @@ const initClient = async () => {
   return signClient;
 };
 const initModal = async () => {
-  ConfigCtrl.state = { ...defaultModalConfigCtrlState };
-  const wcConfig: WalletConnectModalConfig = {
-    // ...ConfigCtrl.state,
-    projectId: walletConnectProjectId,
-    chains: allNamespaces.zenon.chains,
-    themeVariables: themeVariables,
-    mobileWallets: [],
-    desktopWallets: desktopWallets,
-    walletImages: walletImages,
-    explorerRecommendedWalletIds: [],
-    explorerExcludedWalletIds: [
-      "c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96",
-      "1ae92b26df02f0abca6304df07debccd18262fdf5fe82daa81593582dac9a369",
-      "4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0",
-    ],
-    enableExplorer: false,
-    themeMode: "light",
-  };
+  try {
+    ConfigCtrl.state = { ...defaultModalConfigCtrlState };
+    const wcConfig: WalletConnectModalConfig = {
+      // ...ConfigCtrl.state,
+      projectId: walletConnectProjectId,
+      chains: allNamespaces.zenon.chains,
+      themeVariables: themeVariables,
+      mobileWallets: [],
+      desktopWallets: desktopWallets,
+      walletImages: walletImages,
+      explorerRecommendedWalletIds: [],
+      explorerExcludedWalletIds: [
+        "c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96",
+        "1ae92b26df02f0abca6304df07debccd18262fdf5fe82daa81593582dac9a369",
+        "4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0",
+      ],
+      enableExplorer: false,
+      themeMode: "light",
+    };
 
-  ConfigCtrl.state = wcConfig;
+    ConfigCtrl.state = wcConfig;
 
-  deleteRecentWalletsFromLocalStorage();
-  const wcModal: WalletConnectModal = new WalletConnectModal(wcConfig);
-  console.log("3. ConfigCtrl.state", { ...ConfigCtrl.state });
-  ConfigCtrl.setConfig(wcConfig);
-  await delay(1000);
-  console.log("4. ConfigCtrl.state", { ...ConfigCtrl.state });
+    deleteRecentWalletsFromLocalStorage();
+    const wcModal: WalletConnectModal = new WalletConnectModal(wcConfig);
+    console.log("3. ConfigCtrl.state", { ...ConfigCtrl.state });
+    ConfigCtrl.setConfig(wcConfig);
+    await delay(1000);
+    console.log("4. ConfigCtrl.state", { ...ConfigCtrl.state });
 
-  return wcModal;
+    return wcModal;
+  } catch (err) {
+    //
+    // Bug in the WalletConnect package
+    // https://github.com/WalletConnect/walletconnect-monorepo/issues/4257
+    //
+    console.error("Error initializing WalletConnectModal", err);
+    throw new Error("Error initializing WalletConnectModal");
+  }
 };
 
 const connect = async (signClient: Client, onDismiss?: (reason: string) => unknown) => {
@@ -116,11 +125,22 @@ const connect = async (signClient: Client, onDismiss?: (reason: string) => unkno
       //  Old Pairing, New Session
       //
       console.log("[CONNECTED] Creating new session on pairing", latestPairing);
+
+      //
+      // Version 1
+      //
       const retrievedSession = await signClient.connect({
         pairingTopic: latestPairing.topic,
         requiredNamespaces: { zenon: allNamespaces.zenon },
       });
       console.log("retrievedSession", retrievedSession);
+
+      //
+      // Version 1.2
+      //
+      // await retrievedSession.approval();
+      // signClient.approve()
+      console.log("retrievedSession after approval", retrievedSession);
 
       // We usually got some errors if not adding the delay. Sessions were not updated as soon as the await finished
       await delay(5000);
@@ -268,22 +288,22 @@ const disconnectPairing = async (
   } catch (err: any) {
     console.error(err);
     const readableError = err?.message || JSON.stringify(err);
-    toast(`Error: ${readableError}`, {
-      position: "bottom-center",
-      autoClose: 5000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: false,
-      draggable: true,
-      type: "error",
-      theme: "dark",
-    });
+    // toast(`Error: ${readableError}`, {
+    //   position: "bottom-center",
+    //   autoClose: 5000,
+    //   hideProgressBar: false,
+    //   closeOnClick: true,
+    //   pauseOnHover: false,
+    //   draggable: true,
+    //   type: "error",
+    //   theme: "dark",
+    // });
   }
 };
 
 const disconnectSession = async (
   signClient: Client,
-  session: SessionTypes.Struct,
+  session: SessionTypes.Struct | { topic: string },
   reasonMessage?: string,
   reasonData?: string
 ) => {
@@ -309,16 +329,16 @@ const disconnectSession = async (
   } catch (err: any) {
     console.error(err);
     const readableError = err?.message || JSON.stringify(err);
-    toast(`Error: ${readableError}`, {
-      position: "bottom-center",
-      autoClose: 5000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: false,
-      draggable: true,
-      type: "error",
-      theme: "dark",
-    });
+    // toast(`Error: ${readableError}`, {
+    //   position: "bottom-center",
+    //   autoClose: 5000,
+    //   hideProgressBar: false,
+    //   closeOnClick: true,
+    //   pauseOnHover: false,
+    //   draggable: true,
+    //   type: "error",
+    //   theme: "dark",
+    // });
   }
 };
 
@@ -333,16 +353,16 @@ const disconnectAllPairings = async (signClient: Client, reasonMessage?: string,
   } catch (err: any) {
     console.error(err);
     const readableError = err?.message || JSON.stringify(err);
-    toast(`Error: ${readableError}`, {
-      position: "bottom-center",
-      autoClose: 5000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: false,
-      draggable: true,
-      type: "error",
-      theme: "dark",
-    });
+    // toast(`Error: ${readableError}`, {
+    //   position: "bottom-center",
+    //   autoClose: 5000,
+    //   hideProgressBar: false,
+    //   closeOnClick: true,
+    //   pauseOnHover: false,
+    //   draggable: true,
+    //   type: "error",
+    //   theme: "dark",
+    // });
   }
 };
 
@@ -357,21 +377,22 @@ const disconnectAllSessions = async (signClient: Client, reasonMessage?: string,
   } catch (err: any) {
     console.error(err);
     const readableError = err?.message || JSON.stringify(err);
-    toast(`Error: ${readableError}`, {
-      position: "bottom-center",
-      autoClose: 5000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: false,
-      draggable: true,
-      type: "error",
-      theme: "dark",
-    });
+    // toast(`Error: ${readableError}`, {
+    //   position: "bottom-center",
+    //   autoClose: 5000,
+    //   hideProgressBar: false,
+    //   closeOnClick: true,
+    //   pauseOnHover: false,
+    //   draggable: true,
+    //   type: "error",
+    //   theme: "dark",
+    // });
   }
 };
 
 const registerEvents = (
   signClient: Client,
+  onDisconnect: () => Promise<boolean>,
   onAddressChange: (newAddress: string, providerType: internalNetworkProviderTypes) => unknown,
   onChainIdChange: (newChainId: string, providerType: internalNetworkProviderTypes) => unknown,
   onNodeChange: (newChainId: string, providerType: internalNetworkProviderTypes) => unknown
@@ -382,68 +403,71 @@ const registerEvents = (
   // Available events
   // type Event = "session_proposal" | "session_update" | "session_extend" | "session_ping" | "session_delete" | "session_expire" | "session_request" | "session_request_sent" | "session_event" | "proposal_expire";
 
-  // signClient.on("session_delete", (args) => {
-  //   console.log(".on session_delete", args);
-  // });
+  signClient.core.on("disconnect", (args: any) => {
+    console.log(".on internal disconnect", args);
+    // disconnectAllSessions(signClient);
+    // disconnectSession(signClient, { topic: args?.topic }, "Disconnected from the Wallet App");
+    onDisconnect();
+  });
 
-  // signClient.core.on("disconnect", (args: any) => {
-  //   console.log(".on disconnect", args);
-  // });
+  signClient.core.on("wc_pairingDelete", (args: any) => {
+    console.log(".on internal wc_pairingDelete", args);
+  });
 
-  // signClient.core.on("wc_pairingDelete", (args: any) => {
-  //   console.log(".on wc_pairingDelete", args);
-  // });
+  signClient.core.on("wc_sessionUpdate", (args: any) => {
+    console.log(".on internal wc_sessionUpdate", args);
+  });
 
-  // signClient.core.on("wc_sessionUpdate", (args: any) => {
-  //   console.log(".on wc_sessionUpdate", args);
-  // });
+  signClient.core.on("wc_sessionUpdate", (args: any) => {
+    console.log(".on internal wc_sessionUpdate", args);
+  });
 
-  // signClient.core.on("wc_sessionUpdate", (args: any) => {
-  //   console.log(".on wc_sessionUpdate", args);
-  // });
+  signClient.core.on("addressChange", (args: any) => {
+    console.log(".on internal addressChange", args);
+  });
 
-  // signClient.core.on("addressChange", (args: any) => {
-  //   console.log(".on addressChange", args);
-  // });
+  signClient.core.on("chainIdChange", (args: any) => {
+    console.log(".on internal chainIdChange", args);
+  });
 
-  // signClient.core.on("chainIdChange", (args: any) => {
-  //   console.log(".on chainIdChange", args);
-  // });
+  signClient.core.relayer.on("onRelayDisconnected", (args: any) => {
+    console.log(".on internal onRelayDisconnected", args);
+  });
 
-  // signClient.core.relayer.on("onRelayDisconnected", (args: any) => {
-  //   console.log(".on onRelayDisconnected", args);
-  // });
+  signClient.on("session_proposal", (args: any) => {
+    console.log(".on internal session_proposal (should only be listened by the wallet)", args);
+  });
 
-  // signClient.on("session_proposal", (args: any) => {
-  //   console.log(".on session_proposal (should only be listened by the wallet)", args);
-  // });
+  signClient.on("session_update", (args: any) => {
+    console.log(".on internal session_update (should only be listened by the wallet)", args);
+  });
 
-  // signClient.on("session_update", (args: any) => {
-  //   console.log(".on session_update (should only be listened by the wallet)", args);
-  // });
+  signClient.on("session_extend", (args: any) => {
+    console.log(".on internal session_extend", args);
+  });
 
-  // signClient.on("session_extend", (args: any) => {
-  //   console.log(".on session_extend", args);
-  // });
+  signClient.on("session_ping", (args: any) => {
+    console.log(".on internal session_ping", args);
+  });
 
-  // signClient.on("session_ping", (args: any) => {
-  //   console.log(".on session_ping", args);
-  // });
+  signClient.on("session_delete", (args: any) => {
+    console.log(".on internal session_delete", args);
+    // disconnectSession(signClient, { topic: args?.topic }, "Session deleted from the Wallet App");
+    onDisconnect();
+  });
 
-  // signClient.on("session_delete", (args: any) => {
-  //   console.log(".on session_delete", args);
-  // });
-
-  // signClient.on("session_expire", (args: any) => {
-  //   console.log(".on session_expire", args);
-  // });
+  signClient.on("session_expire", (args: any) => {
+    console.log(".on internal session_expire", args);
+    // disconnectSession(signClient, { topic: args?.topic }, "Session expired");
+    onDisconnect();
+  });
 
   // signClient.on("session_request", (args: any) => {
-  //   console.log(".on session_request", args);
+  //   console.log(".on internal session_request", args);
   // });
 
   // signClient.on("session_request_sent", (args: any) => {
-  //   console.log(".on session_request_sent", args);
+  //   console.log(".on internal session_request_sent", args);
   // });
 
   signClient.on("session_event", (args: any) => {
@@ -459,8 +483,12 @@ const registerEvents = (
       switch (args?.params?.event?.name) {
         case "addressChange": {
           const newAddress = args?.params?.event?.data?.toLowerCase();
-          console.log("addressChanged to", newAddress);
-          onAddressChange(newAddress, internalNetworkProviderTypes.walletConnect);
+          if (!newAddress?.length) {
+            onDisconnect();
+          } else {
+            console.log("addressChanged to", newAddress);
+            onAddressChange(newAddress, internalNetworkProviderTypes.walletConnect);
+          }
           break;
         }
         case "chainIdChange": {

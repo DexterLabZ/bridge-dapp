@@ -179,6 +179,7 @@ export type MetamaskChangeEventsHandler = {
 
 const registerEvents = (
   provider: ethers.providers.Web3Provider,
+  onDisconnect: () => Promise<boolean>,
   onAddressChange: (
     newAddress: string,
     provider: ethers.providers.Web3Provider,
@@ -195,7 +196,11 @@ const registerEvents = (
 
     // const oldErcInfo = JSONbig.parse(serializedWalletInfo["ercInfo"] || "{}");
     // dispatch(storeErcInfo(JSONbig.stringify({ ...oldErcInfo, address: accounts[0]?.toLowerCase() })));
-    onAddressChange(accounts, provider, externalNetworkProviderTypes.metamask);
+    if (!accounts?.length) {
+      onDisconnect();
+    } else {
+      onAddressChange(accounts, provider, externalNetworkProviderTypes.metamask);
+    }
   };
   window?.ethereum?.on("accountsChanged", accountChangedHandler);
 

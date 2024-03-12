@@ -26,10 +26,14 @@ const NavBreadcrumbsMenu: FC = () => {
     if (serializedWalletInfo["zenonInfo"]) {
       console.log(JSONbig.parse(serializedWalletInfo["zenonInfo"]));
       setZenonAddress(JSONbig.parse(serializedWalletInfo["zenonInfo"])?.address);
+    } else {
+      setZenonAddress("");
     }
     if (serializedWalletInfo["ercInfo"]) {
       console.log(JSONbig.parse(serializedWalletInfo["ercInfo"]));
       setErcAddress(JSONbig.parse(serializedWalletInfo["ercInfo"])?.address);
+    } else {
+      setErcAddress("");
     }
   }, [serializedWalletInfo]);
 
@@ -74,13 +78,13 @@ const NavBreadcrumbsMenu: FC = () => {
       if (questionableStepIndex > flowStepsEnum["Agreement"]) return true;
     }
 
-    if (!(zenonAddress && zenonAddress.length && ercAddress && zenonAddress.length)) {
+    if (!(zenonAddress?.length && ercAddress?.length)) {
       // User doesn't have both extensions connected
       if (questionableStepIndex > flowStepsEnum["Agreement"]) return true;
     }
 
     const disabledSteps = [...alwaysDisabledSteps, ...dynamicallyDisabled];
-    
+
     if (disabledSteps.includes(questionableStepIndex)) return true;
 
     return false;
@@ -118,7 +122,7 @@ const NavBreadcrumbsMenu: FC = () => {
                           uniqueKey={"breadcrumbs-menu-key" + wizardStatus.metaFlowType + "-" + step}
                           content={
                             (stepsDisplayNames as any)?.[wizardStatus.metaFlowType]?.[
-                            getFlowStepsEnum(wizardStatus.metaFlowType)[step]
+                              getFlowStepsEnum(wizardStatus.metaFlowType)[step]
                             ]
                           }
                           link=""
@@ -135,7 +139,7 @@ const NavBreadcrumbsMenu: FC = () => {
                           uniqueKey={"breadcrumbs-menu-key" + wizardStatus.metaFlowType + "-" + step}
                           content={
                             (stepsDisplayNames as any)?.[wizardStatus.metaFlowType]?.[
-                            getFlowStepsEnum(wizardStatus.metaFlowType)[step]
+                              getFlowStepsEnum(wizardStatus.metaFlowType)[step]
                             ]
                           }
                           link=""
@@ -154,7 +158,7 @@ const NavBreadcrumbsMenu: FC = () => {
                       uniqueKey={"breadcrumbs-menu-key" + wizardStatus.currentFlowType + "-" + step}
                       content={
                         (stepsDisplayNames as any)?.[wizardStatus.currentFlowType]?.[
-                        getFlowStepsEnum(wizardStatus.currentFlowType)[step]
+                          getFlowStepsEnum(wizardStatus.currentFlowType)[step]
                         ]
                       }
                       link=""

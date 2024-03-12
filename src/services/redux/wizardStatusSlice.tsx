@@ -83,16 +83,25 @@ export const wizardStatusSlice = createSlice({
       state = action.payload;
     },
     storeCurrentWizardFlowStep: (state, action) => {
-      state.currentFlowStep = action.payload;
+      console.log("storeCurrentWizardFlowStep", action.payload);
+      if (state.currentFlowStep !== action.payload) {
+        state.currentFlowStep = action.payload;
+      }
     },
     storeCurrentFlowType: (state, action) => {
-      state.currentFlowType = action.payload;
+      if (state.currentFlowType !== action.payload) {
+        state.currentFlowType = action.payload;
+      }
     },
     storeMetaFlowStep: (state, action) => {
-      state.metaFlowStep = action.payload;
+      if (state.metaFlowStep !== action.payload) {
+        state.metaFlowStep = action.payload;
+      }
     },
     storeMetaFlowType: (state, action) => {
-      state.metaFlowType = action.payload;
+      if (state.metaFlowType !== action.payload) {
+        state.metaFlowType = action.payload;
+      }
     },
   },
 });
