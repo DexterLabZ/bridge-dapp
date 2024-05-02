@@ -1750,6 +1750,7 @@ export const abiToken = `[
 export const abiContract = `[
   "function unwrap(address,uint256,string)",
   "function redeem(address,address,uint256,uint256,bytes)",
+  "function redeemNative(address,address,uint256,uint256,bytes)",
   "function redeemDelay() view returns(uint256)",
   "function estimatedBlockTime() view returns(uint64)",
   "function tokensInfo(address) view returns(uint256 minAmount, uint32 redeemDelay, bool allowed)",

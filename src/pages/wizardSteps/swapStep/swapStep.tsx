@@ -63,6 +63,7 @@ export type simpleTokenType = {
   availableSoon?: boolean;
   isCommonToken?: boolean;
   network: simpleNetworkType;
+  chainIdsOfPairedTokens?: number[];
 };
 
 export type simpleNetworkType = {
@@ -624,8 +625,8 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
 
         const currentPair = globalConstants.tokenPairs.find(
           (pair: any) =>
-            pair.internalToken.address?.toLowerCase() == zenonToken.address?.toLowerCase() &&
-            pair.externalToken.address?.toLowerCase() == ercToken.address?.toLowerCase()
+            pair?.internalToken?.address?.toLowerCase() == zenonToken.address?.toLowerCase() &&
+            pair?.externalToken?.address?.toLowerCase() == ercToken.address?.toLowerCase()
         );
 
         console.log("currentPair", currentPair);
@@ -650,15 +651,19 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
     }
   };
 
-  const getPairOfToken = (address: string, destinationChainId = -1) => {
+  const getPairOfToken = (address = "", destinationChainId = -1) => {
+    console.log("address", address);
+    console.log("destinationChainId", destinationChainId);
+    console.log("globalConstants.tokenPairs", globalConstants.tokenPairs);
     return (
       globalConstants.tokenPairs.find(
-        (pair: any) => pair.internalToken.address?.toLowerCase() == address?.toLowerCase()
+        (pair: any) => pair?.internalToken?.address?.toLowerCase() == address?.toLowerCase()
       )?.externalToken ||
       globalConstants.tokenPairs.find(
         (pair: any) =>
-          pair.externalToken.address?.toLowerCase() == address?.toLowerCase() &&
-          pair?.externalToken?.network?.chainId == destinationChainId
+          pair?.externalToken?.address?.toLowerCase() == address?.toLowerCase() &&
+          pair?.internalToken?.network?.chainId == destinationChainId
+        // pair?.internalToken?.chainIdsOfPairedTokens.includes(destinationChainId)
       )?.internalToken
     );
   };
@@ -767,8 +772,11 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
 
       setValue("ercToken", token, { shouldValidate: true });
       setErcToken(token);
+      console.log("newToken", token);
 
-      const pairedToken = getPairOfToken(token.address, token?.network?.chainId);
+      // const pairedToken = getPairOfToken(token.address, token?.network?.chainId);
+      const pairedToken = getPairOfToken(token.address, token?.chainIdsOfPairedTokens[0]);
+      console.log("parOfNewToken", pairedToken);
 
       setValue("zenonToken", pairedToken, { shouldValidate: true });
       setZenonToken(pairedToken);
@@ -1620,7 +1628,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
                   parseFloat(zenonAmount || "0") * (wrapFeePercentage / globalConstants.feeDenominator) + ""
                 ).toFixed(2) +
                   " " +
-                  zenonToken.symbol}
+                  zenonToken?.symbol}
               </b>
             </>
           )}

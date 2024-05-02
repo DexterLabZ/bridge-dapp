@@ -136,6 +136,25 @@ export const getExternalTokensDetails = async (
           contract.name(),
         ]);
 
+        const xZNNToken = (constants as any)?.xZnnTokenInfo;
+        if ((constants as any)?.isSupernovaNetwork) {
+          //
+          // Because we want to bypass wxZNN so that it's simpler for the user
+          // We just replace wxZNN info with xZNN in the interface
+          // We can do this because the autoRedeemer does the conversion
+          // from znn -> wxZNN -> xZNN automatically
+          //
+          if (newTok.address?.toLowerCase() === xZNNToken?.address?.toLowerCase()) {
+            newTok.name = xZNNToken?.name;
+            newTok.symbol = xZNNToken?.symbol;
+          }
+        } else {
+          // ToDo: Remove this token alltogether
+          if (newTok.address?.toLowerCase() === xZNNToken?.address?.toLowerCase()) {
+            newTok.isAvailable = false;
+          }
+        }
+
         console.log("updatedTok", newTok);
       }
       return newTok;
@@ -144,7 +163,7 @@ export const getExternalTokensDetails = async (
 };
 
 export const updateTokenPairsWithNewExternalTokens = (currentPairs: any[], newExternalTokens: simpleTokenType[]) => {
-  return currentPairs.map((pair: any) => {
+  const pairsList = currentPairs.map((pair: any) => {
     return {
       ...pair,
       externalToken:
@@ -155,10 +174,11 @@ export const updateTokenPairsWithNewExternalTokens = (currentPairs: any[], newEx
         ) || pair.externalToken,
     };
   });
+  return curateTokenPairsForSupernova(pairsList);
 };
 
 export const updateTokenPairsWithNewInternalTokens = (currentPairs: any[], newInternalTokens: simpleTokenType[]) => {
-  return currentPairs.map((pair: any) => {
+  const pairsList = currentPairs.map((pair: any) => {
     return {
       ...pair,
       internalToken:
@@ -169,6 +189,7 @@ export const updateTokenPairsWithNewInternalTokens = (currentPairs: any[], newIn
         ) || pair.internalToken,
     };
   });
+  return curateTokenPairsForSupernova(pairsList);
 };
 
 export const getLiquidityPairsDetails = async (
@@ -551,5 +572,141 @@ export const extractChainIdsFromNamespacesAccounts = (namespacesAccounts: string
   return namespacesAccounts.map((namespacesAccount) => {
     const [namespace, chainId, address] = namespacesAccount.split(":");
     return chainId;
+  });
+};
+
+export const curateinternalNetworksForSupernova = (internalNetworks: simpleNetworkType[]) => {
+  console.log("supernovaChainId", (constants as any)?.supernovaChainId);
+  console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
+  console.log("curateinternalNetworksForSupernova", JSON.stringify(internalNetworks));
+  return internalNetworks.filter((network) => {
+    if ((constants as any)?.isSupernovaNetwork) {
+      if (network?.chainId?.toString() == (constants as any)?.supernovaChainId?.toString()) {
+        return true;
+      }
+    } else {
+      if (network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
+        return true;
+      }
+    }
+  });
+};
+
+export const curateExternalNetworksForSupernova = (externalNetworks: simpleNetworkType[]) => {
+  console.log("supernovaChainId", (constants as any)?.supernovaChainId);
+  console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
+  console.log("curateExternalNetworksForSupernova", JSON.stringify(externalNetworks));
+  return externalNetworks.filter((network) => {
+    if ((constants as any)?.isSupernovaNetwork) {
+      if (network?.chainId?.toString() == (constants as any)?.supernovaChainId?.toString()) {
+        return true;
+      }
+    } else {
+      if (network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
+        return true;
+      }
+    }
+  });
+};
+
+export const curateExternalTokensForSupernova = (externalTokens: simpleTokenType[]) => {
+  console.log("supernovaChainId", (constants as any)?.supernovaChainId);
+  console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
+  console.log("curateExternalTokensForSupernova", JSON.stringify(externalTokens));
+  const list = externalTokens.map((token) => {
+    if ((constants as any)?.isSupernovaNetwork) {
+      if (token?.network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
+        return undefined;
+      } else {
+        return {
+          ...token,
+          name: "xZenon",
+          symbol: "XZNN",
+        };
+      }
+    } else {
+      console.log("SUPER NETWORK NO");
+      console.log("token?.network?.chainId", token?.network?.chainId);
+      console.log("(constants as any)?.supernovaChainId", (constants as any)?.supernovaChainId);
+      console.log(
+        "token?.network?.chainId !== (constants as any)?.supernovaChainId)",
+        token?.network?.chainId !== (constants as any)?.supernovaChainId
+      );
+
+      if (token?.network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
+        console.log("SUPER TOKEN YES", JSON.stringify(token));
+        return token;
+      } else {
+        console.log("SUPER TOKEN NO", JSON.stringify(token));
+        return undefined;
+      }
+    }
+  });
+  console.log("curatedList", JSON.stringify(list));
+  return list.filter((v) => v !== undefined);
+};
+
+export const curateInternalTokensForSupernova = (internalTokens: simpleTokenType[]) => {
+  console.log("supernovaChainId", (constants as any)?.supernovaChainId);
+  console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
+  console.log("curateInternalTokensForSupernova", JSON.stringify(internalTokens));
+  const list = internalTokens.map((token) => {
+    if ((constants as any)?.isSupernovaNetwork) {
+      if (!token?.chainIdsOfPairedTokens?.includes(parseInt((constants as any)?.supernovaChainId))) {
+        return undefined;
+      } else {
+        return token;
+      }
+    } else {
+      console.log("SUPER NETWORK NO");
+      console.log("token?.chainIdsOfPairedTokens", token?.chainIdsOfPairedTokens);
+      console.log("(constants as any)?.supernovaChainId", (constants as any)?.supernovaChainId);
+
+      const chainIdWithoutDuplicates = removeDuplicatesFromArray(token?.chainIdsOfPairedTokens || []);
+      if (
+        chainIdWithoutDuplicates?.includes((constants as any)?.supernovaChainId?.toString()) &&
+        chainIdWithoutDuplicates?.length == 1
+      ) {
+        console.log("SUPER TOKEN NO", JSON.stringify(token));
+        return undefined;
+      } else {
+        console.log("SUPER TOKEN YES", JSON.stringify(token));
+        return token;
+      }
+    }
+  });
+  console.log("curatedList", JSON.stringify(list));
+  return list.filter((v) => v !== undefined);
+};
+
+export const curateTokenPairsForSupernova = (tokenPairs: any[]) => {
+  console.log("supernovaChainId", (constants as any)?.supernovaChainId);
+  console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
+  console.log("curateTokenPairsForSupernova", JSON.stringify(tokenPairs));
+  return tokenPairs.filter((pair) => {
+    if (!pair?.externalToken) return false;
+    if (!pair?.internalToken) return false;
+
+    if ((constants as any)?.isSupernovaNetwork) {
+      if (pair?.externalToken?.network?.chainId?.toString() == (constants as any)?.supernovaChainId?.toString()) {
+        return true;
+      }
+    } else {
+      if (pair?.externalToken?.network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
+        return true;
+      }
+    }
+    return false;
+  });
+};
+
+export const removeDuplicatesFromArray = (a: any[]) => {
+  const prims: any = { boolean: {}, number: {}, string: {} };
+  const objs: any = [];
+
+  return a.filter(function (item) {
+    const type = typeof item;
+    if (type in prims) return prims[type].hasOwnProperty(item) ? false : (prims[type][item] = true);
+    else return objs.indexOf(item) >= 0 ? false : objs.push(item);
   });
 };

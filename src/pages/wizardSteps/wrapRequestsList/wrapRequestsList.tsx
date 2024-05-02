@@ -489,10 +489,14 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
 
       const redeemTransactionParams = [wrapRequest.toAddress, tokenAddress, amount, "0x" + id, "0x" + newSig];
       console.log("redeemTransactionParams", redeemTransactionParams);
+
+      const functionToBeCalled = globalConstants.isSupernovaNetwork ? "redeemNative" : "redeem";
+      console.log("functionToBeCalled", functionToBeCalled);
+
       const redeemResponse = await externalNetworkClient.callContract(
         currentContractAddress,
         globalConstants.abiContract,
-        "redeem",
+        functionToBeCalled,
         redeemTransactionParams
       );
       console.log("redeemResponse", redeemResponse);

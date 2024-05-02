@@ -16,6 +16,9 @@ import { storeErcInfo, storeZenonInfo } from "../../../services/redux/walletSlic
 import {
   checkMetamaskAvailability,
   checkSyriusAvailability,
+  curateExternalNetworksForSupernova,
+  curateExternalTokensForSupernova,
+  curateInternalTokensForSupernova,
   getExternalTokensDetails,
   getInternalTokensDetails,
   getLiquidityPairsDetails,
@@ -209,11 +212,13 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
       );
       console.log("JSON.stringify(zenonWalletInfo.balanceInfoMap)", JSON.stringify(zenonWalletInfo.balanceInfoMap));
 
-      updatedConstants = await updateGlobalConstantsWithLiquidityInfo(
-        zenon,
-        updatedConstants,
-        Primitives.Address.parse(zenonInfo.address)
-      );
+      if (!globalConstants.isSupernovaNetwork) {
+        updatedConstants = await updateGlobalConstantsWithLiquidityInfo(
+          zenon,
+          updatedConstants,
+          Primitives.Address.parse(zenonInfo.address)
+        );
+      }
 
       dispatch(storeZenonInfo(JSONbig.stringify(zenonWalletInfo)));
       setIsSyriusConnected(true);
@@ -300,6 +305,8 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
         currentToken = globalConstants.externalAvailableTokens.find(
           (tok: any) => tok.isAvailable && externalNetworkChainId === tok.network.chainId
         );
+        console.log("globalConstants.externalAvailableTokens", globalConstants.externalAvailableTokens);
+        console.log("externalNetworkChainId", externalNetworkChainId);
 
         // ToDo create contract with selected external token (make wznn ABI as default but get it from internalAvTok)
         console.log("new Contract", currentToken.address, globalConstants.wznnAbi, provider);
@@ -326,50 +333,59 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
         console.log("updatedExternalTokens", updatedExternalTokens);
         console.log("updatedTokenPairs", updatedTokenPairs);
 
-        const externalLiquidityTokens = await getExternalTokensDetails(
-          globalConstants.liquidityExternalTokens,
-          provider
-        );
-        let updatedLiquidityTokenPairs = updateTokenPairsWithNewExternalTokens(
-          globalConstants.liquidityTokenPairs,
-          externalLiquidityTokens
-        );
-        console.log("externalLiquidityTokens", externalLiquidityTokens);
-        console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
+        if (!globalConstants.isSupernovaNetwork) {
+          const externalLiquidityTokens = await getExternalTokensDetails(
+            globalConstants.liquidityExternalTokens,
+            provider
+          );
+          let updatedLiquidityTokenPairs = updateTokenPairsWithNewExternalTokens(
+            globalConstants.liquidityTokenPairs,
+            externalLiquidityTokens
+          );
+          console.log("externalLiquidityTokens", externalLiquidityTokens);
+          console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
 
-        // We do this because even if it's called internal tokens, they are still erc-20 tokens
-        const internalLiquidityTokens = await getExternalTokensDetails(
-          globalConstants.liquidityInternalTokens,
-          provider
-        );
-        updatedLiquidityTokenPairs = updateTokenPairsWithNewInternalTokens(
-          globalConstants.liquidityTokenPairs,
-          internalLiquidityTokens
-        );
-        console.log("internalLiquidityTokens", internalLiquidityTokens);
-        console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
+          // We do this because even if it's called internal tokens, they are still erc-20 tokens
+          const internalLiquidityTokens = await getExternalTokensDetails(
+            globalConstants.liquidityInternalTokens,
+            provider
+          );
+          updatedLiquidityTokenPairs = updateTokenPairsWithNewInternalTokens(
+            globalConstants.liquidityTokenPairs,
+            internalLiquidityTokens
+          );
+          console.log("internalLiquidityTokens", internalLiquidityTokens);
+          console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
 
-        const liquidityTokenPairs: any = await getLiquidityPairsDetails(updatedLiquidityTokenPairs, provider);
-        console.log("getLiquidityPairsDetails", liquidityTokenPairs);
+          const liquidityTokenPairs: any = await getLiquidityPairsDetails(updatedLiquidityTokenPairs, provider);
+          console.log("getLiquidityPairsDetails", liquidityTokenPairs);
 
-        const availableExternalLiquidityTokens = updateExternalLiquidityTokensBasedOnTokenPairs(
-          externalLiquidityTokens,
-          liquidityTokenPairs
-        );
-        const availableInternalLiquidityTokens = updateInternalLiquidityTokensBasedOnTokenPairs(
-          internalLiquidityTokens,
-          liquidityTokenPairs
-        );
+          const availableExternalLiquidityTokens = updateExternalLiquidityTokensBasedOnTokenPairs(
+            externalLiquidityTokens,
+            liquidityTokenPairs
+          );
+          const availableInternalLiquidityTokens = updateInternalLiquidityTokensBasedOnTokenPairs(
+            internalLiquidityTokens,
+            liquidityTokenPairs
+          );
+          updatedConstants = {
+            ...globalConstants,
+            internalAvailableTokens: updatedInternalTokens,
+            externalAvailableTokens: updatedExternalTokens,
+            tokenPairs: updatedTokenPairs,
+            liquidityExternalTokens: availableExternalLiquidityTokens,
+            liquidityInternalTokens: availableInternalLiquidityTokens,
+            liquidityTokenPairs: liquidityTokenPairs,
+          };
+        } else {
+          updatedConstants = {
+            ...globalConstants,
+            internalAvailableTokens: updatedInternalTokens,
+            externalAvailableTokens: updatedExternalTokens,
+            tokenPairs: updatedTokenPairs,
+          };
+        }
 
-        updatedConstants = {
-          ...globalConstants,
-          internalAvailableTokens: updatedInternalTokens,
-          externalAvailableTokens: updatedExternalTokens,
-          tokenPairs: updatedTokenPairs,
-          liquidityExternalTokens: availableExternalLiquidityTokens,
-          liquidityInternalTokens: availableInternalLiquidityTokens,
-          liquidityTokenPairs: liquidityTokenPairs,
-        };
         await externalNetworkClient.init(externalNetworkProviderTypes.metamask);
         await externalNetworkClient.connect(externalNetworkProviderTypes.metamask);
 
@@ -476,50 +492,59 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
           console.log("updatedExternalTokens", updatedExternalTokens);
           console.log("updatedTokenPairs", updatedTokenPairs);
 
-          const externalLiquidityTokens = await getExternalTokensDetails(
-            globalConstants.liquidityExternalTokens,
-            provider
-          );
-          let updatedLiquidityTokenPairs = updateTokenPairsWithNewExternalTokens(
-            globalConstants.liquidityTokenPairs,
-            externalLiquidityTokens
-          );
-          console.log("externalLiquidityTokens", externalLiquidityTokens);
-          console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
+          if (!globalConstants.isSupernovaNetwork) {
+            const externalLiquidityTokens = await getExternalTokensDetails(
+              globalConstants.liquidityExternalTokens,
+              provider
+            );
+            let updatedLiquidityTokenPairs = updateTokenPairsWithNewExternalTokens(
+              globalConstants.liquidityTokenPairs,
+              externalLiquidityTokens
+            );
+            console.log("externalLiquidityTokens", externalLiquidityTokens);
+            console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
 
-          // We do this because even if it's called internal tokens, they are still erc-20 tokens
-          const internalLiquidityTokens = await getExternalTokensDetails(
-            globalConstants.liquidityInternalTokens,
-            provider
-          );
-          updatedLiquidityTokenPairs = updateTokenPairsWithNewInternalTokens(
-            globalConstants.liquidityTokenPairs,
-            internalLiquidityTokens
-          );
-          console.log("internalLiquidityTokens", internalLiquidityTokens);
-          console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
+            // We do this because even if it's called internal tokens, they are still erc-20 tokens
+            const internalLiquidityTokens = await getExternalTokensDetails(
+              globalConstants.liquidityInternalTokens,
+              provider
+            );
+            updatedLiquidityTokenPairs = updateTokenPairsWithNewInternalTokens(
+              globalConstants.liquidityTokenPairs,
+              internalLiquidityTokens
+            );
+            console.log("internalLiquidityTokens", internalLiquidityTokens);
+            console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
 
-          const liquidityTokenPairs: any = await getLiquidityPairsDetails(updatedLiquidityTokenPairs, provider);
-          console.log("getLiquidityPairsDetails", liquidityTokenPairs);
+            const liquidityTokenPairs: any = await getLiquidityPairsDetails(updatedLiquidityTokenPairs, provider);
+            console.log("getLiquidityPairsDetails", liquidityTokenPairs);
 
-          const availableExternalLiquidityTokens = updateExternalLiquidityTokensBasedOnTokenPairs(
-            externalLiquidityTokens,
-            liquidityTokenPairs
-          );
-          const availableInternalLiquidityTokens = updateInternalLiquidityTokensBasedOnTokenPairs(
-            internalLiquidityTokens,
-            liquidityTokenPairs
-          );
+            const availableExternalLiquidityTokens = updateExternalLiquidityTokensBasedOnTokenPairs(
+              externalLiquidityTokens,
+              liquidityTokenPairs
+            );
+            const availableInternalLiquidityTokens = updateInternalLiquidityTokensBasedOnTokenPairs(
+              internalLiquidityTokens,
+              liquidityTokenPairs
+            );
 
-          updatedConstants = {
-            ...globalConstants,
-            internalAvailableTokens: updatedInternalTokens,
-            externalAvailableTokens: updatedExternalTokens,
-            tokenPairs: updatedTokenPairs,
-            liquidityExternalTokens: availableExternalLiquidityTokens,
-            liquidityInternalTokens: availableInternalLiquidityTokens,
-            liquidityTokenPairs: liquidityTokenPairs,
-          };
+            updatedConstants = {
+              ...globalConstants,
+              internalAvailableTokens: updatedInternalTokens,
+              externalAvailableTokens: updatedExternalTokens,
+              tokenPairs: updatedTokenPairs,
+              liquidityExternalTokens: availableExternalLiquidityTokens,
+              liquidityInternalTokens: availableInternalLiquidityTokens,
+              liquidityTokenPairs: liquidityTokenPairs,
+            };
+          } else {
+            updatedConstants = {
+              ...globalConstants,
+              internalAvailableTokens: updatedInternalTokens,
+              externalAvailableTokens: updatedExternalTokens,
+              tokenPairs: updatedTokenPairs,
+            };
+          }
         }
       }
 
@@ -1120,25 +1145,77 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
       }
     });
     console.log("externalAvailableNetworks", externalAvailableNetworks);
+    // externalAvailableNetworks = curateExternalNetworksForSupernova(externalAvailableNetworks);
+    // console.log("curatedExternalAvailableNetworks", externalAvailableNetworks);
+
+    // const addPairChainIdToTokenList = (
+    //   tokenList: simpleTokenType[],
+    //   networkOfPairedToken: simpleNetworkType | undefined
+    // ) => {
+    //   const returnedList = tokenList.map((tok: any) => {
+    //     console.log("addPairChainIdToTokenList");
+    //     console.log("networkOfPairedToken", networkOfPairedToken);
+    //     console.log("tokenList", tokenList);
+    //     if (!networkOfPairedToken) return undefined;
+
+    //     if (!tok?.chainIdsOfPairedTokens?.length) {
+    //       tok.chainIdsOfPairedTokens = [networkOfPairedToken?.chainId || 0];
+    //     } else {
+    //       tok.chainIdsOfPairedTokens.push(networkOfPairedToken?.chainId || 0);
+    //     }
+    //     return tok;
+    //   });
+    //   return returnedList.filter((v) => v !== undefined);
+    // };
+
+    const addPairChainIdToTokenList = (
+      tokenList: simpleTokenType[],
+      originalTokenAddress: string,
+      pairNetwork: number
+    ) => {
+      console.log("addPairChainIdToTokenList");
+      console.log("tokenList", tokenList);
+      console.log("originalTokenAddress", originalTokenAddress);
+      console.log("pairNetwork", pairNetwork);
+      const returnedList = tokenList.map((tok: any) => {
+        if (tok?.address?.toLowerCase() == originalTokenAddress?.toLowerCase()) {
+          if (!tok?.chainIdsOfPairedTokens?.length) {
+            tok.chainIdsOfPairedTokens = [pairNetwork];
+          } else {
+            tok.chainIdsOfPairedTokens.push(pairNetwork);
+          }
+        }
+        return tok;
+      });
+      return returnedList;
+    };
 
     const mergeTokenToList = (
       tokenList: simpleTokenType[],
       networkList: simpleNetworkType[],
       tokenAddress: any,
-      network: simpleNetworkType
+      network: simpleNetworkType | undefined,
+      // networkOfPairedToken: simpleNetworkType | undefined,
+      isExternal = false
     ) => {
       let isTokenLocallyDefined = false;
-      const returnedList = tokenList.map((tok: any) => {
-        if (!tok?.chainIdsOfPairedTokens?.length) {
-          tok.chainIdsOfPairedTokens = [network.chainId];
-        } else {
-          tok.chainIdsOfPairedTokens.push(network.chainId);
-        }
+      console.log("tokenList", tokenList);
+      console.log("networkList", networkList);
+      console.log("tokenAddress", tokenAddress);
+      console.log("network", network);
+      if (!network) return tokenList;
 
-        if (tok.address.toLowerCase() == tokenAddress.toLowerCase() && tok.network.chainId == network.chainId) {
+      const returnedList = tokenList.map((tok: any) => {
+        // if (!tok?.chainIdsOfPairedTokens?.length) {
+        //   tok.chainIdsOfPairedTokens = [networkOfPairedToken?.chainId || 0];
+        // } else {
+        //   tok.chainIdsOfPairedTokens.push(networkOfPairedToken?.chainId || 0);
+        // }
+        console.log("TOKTOK, tok", tok);
+        if (tok.address.toLowerCase() == tokenAddress.toLowerCase() && tok.network?.chainId == network?.chainId) {
           isTokenLocallyDefined = true;
           tok.isAvailable = true;
-          tok.network = networkList.find((net) => net.chainId === network.chainId);
+          tok.network = networkList.find((net) => net?.chainId === network?.chainId);
         }
         return tok;
       });
@@ -1146,15 +1223,26 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
         returnedList.push({
           address: tokenAddress,
           isAvailable: true,
-          network: networkList.find((net) => net.chainId === network.chainId),
+          network: networkList.find((net) => net?.chainId === network?.chainId),
         });
       }
+
+      // if (isExternal) {
+      //   returnedList = curateExternalTokensForSupernova(returnedList);
+      //   console.log("curatedReturnedList", returnedList);
+      // } else {
+      //   returnedList = curateInternalTokensForSupernova(returnedList);
+      //   console.log("curatedReturnedList", returnedList);
+      // }
       return returnedList;
     };
 
     //
     // Bridge (Swap)
     //
+    console.log("internalAvailableTokens", JSON.stringify(internalAvailableTokens));
+    console.log("externalAvailableTokens", JSON.stringify(externalAvailableTokens));
+
     updatedConstants.tokenPairs = [];
     getAllNetworks.list.forEach((network: any) => {
       network.tokenPairs.forEach((pair: any) => {
@@ -1162,13 +1250,16 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
           internalAvailableTokens,
           internalAvailableNetworks,
           pair.tokenStandard,
-          internalAvailableNetworks[0]
+          // internalAvailableNetworks[0],
+          internalAvailableNetworks.find((net) => net.chainId === network.chainId) || internalAvailableNetworks[0],
+          false
         );
         externalAvailableTokens = mergeTokenToList(
           externalAvailableTokens,
           externalAvailableNetworks,
           pair.tokenAddress,
-          externalAvailableNetworks.find((net) => net.chainId === network.chainId) || externalAvailableNetworks[0]
+          externalAvailableNetworks.find((net) => net.chainId === network.chainId),
+          true
         );
 
         console.log("first_externalAvailableTokens", JSON.stringify(externalAvailableTokens));
@@ -1197,6 +1288,33 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
       });
     });
 
+    getAllNetworks.list.forEach((network: any) => {
+      network.tokenPairs.forEach((pair: any) => {
+        // internalAvailableTokens = addPairChainIdToTokenList(
+        //   internalAvailableTokens,
+        //   externalAvailableTokens.find((tok) => tok?.address?.toLowerCase() === pair.tokenAddress?.toLowerCase())
+        //     ?.network
+        // );
+        // externalAvailableTokens = addPairChainIdToTokenList(
+        //   externalAvailableTokens,
+        //   internalAvailableTokens.find((tok) => tok?.address?.toLowerCase() === pair.tokenStandard?.toLowerCase())
+        //     ?.network
+        // );
+        internalAvailableTokens = addPairChainIdToTokenList(
+          internalAvailableTokens,
+          pair.tokenStandard,
+          externalAvailableTokens.find((tok) => tok?.address?.toLowerCase() === pair.tokenAddress?.toLowerCase())
+            ?.network?.chainId || 0
+        );
+        externalAvailableTokens = addPairChainIdToTokenList(
+          externalAvailableTokens,
+          pair.tokenAddress,
+          internalAvailableTokens.find((tok) => tok?.address?.toLowerCase() === pair.tokenStandard?.toLowerCase())
+            ?.network?.chainId || 0
+        );
+      });
+    });
+
     //
     // Liquidity
     //
@@ -1222,9 +1340,9 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
     updatedConstants.liquidityInternalTokens = [];
 
     updatedConstants.internalAvailableNetworks.push(...internalAvailableNetworks);
-    updatedConstants.externalAvailableNetworks.push(...externalAvailableNetworks);
-    updatedConstants.internalAvailableTokens.push(...internalAvailableTokens);
-    updatedConstants.externalAvailableTokens.push(...externalAvailableTokens);
+    updatedConstants.externalAvailableNetworks.push(...curateExternalNetworksForSupernova(externalAvailableNetworks));
+    updatedConstants.internalAvailableTokens.push(...curateInternalTokensForSupernova(internalAvailableTokens));
+    updatedConstants.externalAvailableTokens.push(...curateExternalTokensForSupernova(externalAvailableTokens));
 
     updatedConstants.liquidityExternalNetworks.push(...liquidityExternalNetworks);
     updatedConstants.liquidityInternalNetworks.push(...liquidityInternalNetworks);
