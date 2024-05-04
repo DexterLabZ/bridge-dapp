@@ -700,6 +700,42 @@ export const curateTokenPairsForSupernova = (tokenPairs: any[]) => {
   });
 };
 
+export const curateWrapRequestsForSupernova = (wrapRequests: any[]) => {
+  console.log("supernovaChainId", (constants as any)?.supernovaChainId);
+  console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
+  console.log("curateWrapRequestsForSupernova", JSON.stringify(wrapRequests));
+  return wrapRequests.filter((req) => {
+    if ((constants as any)?.isSupernovaNetwork) {
+      if (req?.toToken?.network?.chainId?.toString() == (constants as any)?.supernovaChainId?.toString()) {
+        return true;
+      }
+    } else {
+      if (req?.toToken?.network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
+        return true;
+      }
+    }
+    return false;
+  });
+};
+
+export const curateUnwrapRequestsForSupernova = (unwrapRequests: any[]) => {
+  console.log("supernovaChainId", (constants as any)?.supernovaChainId);
+  console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
+  console.log("curateunWrapRequestsForSupernova", JSON.stringify(unwrapRequests));
+  return unwrapRequests.filter((req) => {
+    if ((constants as any)?.isSupernovaNetwork) {
+      if (req?.fromToken?.network?.chainId?.toString() == (constants as any)?.supernovaChainId?.toString()) {
+        return true;
+      }
+    } else {
+      if (req?.fromToken?.network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
+        return true;
+      }
+    }
+    return false;
+  });
+};
+
 export const removeDuplicatesFromArray = (a: any[]) => {
   const prims: any = { boolean: {}, number: {}, string: {} };
   const objs: any = [];
