@@ -300,9 +300,10 @@ export const getBalance = async (
   provider: ethers.providers.JsonRpcProvider,
   account: string,
   tokenAddress?: string,
-  tokenAbi?: string
+  tokenAbi?: string,
+  isNativeCoin = false
 ): Promise<ethers.BigNumber> => {
-  if (tokenAddress && tokenAbi) {
+  if (!isNativeCoin && tokenAddress && tokenAbi) {
     // Return the balance of the custom token
     const contract = new ethers.Contract(tokenAddress, tokenAbi, provider);
     return await contract.balanceOf(account);

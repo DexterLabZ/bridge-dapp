@@ -699,7 +699,7 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
 
     setRequestItems((reqItems) => {
       const curatedForSupernova = curateWrapRequestsForSupernova(reqItems);
-      const newReq = curatedForSupernova.map((req) => {
+      const newReq = curatedForSupernova.map((req: any) => {
         if (req.id === wrapRequest.id) {
           req.status = wrapRequest.status;
           req.timestamp = wrapRequest.timestamp;

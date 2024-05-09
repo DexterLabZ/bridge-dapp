@@ -64,6 +64,7 @@ export type simpleTokenType = {
   isCommonToken?: boolean;
   network: simpleNetworkType;
   chainIdsOfPairedTokens?: number[];
+  isNativeCoin?: boolean;
 };
 
 export type simpleNetworkType = {
@@ -374,6 +375,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
       const rawBalance = await externalNetworkClient.getBalance(
         currentToken.address,
         updatedConstants.wznnAbi,
+        currentToken?.isNativeCoin,
         provider
       );
       console.log("rawBalance", rawBalance);
@@ -1148,18 +1150,20 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
         };
         console.log("ercTokenCopy", ercTokenCopy);
 
-        const tokenApprovalParameters = [
-          currentContractAddress,
-          ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals)),
-        ];
-        console.log("tokenApprovalParameters", tokenApprovalParameters);
-        const tokenApproval = await externalNetworkClient.callContract(
-          ercToken.address,
-          globalConstants.abiToken,
-          "approve",
-          tokenApprovalParameters
-        );
-        console.log("tokenApproval", tokenApproval);
+        if (!globalConstants.isSupernovaNetwork) {
+          const tokenApprovalParameters = [
+            currentContractAddress,
+            ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals)),
+          ];
+          console.log("tokenApprovalParameters", tokenApprovalParameters);
+          const tokenApproval = await externalNetworkClient.callContract(
+            ercToken.address,
+            globalConstants.abiToken,
+            "approve",
+            tokenApprovalParameters
+          );
+          console.log("tokenApproval", tokenApproval);
+        }
 
         console.log(
           "Swaping with",
@@ -1177,19 +1181,35 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
         }
         console.log("concatenatedAddresses", concatenatedAddresses);
 
-        const swapParameters = [
-          ercTokenCopy.address,
-          ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals)),
-          concatenatedAddresses,
-        ];
-        console.log("swapParameters", swapParameters);
+        let swapParameters = [];
+        let swapResponse;
 
-        const swapResponse = await externalNetworkClient.callContract(
-          currentContractAddress,
-          globalConstants.abiContract,
-          "unwrap",
-          swapParameters
-        );
+        if (globalConstants.isSupernovaNetwork) {
+          swapParameters = [
+            ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals)),
+            concatenatedAddresses,
+          ];
+          swapResponse = await externalNetworkClient.callContract(
+            currentContractAddress,
+            globalConstants.abiContract,
+            "unwrapNative",
+            swapParameters,
+            ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals))
+          );
+        } else {
+          swapParameters = [
+            ercTokenCopy.address,
+            ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals)),
+            concatenatedAddresses,
+          ];
+          swapResponse = await externalNetworkClient.callContract(
+            currentContractAddress,
+            globalConstants.abiContract,
+            "unwrap",
+            swapParameters
+          );
+        }
+        console.log("swapParameters", swapParameters);
         console.log("swapResponse", swapResponse);
 
         resolve({ hash: swapResponse?.hash || "", logIndex: swapResponse?.logIndex || 0 });

@@ -620,14 +620,16 @@ export const replaceSupernovaWrappedTokenWithNativeToken = (wrappedToken: simple
     if (wrappedToken?.address.toLowerCase() == xZnnTokenInfo?.address?.toLowerCase()) {
       return {
         ...wrappedToken,
-        // ToDO: Because we do this all the token pairs are now broken...
-        // Fix it somehow
-        address: "",
+        isNativeCoin: true,
         name: xZnnTokenInfo?.name,
         symbol: xZnnTokenInfo?.symbol,
       };
+    } else {
+      return {
+        ...wrappedToken,
+        isNativeCoin: false,
+      };
     }
-    return wrappedToken;
   } else {
     if (wrappedToken?.address.toLowerCase() == xZnnTokenInfo?.address?.toLowerCase()) {
       wrappedToken.isAvailable = false;
@@ -734,17 +736,35 @@ export const curateWrapRequestsForSupernova = (wrapRequests: any[]) => {
   console.log("supernovaChainId", (constants as any)?.supernovaChainId);
   console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
   console.log("curateWrapRequestsForSupernova", JSON.stringify(wrapRequests));
-  return wrapRequests.filter((req) => {
+  // const list = wrapRequests.filter((req) => {
+  //   if ((constants as any)?.isSupernovaNetwork) {
+  //     if (req?.toToken?.network?.chainId?.toString() == (constants as any)?.supernovaChainId?.toString()) {
+  //       return req;
+  //     }
+  //   } else {
+  //     if (req?.toToken?.network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
+  //       return req;
+  //     }
+  //   }
+  //   return undefined;
+  // });
+  // return list.filter((v) => v !== undefined);
+  return wrapRequests.map((req) => {
     if ((constants as any)?.isSupernovaNetwork) {
       if (req?.toToken?.network?.chainId?.toString() == (constants as any)?.supernovaChainId?.toString()) {
-        return true;
-      }
-    } else {
-      if (req?.toToken?.network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
-        return true;
+        return {
+          ...req,
+          toToken: {
+            ...req?.toToken,
+            // Here we take the number of decimals from the NoM and override to the Supernova token
+            // Because the Supernova token in the toToken is not the ERC wrappedToken
+            // But the actual supernova token on the NoM network
+            decimals: req?.fromToken?.decimals,
+          },
+        };
       }
     }
-    return false;
+    return req;
   });
 };
 
@@ -752,17 +772,35 @@ export const curateUnwrapRequestsForSupernova = (unwrapRequests: any[]) => {
   console.log("supernovaChainId", (constants as any)?.supernovaChainId);
   console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
   console.log("curateunWrapRequestsForSupernova", JSON.stringify(unwrapRequests));
-  return unwrapRequests.filter((req) => {
+  // return unwrapRequests.filter((req) => {
+  //   if ((constants as any)?.isSupernovaNetwork) {
+  //     if (req?.fromToken?.network?.chainId?.toString() == (constants as any)?.supernovaChainId?.toString()) {
+  //       return true;
+  //     }
+  //   } else {
+  //     if (req?.fromToken?.network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
+  //       return true;
+  //     }
+  //   }
+  //   return false;
+  // });
+
+  return unwrapRequests.map((req) => {
     if ((constants as any)?.isSupernovaNetwork) {
       if (req?.fromToken?.network?.chainId?.toString() == (constants as any)?.supernovaChainId?.toString()) {
-        return true;
-      }
-    } else {
-      if (req?.fromToken?.network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
-        return true;
+        return {
+          ...req,
+          fromToken: {
+            ...req?.fromToken,
+            // Here we take the number of decimals from the NoM and override to the Supernova token
+            // Because the Supernova token in the fromToken is not the ERC wrappedToken
+            // But the actual supernova token on the NoM network
+            decimals: req?.toToken?.decimals,
+          },
+        };
       }
     }
-    return false;
+    return req;
   });
 };
 

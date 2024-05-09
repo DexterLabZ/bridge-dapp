@@ -79,22 +79,22 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
         list: [],
       };
       if (toAddress) {
-        if (globalConstants?.isSupernovaNetwork) {
-          getAllUnwrapTokenRequestsByToAddress =
-            await zenon.embedded.bridge.getAllUnwrapTokenRequestsByToAddressNetworkClassAndChainId(
-              toAddress,
-              globalConstants?.externalAvailableNetworks.find((n: simpleNetworkType) => n.isAvailable)?.networkClass,
-              parseInt(globalConstants?.supernovaChainId?.toString()),
-              _currentPage,
-              _itemsPerPage
-            );
-        } else {
-          getAllUnwrapTokenRequestsByToAddress = await zenon.embedded.bridge.getAllUnwrapTokenRequestsByToAddress(
-            toAddress,
-            _currentPage,
-            _itemsPerPage
-          );
-        }
+        // if (globalConstants?.isSupernovaNetwork) {
+        //   getAllUnwrapTokenRequestsByToAddress =
+        //     await zenon.embedded.bridge.getAllUnwrapTokenRequestsByToAddressNetworkClassAndChainId(
+        //       toAddress,
+        //       globalConstants?.externalAvailableNetworks.find((n: simpleNetworkType) => n.isAvailable)?.networkClass,
+        //       parseInt(globalConstants?.supernovaChainId?.toString()),
+        //       _currentPage,
+        //       _itemsPerPage
+        //     );
+        // } else {
+        getAllUnwrapTokenRequestsByToAddress = await zenon.embedded.bridge.getAllUnwrapTokenRequestsByToAddress(
+          toAddress,
+          _currentPage,
+          _itemsPerPage
+        );
+        // }
       }
 
       setMaxPages(Math.ceil(getAllUnwrapTokenRequestsByToAddress.count / _itemsPerPage));
@@ -130,7 +130,6 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
       console.log("mergedUnwrapRequests", mergedUnwrapRequests);
 
       const curatedForSupernova = curateUnwrapRequestsForSupernova(mergedUnwrapRequests);
-
       setRequestItems(curatedForSupernova);
     } catch (err) {
       console.error(err);

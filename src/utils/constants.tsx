@@ -57,6 +57,7 @@ const constants = {
     address: "0xb2e96a63479C2Edd2FD62b382c89D5CA79f572d3",
   },
   xZnnTokenInfo: {
+    isNativeCoin: true,
     symbol: "XZNN",
     name: "xZenon",
     decimals: 18,
@@ -550,6 +551,7 @@ const supernovaTestNetConstants = {
   officialBridgeCommunityUrl: "https://bridge.supernova.zenon.community",
 
   xZnnTokenInfo: {
+    isNativeCoin: true,
     symbol: "XZNN-Test",
     name: "xZenon-Test",
     decimals: 18,
