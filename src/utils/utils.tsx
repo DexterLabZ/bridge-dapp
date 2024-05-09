@@ -110,7 +110,7 @@ export const getExternalTokensDetails = async (
   return await Promise.all(
     currentExternalTokens.map(async (tok) => {
       console.log("getExternalTokensDetails - tok", tok);
-      const newTok = {
+      let newTok = {
         ...tok,
       };
       const externalNetworkChainId = (await provider.getNetwork())?.chainId;
@@ -136,24 +136,26 @@ export const getExternalTokensDetails = async (
           contract.name(),
         ]);
 
-        const xZNNToken = (constants as any)?.xZnnTokenInfo;
-        if ((constants as any)?.isSupernovaNetwork) {
-          //
-          // Because we want to bypass wxZNN so that it's simpler for the user
-          // We just replace wxZNN info with xZNN in the interface
-          // We can do this because the autoRedeemer does the conversion
-          // from znn -> wxZNN -> xZNN automatically
-          //
-          if (newTok.address?.toLowerCase() === xZNNToken?.address?.toLowerCase()) {
-            newTok.name = xZNNToken?.name;
-            newTok.symbol = xZNNToken?.symbol;
-          }
-        } else {
-          // ToDo: Remove this token alltogether
-          if (newTok.address?.toLowerCase() === xZNNToken?.address?.toLowerCase()) {
-            newTok.isAvailable = false;
-          }
-        }
+        // const xZNNToken = (constants as any)?.xZnnTokenInfo;
+        // if ((constants as any)?.isSupernovaNetwork) {
+        //   if (newTok.address?.toLowerCase() === xZNNToken?.address?.toLowerCase()) {
+        //     newTok.name = xZNNToken?.name;
+        //     newTok.symbol = xZNNToken?.symbol;
+        //   }
+        // } else {
+        //   // ToDo: Remove this token alltogether
+        //   if (newTok.address?.toLowerCase() === xZNNToken?.address?.toLowerCase()) {
+        //     newTok.isAvailable = false;
+        //   }
+        // }
+
+        //
+        // Because we want to bypass wxZNN so that it's simpler for the user
+        // We just replace wxZNN info with xZNN in the interface
+        // We can do this because the autoRedeemer does the conversion
+        // from znn -> wxZNN -> xZNN automatically
+        //
+        newTok = replaceSupernovaWrappedTokenWithNativeToken(newTok);
 
         console.log("updatedTok", newTok);
       }
@@ -609,6 +611,31 @@ export const curateExternalNetworksForSupernova = (externalNetworks: simpleNetwo
   });
 };
 
+export const replaceSupernovaWrappedTokenWithNativeToken = (wrappedToken: simpleTokenType) => {
+  console.log("supernovaChainId", (constants as any)?.supernovaChainId);
+  console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
+  console.log("replaceSupernovaWrappedTokenWithNativeToken", wrappedToken);
+  const xZnnTokenInfo = (constants as any)?.xZnnTokenInfo;
+  if ((constants as any)?.isSupernovaNetwork) {
+    if (wrappedToken?.address.toLowerCase() == xZnnTokenInfo?.address?.toLowerCase()) {
+      return {
+        ...wrappedToken,
+        // ToDO: Because we do this all the token pairs are now broken...
+        // Fix it somehow
+        address: "",
+        name: xZnnTokenInfo?.name,
+        symbol: xZnnTokenInfo?.symbol,
+      };
+    }
+    return wrappedToken;
+  } else {
+    if (wrappedToken?.address.toLowerCase() == xZnnTokenInfo?.address?.toLowerCase()) {
+      wrappedToken.isAvailable = false;
+    }
+    return wrappedToken;
+  }
+};
+
 export const curateExternalTokensForSupernova = (externalTokens: simpleTokenType[]) => {
   console.log("supernovaChainId", (constants as any)?.supernovaChainId);
   console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
@@ -618,10 +645,11 @@ export const curateExternalTokensForSupernova = (externalTokens: simpleTokenType
       if (token?.network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
         return undefined;
       } else {
+        const xZnnTokenInfo = (constants as any)?.xZnnTokenInfo;
         return {
           ...token,
-          name: "xZenon",
-          symbol: "XZNN",
+          name: xZnnTokenInfo?.name,
+          symbol: xZnnTokenInfo?.symbol,
         };
       }
     } else {
@@ -683,21 +711,23 @@ export const curateTokenPairsForSupernova = (tokenPairs: any[]) => {
   console.log("supernovaChainId", (constants as any)?.supernovaChainId);
   console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
   console.log("curateTokenPairsForSupernova", JSON.stringify(tokenPairs));
-  return tokenPairs.filter((pair) => {
-    if (!pair?.externalToken) return false;
-    if (!pair?.internalToken) return false;
+  const list = tokenPairs.map((pair) => {
+    if (!pair?.externalToken) return undefined;
+    if (!pair?.internalToken) return undefined;
 
     if ((constants as any)?.isSupernovaNetwork) {
       if (pair?.externalToken?.network?.chainId?.toString() == (constants as any)?.supernovaChainId?.toString()) {
-        return true;
+        pair.externalToken = replaceSupernovaWrappedTokenWithNativeToken(pair.externalToken);
+        return pair;
       }
     } else {
       if (pair?.externalToken?.network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
-        return true;
+        return pair;
       }
     }
-    return false;
+    return undefined;
   });
+  return list.filter((v) => v !== undefined);
 };
 
 export const curateWrapRequestsForSupernova = (wrapRequests: any[]) => {
