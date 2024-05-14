@@ -19,7 +19,7 @@ import forumLogo from "./../../../assets/logos/forum-logo.svg";
 import telegramLogo from "./../../../assets/logos/telegram.svg";
 import twitterLogo from "./../../../assets/logos/twitter.svg";
 import useExternalNetwork from "../../../services/hooks/externalNetwork-provider/useExternalNetwork";
-import { curateUnwrapRequestsForSupernova } from "../../../utils/utils";
+import { curateUnwrapRequestsForSupernova, getUnwrapRequestsAndEmulatePagination } from "../../../utils/utils";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
@@ -74,6 +74,8 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
       const toAddress = zenonInfo?.address;
 
       console.log("toAddress", toAddress);
+      console.log("_currentPage", _currentPage);
+      console.log("_itemsPerPage", _itemsPerPage);
       let getAllUnwrapTokenRequestsByToAddress = {
         count: 0,
         list: [],
@@ -89,12 +91,19 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
         //       _itemsPerPage
         //     );
         // } else {
-        getAllUnwrapTokenRequestsByToAddress = await zenon.embedded.bridge.getAllUnwrapTokenRequestsByToAddress(
+        // getAllUnwrapTokenRequestsByToAddress = await zenon.embedded.bridge.getAllUnwrapTokenRequestsByToAddress(
+        //   toAddress,
+        //   _currentPage,
+        //   _itemsPerPage
+        // );
+        // }
+
+        getAllUnwrapTokenRequestsByToAddress = await getUnwrapRequestsAndEmulatePagination(
+          zenon,
           toAddress,
           _currentPage,
           _itemsPerPage
         );
-        // }
       }
 
       setMaxPages(Math.ceil(getAllUnwrapTokenRequestsByToAddress.count / _itemsPerPage));

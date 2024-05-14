@@ -814,3 +814,58 @@ export const removeDuplicatesFromArray = (a: any[]) => {
     else return objs.indexOf(item) >= 0 ? false : objs.push(item);
   });
 };
+
+export const getUnwrapRequestsAndEmulatePagination = async (
+  zenonInstance: Zenon,
+  toAddress: any,
+  currentPage: number,
+  itemsPerPage: number
+) => {
+  if (!(constants as any)?.isSupernovaNetwork) {
+    return zenonInstance.embedded.bridge.getAllUnwrapTokenRequestsByToAddress(toAddress, currentPage, itemsPerPage);
+  } else {
+    const allRequests = (await zenonInstance.embedded.bridge.getAllUnwrapTokenRequestsByToAddress(toAddress, 0, 255))
+      ?.list;
+    console.log("allRequests", allRequests);
+    console.log("(JSON.stringify(allRequests))", JSON.stringify(allRequests));
+    console.log("supernovaChainId", (constants as any)?.supernovaChainId);
+
+    const onSupernova = allRequests.filter(
+      (item: any) => item.chainId.toString() === (constants as any)?.supernovaChainId
+    );
+    const notOnSupernova = allRequests.filter(
+      (item: any) => item.chainId.toString() !== (constants as any)?.supernovaChainId
+    );
+
+    console.log("onSupernova", onSupernova);
+    console.log("notOnSupernova", notOnSupernova);
+
+    const orderedRequests = [
+      ...onSupernova.filter((item: any) => item.redeemed === 0),
+      ...onSupernova.filter((item: any) => item.redeemed !== 0),
+      ...notOnSupernova.filter((item: any) => item.redeemed === 0),
+      ...notOnSupernova.filter((item: any) => item.redeemed !== 0),
+    ];
+    console.log("orderedRequestsByRedeemed", orderedRequests);
+
+    const totalItems = orderedRequests.length;
+    const maxPages = Math.ceil(totalItems / itemsPerPage);
+    console.log("maxPages", maxPages);
+
+    // Calculate the starting and ending indices
+    const startIndex = currentPage * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    console.log("startIndex", startIndex);
+    console.log("endIndex", endIndex);
+
+    // Get the items for the current page
+    const paginatedItems = orderedRequests.slice(startIndex, endIndex);
+    console.log("paginatedItems", paginatedItems);
+
+    return {
+      count: totalItems,
+      list: paginatedItems,
+      maxPages: maxPages,
+    };
+  }
+};
