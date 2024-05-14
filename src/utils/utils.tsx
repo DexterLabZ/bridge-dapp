@@ -843,8 +843,8 @@ export const getUnwrapRequestsAndEmulatePagination = async (
     const orderedRequests = [
       ...onSupernova.filter((item: any) => item.redeemed === 0),
       ...onSupernova.filter((item: any) => item.redeemed !== 0),
-      ...notOnSupernova.filter((item: any) => item.redeemed === 0),
-      ...notOnSupernova.filter((item: any) => item.redeemed !== 0),
+      // ...notOnSupernova.filter((item: any) => item.redeemed === 0),
+      // ...notOnSupernova.filter((item: any) => item.redeemed !== 0),
     ];
     console.log("orderedRequestsByRedeemed", orderedRequests);
 
