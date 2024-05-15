@@ -13,7 +13,7 @@ const constants = {
   isTestNet: false,
   isSupernovaTestNet: false,
   isSupernovaMainNet: false,
-  supernovaChainId: process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_MAINNET_CHAIN_ID,
+  supernovaChainId: parseInt(process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_MAINNET_CHAIN_ID || "0"),
   feeDenominator: 10000,
 
   maxLogIndex: 4000000000,
@@ -251,7 +251,7 @@ const testConstants = {
   isSupernovaTestNet: false,
   isSupernovaMainNet: false,
 
-  supernovaChainId: process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_TESTNET_CHAIN_ID,
+  supernovaChainId: parseInt(process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_TESTNET_CHAIN_ID || "0"),
   defaultInternalChainId: 3,
   defaultExternalChainId: 11155111,
 
@@ -394,7 +394,7 @@ const developmentConstants = {
   isSupernovaTestNet: false,
   isSupernovaMainNet: false,
 
-  supernovaChainId: process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_DEVNET_CHAIN_ID,
+  supernovaChainId: parseInt(process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_DEVNET_CHAIN_ID || "0"),
   defaultInternalChainId: 3,
   defaultExternalChainId: 11155111,
 
@@ -543,7 +543,7 @@ const supernovaTestNetConstants = {
   //
   isSupernovaNetwork: true,
 
-  supernovaChainId: process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_TESTNET_CHAIN_ID,
+  supernovaChainId: parseInt(process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_TESTNET_CHAIN_ID || "0"),
   defaultInternalChainId: 3,
   defaultExternalChainId: parseInt(process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_TESTNET_CHAIN_ID || "0"),
 
@@ -577,7 +577,7 @@ const supernovaTestNetConstants = {
   // Liquidity networks
   defaultLiquidityExternalNetworkDetails: {
     ETH: {
-      name: "SUPERNOVA-TESTNET-ETH",
+      name: "Supernova-Testnet-ETH",
       chainId: 74506,
       // contractAddress is also known as bridgeAddress
       contractAddress:

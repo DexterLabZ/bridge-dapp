@@ -1546,18 +1546,23 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
             </div>
 
             <div className="d-flex justify-content-between align-items-center height-30px">
-              {externalNetworkClient.providerType == externalNetworkProviderTypes.metamask ? (
-                <div className="text-button" onClick={addTokenToMetamask}>
-                  <span className="mr-1 text-nowrap">Add token to metamask</span>
-                  <img
-                    alt="text-button-icon"
-                    className="text-button-icon"
-                    src={require("./../../../assets/logos/metamask.png")}></img>
-                </div>
-              ) : (
+              {globalConstants?.isSupernovaNetwork ? (
                 <div></div>
+              ) : (
+                <>
+                  {externalNetworkClient.providerType == externalNetworkProviderTypes.metamask ? (
+                    <div className="text-button" onClick={addTokenToMetamask}>
+                      <span className="mr-1 text-nowrap">Add token to metamask</span>
+                      <img
+                        alt="text-button-icon"
+                        className="text-button-icon"
+                        src={require("./../../../assets/logos/metamask.png")}></img>
+                    </div>
+                  ) : (
+                    <div></div>
+                  )}
+                </>
               )}
-
               <div className="mt-1 d-flex text-right">
                 {"Balance: "}
                 {isErcBalanceLoading ? (
@@ -1628,54 +1633,63 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
           </div>
         </div>
 
-        <div className="d-flex flex-wrap justify-content-start mt-1">
-          <img alt="fees-info" className="switch-arrow mr-1" src={infoIcon}></img>
-          {isUnwrapDirection ? (
-            <>
-              <div className="text-nowrap">{"Fees: No fees."}</div>
-            </>
-          ) : (
-            <>
-              <span className="text-nowrap">
-                {"Fees: " +
-                  parseFloat(zenonAmount || "0") +
-                  " * " +
-                  (wrapFeePercentage * 100) / globalConstants.feeDenominator +
-                  "% = "}
-              </span>
-              <b className="ml-1 text-nowrap">
-                {parseFloat(
-                  parseFloat(zenonAmount || "0") * (wrapFeePercentage / globalConstants.feeDenominator) + ""
-                ).toFixed(2) +
-                  " " +
-                  zenonToken?.symbol}
-              </b>
-            </>
-          )}
-        </div>
+        {globalConstants?.isSupernovaNetwork ? (
+          <></>
+        ) : (
+          <>
+            <div className="d-flex flex-wrap justify-content-start mt-1">
+              <img alt="fees-info" className="switch-arrow mr-1" src={infoIcon}></img>
+              {isUnwrapDirection ? (
+                <>
+                  <div className="text-nowrap">{"Fees: No fees."}</div>
+                </>
+              ) : (
+                <>
+                  <span className="text-nowrap">
+                    {"Fees: " +
+                      parseFloat(zenonAmount || "0") +
+                      " * " +
+                      (wrapFeePercentage * 100) / globalConstants.feeDenominator +
+                      "% = "}
+                  </span>
+                  <b className="ml-1 text-nowrap">
+                    {parseFloat(
+                      parseFloat(zenonAmount || "0") * (wrapFeePercentage / globalConstants.feeDenominator) + ""
+                    ).toFixed(2) +
+                      " " +
+                      zenonToken?.symbol}
+                  </b>
+                </>
+              )}
+            </div>
 
-        {isUnwrapDirection ? (
-          <div className="d-flex flex-wrap justify-content-start mt-1">
-            <img alt="fees-info" className="switch-arrow mr-1" src={referralCode ? infoIconBlue : infoIconRed}></img>
-            {referralCode ? (
-              <div>
-                <b className="text-qsr">BONUS:</b>
-                <span className="text-nowrap">{" You will get 1% because you are using a referral code"}</span>
+            {isUnwrapDirection ? (
+              <div className="d-flex flex-wrap justify-content-start mt-1">
+                <img
+                  alt="fees-info"
+                  className="switch-arrow mr-1"
+                  src={referralCode ? infoIconBlue : infoIconRed}></img>
+                {referralCode ? (
+                  <div>
+                    <b className="text-qsr">BONUS:</b>
+                    <span className="text-nowrap">{" You will get 1% because you are using a referral code"}</span>
+                  </div>
+                ) : (
+                  <a
+                    className="no-decoration text-white"
+                    href="https://twitter.com/hashtag/HyperGrowth"
+                    target="_blank"
+                    rel="noreferrer">
+                    <span className="text-nowrap text-attention-grabber p-relative">
+                      {"Click here to find a referral link and get 1% bonus "}
+                    </span>
+                  </a>
+                )}
               </div>
             ) : (
-              <a
-                className="no-decoration text-white"
-                href="https://twitter.com/hashtag/HyperGrowth"
-                target="_blank"
-                rel="noreferrer">
-                <span className="text-nowrap text-attention-grabber p-relative">
-                  {"Click here to find a referral link and get 1% bonus "}
-                </span>
-              </a>
+              <></>
             )}
-          </div>
-        ) : (
-          <></>
+          </>
         )}
 
         <div className="d-flex flex-wrap justify-content-start mt-1">

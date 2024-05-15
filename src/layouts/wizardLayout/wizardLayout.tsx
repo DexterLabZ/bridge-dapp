@@ -25,6 +25,7 @@ const WizardLayout = () => {
   const wizardStatus = useSelector((state: any) => state.wizardStatus);
   const dispatch = useDispatch();
   const [currentFlowStep, setCurrentFlowStep] = useState(wizardStatus.currentFlowStep);
+  const globalConstants = useSelector((state: any) => state.globalConstants);
 
   useEffect(() => {
     console.log("Step changed from", currentFlowStep, "to", wizardStatus.currentFlowStep);
@@ -130,8 +131,17 @@ const WizardLayout = () => {
     <div className="wizard-container">
       <div className="container-header">
         <div className="logo-container">
-          <div className="logo-white-part">NoM</div>
-          <div className="logo-green-part">Multichain</div>
+          {globalConstants?.isSupernovaNetwork ? (
+            <>
+              <div className="supernova-logo-font logo-white-part">Supernova</div>
+              <div className="supernova-logo-font logo-green-part">Extension-chain</div>
+            </>
+          ) : (
+            <>
+              <div className="logo-white-part">NoM</div>
+              <div className="logo-green-part">Multichain</div>
+            </>
+          )}
         </div>
       </div>
       <div id="extension-approval-spinner-root" className="wizard-content">
@@ -217,7 +227,6 @@ const WizardLayout = () => {
           </div>
         )}
       </div>
-
     </div>
   );
 };

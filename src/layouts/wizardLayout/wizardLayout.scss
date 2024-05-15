@@ -1,4 +1,4 @@
-@import './../../styles/variables.scss';
+@import "./../../styles/variables.scss";
 
 .wizard-container {
   background: rgba(38, 38, 38, 0.3);
@@ -24,7 +24,12 @@
   }
 
   .container-header {
-    background: linear-gradient(90deg, $primary-gradient-start 0%, $primary-gradient-end 50%, $primary-gradient-start 100%);
+    background: linear-gradient(
+      90deg,
+      $primary-gradient-start 0%,
+      $primary-gradient-end 50%,
+      $primary-gradient-start 100%
+    );
     animation: translate-bg-right 15s infinite ease-in-out;
 
     border-radius: 24px 24px 0px 0px;
@@ -47,15 +52,25 @@
       font-size: clamp(1.2em, 5vw, 2em);
       font-weight: 600;
       padding-bottom: 16px;
+
+      &.supernova-logo-font {
+        font-size: clamp(1em, 3.5vw, 1.5em);
+        font-weight: 600;
+      }
     }
 
     .logo-green-part {
       font-size: clamp(3.6em, 15vw, 6em);
       font-weight: 700;
-      background: linear-gradient(180deg, #3F3F3F 0%, rgba(0, 0, 0, 0.4) 100%);
+      background: linear-gradient(180deg, #3f3f3f 0%, rgba(0, 0, 0, 0.4) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+
+      &.supernova-logo-font {
+        font-size: clamp(2.2em, 8vw, 5em);
+        font-weight: 700;
+      }
     }
   }
 }

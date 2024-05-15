@@ -43,11 +43,13 @@ import ethLogo from "./../../../assets/networks/eth.svg";
 import walletConnectLogo from "./../../../assets/logos/walletConnect.svg";
 import bnbNetworkIcon from "./../../../assets/networks/bnb.svg";
 import znnNetworkIcon from "./../../../assets/networks/zenon.svg";
+import supernovaNetworkIcon from "./../../../assets/networks/supernova.png";
 import ethPurpleIcon from "./../../../assets/tokens/eth-purple.svg";
 import qsrTokenIcon from "./../../../assets/tokens/qsr.svg";
 import wqsrTokenIcon from "./../../../assets/tokens/wqsr.svg";
 import wznnTokenIcon from "./../../../assets/tokens/wznn.svg";
 import znnTokenIcon from "./../../../assets/tokens/znn.svg";
+import xZnnTokenIcon from "./../../../assets/tokens/xznn.png";
 import "./extensionConnect.scss";
 import { externalNetworkProviderTypes } from "../../../services/hooks/externalNetwork-provider/externalNetworkContext";
 import useExternalNetwork from "../../../services/hooks/externalNetwork-provider/useExternalNetwork";
@@ -947,6 +949,45 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
       ];
     }
 
+    // If supernova - mainNet
+    if (updatedConstants?.isSupernovaMainNet) {
+      externalAvailableNetworks = [
+        {
+          name: "Supernova",
+          chainId: updatedConstants?.supernovaChainId,
+          icon: supernovaNetworkIcon,
+          isAvailable: false,
+          color: "#F637A7",
+        },
+        {
+          name: "ETH",
+          chainId: 1,
+          icon: ethPurpleIcon,
+          isAvailable: false,
+          color: "#627EEA",
+        },
+      ];
+    }
+    // If supernova testnet
+    if (updatedConstants?.isSupernovaTestNet) {
+      externalAvailableNetworks = [
+        {
+          name: "Supernova",
+          chainId: updatedConstants?.supernovaChainId,
+          icon: supernovaNetworkIcon,
+          isAvailable: false,
+          color: "#F637A7",
+        },
+        {
+          name: "Sepolia",
+          chainId: 11155111,
+          icon: ethPurpleIcon,
+          isAvailable: false,
+          color: "#627EEA",
+        },
+      ];
+    }
+
     let internalAvailableTokens: simpleTokenType[] = [
       {
         icon: znnTokenIcon,
@@ -1000,35 +1041,52 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
 
     let externalAvailableTokens: simpleTokenType[] = [
       {
-        icon: wznnTokenIcon,
-        symbol: "wZNN",
-        name: "Wrapped Zenon",
+        icon: xZnnTokenIcon,
+        symbol: globalConstants?.xZnnTokenInfo?.symbol,
+        name: globalConstants?.xZnnTokenInfo?.name,
         //
         // TODO: update addresses in constants when changing between testNet and mainNet
         // Such that we have icons for the tokens
         // isAvailable: true if they are found on the network
-        address: globalConstants.bscWznnTokenInfo.address,
-        // BSC network
+        address: globalConstants?.xZnnTokenInfo?.address,
+        // BSC network or Supernova network
         network: externalAvailableNetworks[0],
         balance: "0",
-        decimals: globalConstants.bscWznnTokenInfo.decimals,
+        decimals: globalConstants?.xZnnTokenInfo?.decimals,
         isAvailable: false,
         availableSoon: false,
         isCommonToken: false,
       },
-      {
-        icon: wqsrTokenIcon,
-        symbol: "wQSR",
-        name: "Wrapped Quasar",
-        address: globalConstants.bscWqsrTokenInfo.address,
-        // BSC network
-        network: externalAvailableNetworks[0],
-        balance: "0",
-        decimals: globalConstants.bscWqsrTokenInfo.decimals,
-        isAvailable: false,
-        availableSoon: false,
-        isCommonToken: true,
-      },
+      // {
+      //   icon: wznnTokenIcon,
+      //   symbol: "wZNN",
+      //   name: "Wrapped Zenon",
+      //   //
+      //   // TODO: update addresses in constants when changing between testNet and mainNet
+      //   // Such that we have icons for the tokens
+      //   // isAvailable: true if they are found on the network
+      //   address: globalConstants.bscWznnTokenInfo.address,
+      //   // BSC network
+      //   network: externalAvailableNetworks[0],
+      //   balance: "0",
+      //   decimals: globalConstants.bscWznnTokenInfo.decimals,
+      //   isAvailable: false,
+      //   availableSoon: false,
+      //   isCommonToken: false,
+      // },
+      // {
+      //   icon: wqsrTokenIcon,
+      //   symbol: "wQSR",
+      //   name: "Wrapped Quasar",
+      //   address: globalConstants.bscWqsrTokenInfo.address,
+      //   // BSC network
+      //   network: externalAvailableNetworks[0],
+      //   balance: "0",
+      //   decimals: globalConstants.bscWqsrTokenInfo.decimals,
+      //   isAvailable: false,
+      //   availableSoon: false,
+      //   isCommonToken: true,
+      // },
       {
         icon: wznnTokenIcon,
         symbol: "wZNN",
@@ -1175,6 +1233,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
     ) => {
       console.log("addPairChainIdToTokenList");
       console.log("tokenList", tokenList);
+      console.log("JSON.stringify(tokenList)", JSON.stringify(tokenList));
       console.log("originalTokenAddress", originalTokenAddress);
       console.log("pairNetwork", pairNetwork);
       const returnedList = tokenList.map((tok: any) => {
@@ -1187,6 +1246,8 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
         }
         return tok;
       });
+      console.log("returnedList", returnedList);
+      console.log("JSON.stringify(returnedList)", JSON.stringify(returnedList));
       return returnedList;
     };
 
@@ -1460,55 +1521,59 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
 
   return (
     <div className="pl-3 pr-3 mt-4">
-      <div className="d-flex justify-content-left align-items-center">
-        <a
-          className="no-decoration d-flex justify-content-start align-items-center text-sm"
-          href="https://twitter.com/hashtag/HyperGrowth"
-          target="_blank"
-          rel="noreferrer">
-          <img alt="fees-info" className="mr-1" src={infoIcon}></img>
-          <div className="d-flex justify-items-center align-items-center">
-            <div className="tooltip clickable-info text-bold pt-1 pb-1">
-              {isReferralCodeApplied ? (
-                <>
-                  {`Click here to see more referral links`}
-                  <div className="tooltip-text background-clip-fix">
-                    You successfully used a referral code to get 1% bonus cashback
-                    <br></br>
-                    for every unwrap from wZNN to ZNN and wQSR to QSR
-                  </div>
-                </>
-              ) : (
-                <>
-                  {`Click here to find a referral link and get 1% bonus`}
-                  <div className="tooltip-text background-clip-fix">
-                    Use referral code to get 1% bonus cashback for
-                    <br></br>
-                    every unwrap from wZNN to ZNN and wQSR to QSR
-                  </div>
-                </>
-              )}
+      {globalConstants?.isSupernovaNetwork ? (
+        <></>
+      ) : (
+        <div className="d-flex justify-content-left align-items-center">
+          <a
+            className="no-decoration d-flex justify-content-start align-items-center text-sm"
+            href="https://twitter.com/hashtag/HyperGrowth"
+            target="_blank"
+            rel="noreferrer">
+            <img alt="fees-info" className="mr-1" src={infoIcon}></img>
+            <div className="d-flex justify-items-center align-items-center">
+              <div className="tooltip clickable-info text-bold pt-1 pb-1">
+                {isReferralCodeApplied ? (
+                  <>
+                    {`Click here to see more referral links`}
+                    <div className="tooltip-text background-clip-fix">
+                      You successfully used a referral code to get 1% bonus cashback
+                      <br></br>
+                      for every unwrap from wZNN to ZNN and wQSR to QSR
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {`Click here to find a referral link and get 1% bonus`}
+                    <div className="tooltip-text background-clip-fix">
+                      Use referral code to get 1% bonus cashback for
+                      <br></br>
+                      every unwrap from wZNN to ZNN and wQSR to QSR
+                    </div>
+                  </>
+                )}
+              </div>
+              <img
+                alt="step-logo"
+                className="ml-1"
+                style={{ maxWidth: "32px", maxHeight: "32px" }}
+                src={twitterLogo}></img>
             </div>
-            <img
-              alt="step-logo"
-              className="ml-1"
-              style={{ maxWidth: "32px", maxHeight: "32px" }}
-              src={twitterLogo}></img>
-          </div>
-        </a>
+          </a>
 
-        <a
-          className="no-decoration d-flex justify-content-start align-items-center text-sm"
-          href="https://forum.zenon.org/t/perpetual-ecosystem-growth/1417/17"
-          target="_blank"
-          rel="noreferrer">
-          <div className={`button secondary text-white ml-2 text-sm tooltip d-flex align-items-center`}>
-            {/* <img alt="fees-info" className="mr-2" src={infoIcon}></img> */}
-            About referral
-            <span className="tooltip-text">Find out more about the referral program.</span>
-          </div>
-        </a>
-      </div>
+          <a
+            className="no-decoration d-flex justify-content-start align-items-center text-sm"
+            href="https://forum.zenon.org/t/perpetual-ecosystem-growth/1417/17"
+            target="_blank"
+            rel="noreferrer">
+            <div className={`button secondary text-white ml-2 text-sm tooltip d-flex align-items-center`}>
+              {/* <img alt="fees-info" className="mr-2" src={infoIcon}></img> */}
+              About referral
+              <span className="tooltip-text">Find out more about the referral program.</span>
+            </div>
+          </a>
+        </div>
+      )}
 
       <div className={`extension-item mb-5 mt-4`}>
         <div className={`step-counter ${isSyriusConnected && "completed"}`}>1</div>
