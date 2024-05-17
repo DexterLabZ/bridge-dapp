@@ -5,9 +5,9 @@ name: Build and deploy to staging
 
 on:
   push:
-    branches: ["main"]
+    branches: ["x-chain"]
   pull_request:
-    branches: ["main"]
+    branches: ["x-chain"]
   workflow_dispatch:
 
 jobs:
@@ -52,8 +52,8 @@ jobs:
           branch: main
           git-config-name: github-actions[bot]
           git-config-email: github-action[bot]@users.noreply.github.com
-          repository-name: DexterLabZ/bridge.staging.zenon.community
-          commit-message: Staging release
+          repository-name: DexterLabZ/bridge.supernova-staging.zenon.community
+          commit-message: Supernova Staging release
           clean: true
           single-commit: true
           force: true
