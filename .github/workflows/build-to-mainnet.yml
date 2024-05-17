@@ -59,8 +59,8 @@ jobs:
           branch: main
           git-config-name: github-actions[bot]
           git-config-email: github-action[bot]@users.noreply.github.com
-          repository-name: DexterLabZ/bridge.mainnet.zenon.community
-          commit-message: Mainnet release
+          repository-name: DexterLabZ/bridge.supernova.zenon.community
+          commit-message: Supernova Mainnet release
           clean: true
           single-commit: true
           force: true
