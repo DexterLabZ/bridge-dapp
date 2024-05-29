@@ -1,13 +1,10 @@
 # This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
 
-name: Build and deploy to testnet
+name: Build and deploy to mainnet
 
 on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
+  create:
   workflow_dispatch:
 
 jobs:
@@ -15,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     environment:
-      name: test
+      name: production
 
     strategy:
       matrix:
@@ -23,6 +20,16 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
+      - name: Check Tag Name Format
+        if: github.event_name == 'create' && github.ref_type == 'tag'
+        run: |
+          TAG_REGEX="^v\d+\.\d+\.\d+$"
+          if [[ "${GITHUB_REF##*/}" =~ $TAG_REGEX ]]; then
+            echo "Tag format is correct."
+          else
+            echo "Tag does not match the SemVer format."
+            exit;
+          fi
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
@@ -42,18 +49,18 @@ jobs:
           done < .env
 
       - run: npm ci
-      - run: npm run build-test --if-present
+      - run: npm run build-prod --if-present
         env:
           CI: false
-      - name: Deploy to testnet
+      - name: Deploy to mainnet
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           token: ${{ secrets.STAGING_TOKEN }}
           branch: main
           git-config-name: github-actions[bot]
           git-config-email: github-action[bot]@users.noreply.github.com
-          repository-name: DexterLabZ/bridge.testnet.zenon.community
-          commit-message: Testnet release
+          repository-name: DexterLabZ/bridge.mainnet.zenon.community
+          commit-message: Mainnet release
           clean: true
           single-commit: true
           force: true
