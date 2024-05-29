@@ -110,7 +110,7 @@ export const getExternalTokensDetails = async (
   return await Promise.all(
     currentExternalTokens.map(async (tok) => {
       console.log("getExternalTokensDetails - tok", tok);
-      const newTok = {
+      let newTok = {
         ...tok,
       };
       const externalNetworkChainId = (await provider.getNetwork())?.chainId;
@@ -136,6 +136,27 @@ export const getExternalTokensDetails = async (
           contract.name(),
         ]);
 
+        // const xZNNToken = (constants as any)?.xZnnTokenInfo;
+        // if ((constants as any)?.isSupernovaNetwork) {
+        //   if (newTok.address?.toLowerCase() === xZNNToken?.address?.toLowerCase()) {
+        //     newTok.name = xZNNToken?.name;
+        //     newTok.symbol = xZNNToken?.symbol;
+        //   }
+        // } else {
+        //   // ToDo: Remove this token alltogether
+        //   if (newTok.address?.toLowerCase() === xZNNToken?.address?.toLowerCase()) {
+        //     newTok.isAvailable = false;
+        //   }
+        // }
+
+        //
+        // Because we want to bypass wxZNN so that it's simpler for the user
+        // We just replace wxZNN info with xZNN in the interface
+        // We can do this because the autoRedeemer does the conversion
+        // from znn -> wxZNN -> xZNN automatically
+        //
+        newTok = replaceSupernovaWrappedTokenWithNativeToken(newTok);
+
         console.log("updatedTok", newTok);
       }
       return newTok;
@@ -144,7 +165,7 @@ export const getExternalTokensDetails = async (
 };
 
 export const updateTokenPairsWithNewExternalTokens = (currentPairs: any[], newExternalTokens: simpleTokenType[]) => {
-  return currentPairs.map((pair: any) => {
+  const pairsList = currentPairs.map((pair: any) => {
     return {
       ...pair,
       externalToken:
@@ -155,10 +176,11 @@ export const updateTokenPairsWithNewExternalTokens = (currentPairs: any[], newEx
         ) || pair.externalToken,
     };
   });
+  return curateTokenPairsForSupernova(pairsList);
 };
 
 export const updateTokenPairsWithNewInternalTokens = (currentPairs: any[], newInternalTokens: simpleTokenType[]) => {
-  return currentPairs.map((pair: any) => {
+  const pairsList = currentPairs.map((pair: any) => {
     return {
       ...pair,
       internalToken:
@@ -169,6 +191,7 @@ export const updateTokenPairsWithNewInternalTokens = (currentPairs: any[], newIn
         ) || pair.internalToken,
     };
   });
+  return curateTokenPairsForSupernova(pairsList);
 };
 
 export const getLiquidityPairsDetails = async (
@@ -552,4 +575,338 @@ export const extractChainIdsFromNamespacesAccounts = (namespacesAccounts: string
     const [namespace, chainId, address] = namespacesAccount.split(":");
     return chainId;
   });
+};
+
+export const curateinternalNetworksForSupernova = (internalNetworks: simpleNetworkType[]) => {
+  console.log("supernovaChainId", (constants as any)?.supernovaChainId);
+  console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
+  console.log("curateinternalNetworksForSupernova", JSON.stringify(internalNetworks));
+  return internalNetworks.filter((network) => {
+    if ((constants as any)?.isSupernovaNetwork) {
+      if (network?.chainId?.toString() == (constants as any)?.supernovaChainId?.toString()) {
+        return true;
+      }
+    } else {
+      if (network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
+        return true;
+      }
+    }
+  });
+};
+
+export const curateExternalNetworksForSupernova = (externalNetworks: simpleNetworkType[]) => {
+  console.log("supernovaChainId", (constants as any)?.supernovaChainId);
+  console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
+  console.log("curateExternalNetworksForSupernova", JSON.stringify(externalNetworks));
+  return externalNetworks.filter((network) => {
+    if ((constants as any)?.isSupernovaNetwork) {
+      if (network?.chainId?.toString() == (constants as any)?.supernovaChainId?.toString()) {
+        return true;
+      }
+    } else {
+      if (network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
+        return true;
+      }
+    }
+  });
+};
+
+export const replaceSupernovaWrappedTokenWithNativeToken = (wrappedToken: simpleTokenType) => {
+  console.log("supernovaChainId", (constants as any)?.supernovaChainId);
+  console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
+  console.log("replaceSupernovaWrappedTokenWithNativeToken", wrappedToken);
+  const xZnnTokenInfo = (constants as any)?.xZnnTokenInfo;
+  if ((constants as any)?.isSupernovaNetwork) {
+    if (wrappedToken?.address.toLowerCase() == xZnnTokenInfo?.address?.toLowerCase()) {
+      return {
+        ...wrappedToken,
+        isNativeCoin: true,
+        name: xZnnTokenInfo?.name,
+        symbol: xZnnTokenInfo?.symbol,
+      };
+    } else {
+      return {
+        ...wrappedToken,
+        isNativeCoin: false,
+      };
+    }
+  } else {
+    if (wrappedToken?.address.toLowerCase() == xZnnTokenInfo?.address?.toLowerCase()) {
+      wrappedToken.isAvailable = false;
+    }
+    return wrappedToken;
+  }
+};
+
+export const curateExternalTokensForSupernova = (externalTokens: simpleTokenType[]) => {
+  console.log("supernovaChainId", (constants as any)?.supernovaChainId);
+  console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
+  console.log("curateExternalTokensForSupernova", JSON.stringify(externalTokens));
+  const list = externalTokens.map((token) => {
+    if ((constants as any)?.isSupernovaNetwork) {
+      if (token?.network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
+        return undefined;
+      } else {
+        const xZnnTokenInfo = (constants as any)?.xZnnTokenInfo;
+        return {
+          ...token,
+          name: xZnnTokenInfo?.name,
+          symbol: xZnnTokenInfo?.symbol,
+        };
+      }
+    } else {
+      console.log("SUPER NETWORK NO");
+      console.log("token?.network?.chainId", token?.network?.chainId);
+      console.log("(constants as any)?.supernovaChainId", (constants as any)?.supernovaChainId);
+      console.log(
+        "token?.network?.chainId !== (constants as any)?.supernovaChainId)",
+        token?.network?.chainId !== (constants as any)?.supernovaChainId
+      );
+
+      if (token?.network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
+        console.log("SUPER TOKEN YES", JSON.stringify(token));
+        return token;
+      } else {
+        console.log("SUPER TOKEN NO", JSON.stringify(token));
+        return undefined;
+      }
+    }
+  });
+  console.log("curatedList", JSON.stringify(list));
+  return list.filter((v) => v !== undefined);
+};
+
+export const curateInternalTokensForSupernova = (internalTokens: simpleTokenType[]) => {
+  console.log("supernovaChainId", (constants as any)?.supernovaChainId);
+  console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
+  console.log("curateInternalTokensForSupernova", JSON.stringify(internalTokens));
+  const list = internalTokens.map((token) => {
+    if ((constants as any)?.isSupernovaNetwork) {
+      if (!token?.chainIdsOfPairedTokens?.includes(parseInt((constants as any)?.supernovaChainId))) {
+        return undefined;
+      } else {
+        return token;
+      }
+    } else {
+      console.log("SUPER NETWORK NO");
+      console.log("token?.chainIdsOfPairedTokens", token?.chainIdsOfPairedTokens);
+      console.log("(constants as any)?.supernovaChainId", (constants as any)?.supernovaChainId);
+
+      const chainIdWithoutDuplicates = removeDuplicatesFromArray(token?.chainIdsOfPairedTokens || []);
+      if (
+        chainIdWithoutDuplicates?.includes((constants as any)?.supernovaChainId?.toString()) &&
+        chainIdWithoutDuplicates?.length == 1
+      ) {
+        console.log("SUPER TOKEN NO", JSON.stringify(token));
+        return undefined;
+      } else {
+        console.log("SUPER TOKEN YES", JSON.stringify(token));
+        return token;
+      }
+    }
+  });
+  console.log("curatedList", JSON.stringify(list));
+  return list.filter((v) => v !== undefined);
+};
+
+export const curateTokenPairsForSupernova = (tokenPairs: any[]) => {
+  console.log("supernovaChainId", (constants as any)?.supernovaChainId);
+  console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
+  console.log("curateTokenPairsForSupernova", JSON.stringify(tokenPairs));
+  const list = tokenPairs.map((pair) => {
+    if (!pair?.externalToken) return undefined;
+    if (!pair?.internalToken) return undefined;
+
+    if ((constants as any)?.isSupernovaNetwork) {
+      if (pair?.externalToken?.network?.chainId?.toString() == (constants as any)?.supernovaChainId?.toString()) {
+        pair.externalToken = replaceSupernovaWrappedTokenWithNativeToken(pair.externalToken);
+        return pair;
+      }
+    } else {
+      if (pair?.externalToken?.network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
+        return pair;
+      }
+    }
+    return undefined;
+  });
+  return list.filter((v) => v !== undefined);
+};
+
+export const curateWrapRequestsForSupernova = (wrapRequests: any[]) => {
+  console.log("supernovaChainId", (constants as any)?.supernovaChainId);
+  console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
+  console.log("curateWrapRequestsForSupernova", JSON.stringify(wrapRequests));
+  // const list = wrapRequests.filter((req) => {
+  //   if ((constants as any)?.isSupernovaNetwork) {
+  //     if (req?.toToken?.network?.chainId?.toString() == (constants as any)?.supernovaChainId?.toString()) {
+  //       return req;
+  //     }
+  //   } else {
+  //     if (req?.toToken?.network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
+  //       return req;
+  //     }
+  //   }
+  //   return undefined;
+  // });
+  // return list.filter((v) => v !== undefined);
+  return wrapRequests.map((req) => {
+    if ((constants as any)?.isSupernovaNetwork) {
+      if (req?.toToken?.network?.chainId?.toString() == (constants as any)?.supernovaChainId?.toString()) {
+        return {
+          ...req,
+          toToken: {
+            ...req?.toToken,
+            // Here we take the number of decimals from the NoM and override to the Supernova token
+            // Because the Supernova token in the toToken is not the ERC wrappedToken
+            // But the actual supernova token on the NoM network
+            decimals: req?.fromToken?.decimals,
+          },
+        };
+      }
+    }
+    return req;
+  });
+};
+
+export const curateUnwrapRequestsForSupernova = (unwrapRequests: any[]) => {
+  console.log("supernovaChainId", (constants as any)?.supernovaChainId);
+  console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
+  console.log("curateunWrapRequestsForSupernova", JSON.stringify(unwrapRequests));
+  // return unwrapRequests.filter((req) => {
+  //   if ((constants as any)?.isSupernovaNetwork) {
+  //     if (req?.fromToken?.network?.chainId?.toString() == (constants as any)?.supernovaChainId?.toString()) {
+  //       return true;
+  //     }
+  //   } else {
+  //     if (req?.fromToken?.network?.chainId?.toString() !== (constants as any)?.supernovaChainId?.toString()) {
+  //       return true;
+  //     }
+  //   }
+  //   return false;
+  // });
+
+  return unwrapRequests.map((req) => {
+    if ((constants as any)?.isSupernovaNetwork) {
+      if (req?.fromToken?.network?.chainId?.toString() == (constants as any)?.supernovaChainId?.toString()) {
+        return {
+          ...req,
+          fromToken: {
+            ...req?.fromToken,
+            // Here we take the number of decimals from the NoM and override to the Supernova token
+            // Because the Supernova token in the fromToken is not the ERC wrappedToken
+            // But the actual supernova token on the NoM network
+            decimals: req?.toToken?.decimals,
+          },
+        };
+      }
+    }
+    return req;
+  });
+};
+
+export const removeDuplicatesFromArray = (a: any[]) => {
+  const prims: any = { boolean: {}, number: {}, string: {} };
+  const objs: any = [];
+
+  return a.filter(function (item) {
+    const type = typeof item;
+    if (type in prims) return prims[type].hasOwnProperty(item) ? false : (prims[type][item] = true);
+    else return objs.indexOf(item) >= 0 ? false : objs.push(item);
+  });
+};
+
+export const getUnwrapRequestsAndEmulatePagination = async (
+  zenonInstance: Zenon,
+  toAddress: any,
+  currentPage: number,
+  itemsPerPage: number
+) => {
+  if (!(constants as any)?.isSupernovaNetwork) {
+    return zenonInstance.embedded.bridge.getAllUnwrapTokenRequestsByToAddress(toAddress, currentPage, itemsPerPage);
+  } else {
+    const allRequests = (await zenonInstance.embedded.bridge.getAllUnwrapTokenRequestsByToAddress(toAddress, 0, 255))
+      ?.list;
+    console.log("allRequests", allRequests);
+    console.log("(JSON.stringify(allRequests))", JSON.stringify(allRequests));
+    console.log("supernovaChainId", (constants as any)?.supernovaChainId);
+
+    const onSupernova = allRequests.filter(
+      (item: any) => item.chainId.toString() === (constants as any)?.supernovaChainId
+    );
+    const notOnSupernova = allRequests.filter(
+      (item: any) => item.chainId.toString() !== (constants as any)?.supernovaChainId
+    );
+
+    console.log("onSupernova", onSupernova);
+    console.log("notOnSupernova", notOnSupernova);
+
+    const orderedRequests = [
+      ...onSupernova.filter((item: any) => item.redeemed === 0),
+      ...onSupernova.filter((item: any) => item.redeemed !== 0),
+      // ...notOnSupernova.filter((item: any) => item.redeemed === 0),
+      // ...notOnSupernova.filter((item: any) => item.redeemed !== 0),
+    ];
+    console.log("orderedRequestsByRedeemed", orderedRequests);
+
+    const totalItems = orderedRequests.length;
+    const maxPages = Math.ceil(totalItems / itemsPerPage);
+    console.log("maxPages", maxPages);
+
+    // Calculate the starting and ending indices
+    const startIndex = currentPage * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    console.log("startIndex", startIndex);
+    console.log("endIndex", endIndex);
+
+    // Get the items for the current page
+    const paginatedItems = orderedRequests.slice(startIndex, endIndex);
+    console.log("paginatedItems", paginatedItems);
+
+    return {
+      count: totalItems,
+      list: paginatedItems,
+      maxPages: maxPages,
+    };
+  }
+};
+
+export const checkIfBridgeCanProcessRequests = async (zenon: any) => {
+  const currentMomentumHeight = (await zenon.ledger.getFrontierMomentum())?.height;
+  console.log("currentMomentumHeight", currentMomentumHeight);
+
+  let allBlocks = await zenon.ledger.getBlocksByPage("z1qxemdeddedxdrydgexxxxxxxxxxxxxxxmqgr0d", 0, 100);
+
+  allBlocks = allBlocks.toJson();
+  console.log("allBlocks", allBlocks);
+
+  const unwrapRequests = allBlocks?.list?.filter((block: any) => {
+    if (block?.pairedAccountBlock?.data?.startsWith("tgaUAQ")) return true;
+  });
+  console.log("unwrapRequests", unwrapRequests);
+
+  let canProcessUnwrapRequests = false;
+
+  unwrapRequests.map((req: any) => {
+    const momentumAcknowledgedHeight = req?.momentumAcknowledged?.height;
+    if (currentMomentumHeight - momentumAcknowledgedHeight < 8640) {
+      canProcessUnwrapRequests = true;
+    }
+  });
+
+  const wrapRequests = allBlocks?.list?.filter((block: any) => {
+    if (block?.pairedAccountBlock?.data?.startsWith("1LsRw")) return true;
+  });
+  console.log("wrapRequests", wrapRequests);
+  let canProcessWrapRequests = false;
+  wrapRequests.map((req: any) => {
+    const momentumAcknowledgedHeight = req?.momentumAcknowledged?.height;
+    if (currentMomentumHeight - momentumAcknowledgedHeight < 8640) {
+      canProcessWrapRequests = true;
+    }
+  });
+
+  return {
+    canProcessWrapRequests: canProcessWrapRequests,
+    canProcessUnwrapRequests: canProcessUnwrapRequests,
+  };
 };

@@ -63,6 +63,8 @@ export type simpleTokenType = {
   availableSoon?: boolean;
   isCommonToken?: boolean;
   network: simpleNetworkType;
+  chainIdsOfPairedTokens?: number[];
+  isNativeCoin?: boolean;
 };
 
 export type simpleNetworkType = {
@@ -373,6 +375,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
       const rawBalance = await externalNetworkClient.getBalance(
         currentToken.address,
         updatedConstants.wznnAbi,
+        currentToken?.isNativeCoin,
         provider
       );
       console.log("rawBalance", rawBalance);
@@ -624,8 +627,8 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
 
         const currentPair = globalConstants.tokenPairs.find(
           (pair: any) =>
-            pair.internalToken.address?.toLowerCase() == zenonToken.address?.toLowerCase() &&
-            pair.externalToken.address?.toLowerCase() == ercToken.address?.toLowerCase()
+            pair?.internalToken?.address?.toLowerCase() == zenonToken.address?.toLowerCase() &&
+            pair?.externalToken?.address?.toLowerCase() == ercToken.address?.toLowerCase()
         );
 
         console.log("currentPair", currentPair);
@@ -650,15 +653,19 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
     }
   };
 
-  const getPairOfToken = (address: string, destinationChainId = -1) => {
+  const getPairOfToken = (address = "", destinationChainId = -1) => {
+    console.log("address", address);
+    console.log("destinationChainId", destinationChainId);
+    console.log("globalConstants.tokenPairs", globalConstants.tokenPairs);
     return (
       globalConstants.tokenPairs.find(
-        (pair: any) => pair.internalToken.address?.toLowerCase() == address?.toLowerCase()
+        (pair: any) => pair?.internalToken?.address?.toLowerCase() == address?.toLowerCase()
       )?.externalToken ||
       globalConstants.tokenPairs.find(
         (pair: any) =>
-          pair.externalToken.address?.toLowerCase() == address?.toLowerCase() &&
-          pair?.externalToken?.network?.chainId == destinationChainId
+          pair?.externalToken?.address?.toLowerCase() == address?.toLowerCase() &&
+          pair?.internalToken?.network?.chainId == destinationChainId
+        // pair?.internalToken?.chainIdsOfPairedTokens.includes(destinationChainId)
       )?.internalToken
     );
   };
@@ -767,8 +774,11 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
 
       setValue("ercToken", token, { shouldValidate: true });
       setErcToken(token);
+      console.log("newToken", token);
 
-      const pairedToken = getPairOfToken(token.address, token?.network?.chainId);
+      // const pairedToken = getPairOfToken(token.address, token?.network?.chainId);
+      const pairedToken = getPairOfToken(token.address, token?.chainIdsOfPairedTokens[0]);
+      console.log("parOfNewToken", pairedToken);
 
       setValue("zenonToken", pairedToken, { shouldValidate: true });
       setZenonToken(pairedToken);
@@ -1140,18 +1150,20 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
         };
         console.log("ercTokenCopy", ercTokenCopy);
 
-        const tokenApprovalParameters = [
-          currentContractAddress,
-          ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals)),
-        ];
-        console.log("tokenApprovalParameters", tokenApprovalParameters);
-        const tokenApproval = await externalNetworkClient.callContract(
-          ercToken.address,
-          globalConstants.abiToken,
-          "approve",
-          tokenApprovalParameters
-        );
-        console.log("tokenApproval", tokenApproval);
+        if (!globalConstants.isSupernovaNetwork) {
+          const tokenApprovalParameters = [
+            currentContractAddress,
+            ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals)),
+          ];
+          console.log("tokenApprovalParameters", tokenApprovalParameters);
+          const tokenApproval = await externalNetworkClient.callContract(
+            ercToken.address,
+            globalConstants.abiToken,
+            "approve",
+            tokenApprovalParameters
+          );
+          console.log("tokenApproval", tokenApproval);
+        }
 
         console.log(
           "Swaping with",
@@ -1169,19 +1181,35 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
         }
         console.log("concatenatedAddresses", concatenatedAddresses);
 
-        const swapParameters = [
-          ercTokenCopy.address,
-          ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals)),
-          concatenatedAddresses,
-        ];
-        console.log("swapParameters", swapParameters);
+        let swapParameters = [];
+        let swapResponse;
 
-        const swapResponse = await externalNetworkClient.callContract(
-          currentContractAddress,
-          globalConstants.abiContract,
-          "unwrap",
-          swapParameters
-        );
+        if (globalConstants.isSupernovaNetwork) {
+          swapParameters = [
+            ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals)),
+            concatenatedAddresses,
+          ];
+          swapResponse = await externalNetworkClient.callContract(
+            currentContractAddress,
+            globalConstants.abiContract,
+            "unwrapNative",
+            swapParameters,
+            ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals))
+          );
+        } else {
+          swapParameters = [
+            ercTokenCopy.address,
+            ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals)),
+            concatenatedAddresses,
+          ];
+          swapResponse = await externalNetworkClient.callContract(
+            currentContractAddress,
+            globalConstants.abiContract,
+            "unwrap",
+            swapParameters
+          );
+        }
+        console.log("swapParameters", swapParameters);
         console.log("swapResponse", swapResponse);
 
         resolve({ hash: swapResponse?.hash || "", logIndex: swapResponse?.logIndex || 0 });
@@ -1518,18 +1546,23 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
             </div>
 
             <div className="d-flex justify-content-between align-items-center height-30px">
-              {externalNetworkClient.providerType == externalNetworkProviderTypes.metamask ? (
-                <div className="text-button" onClick={addTokenToMetamask}>
-                  <span className="mr-1 text-nowrap">Add token to metamask</span>
-                  <img
-                    alt="text-button-icon"
-                    className="text-button-icon"
-                    src={require("./../../../assets/logos/metamask.png")}></img>
-                </div>
-              ) : (
+              {globalConstants?.isSupernovaNetwork ? (
                 <div></div>
+              ) : (
+                <>
+                  {externalNetworkClient.providerType == externalNetworkProviderTypes.metamask ? (
+                    <div className="text-button" onClick={addTokenToMetamask}>
+                      <span className="mr-1 text-nowrap">Add token to metamask</span>
+                      <img
+                        alt="text-button-icon"
+                        className="text-button-icon"
+                        src={require("./../../../assets/logos/metamask.png")}></img>
+                    </div>
+                  ) : (
+                    <div></div>
+                  )}
+                </>
               )}
-
               <div className="mt-1 d-flex text-right">
                 {"Balance: "}
                 {isErcBalanceLoading ? (
@@ -1600,54 +1633,63 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
           </div>
         </div>
 
-        <div className="d-flex flex-wrap justify-content-start mt-1">
-          <img alt="fees-info" className="switch-arrow mr-1" src={infoIcon}></img>
-          {isUnwrapDirection ? (
-            <>
-              <div className="text-nowrap">{"Fees: No fees."}</div>
-            </>
-          ) : (
-            <>
-              <span className="text-nowrap">
-                {"Fees: " +
-                  parseFloat(zenonAmount || "0") +
-                  " * " +
-                  (wrapFeePercentage * 100) / globalConstants.feeDenominator +
-                  "% = "}
-              </span>
-              <b className="ml-1 text-nowrap">
-                {parseFloat(
-                  parseFloat(zenonAmount || "0") * (wrapFeePercentage / globalConstants.feeDenominator) + ""
-                ).toFixed(2) +
-                  " " +
-                  zenonToken.symbol}
-              </b>
-            </>
-          )}
-        </div>
+        {globalConstants?.isSupernovaNetwork ? (
+          <></>
+        ) : (
+          <>
+            <div className="d-flex flex-wrap justify-content-start mt-1">
+              <img alt="fees-info" className="switch-arrow mr-1" src={infoIcon}></img>
+              {isUnwrapDirection ? (
+                <>
+                  <div className="text-nowrap">{"Fees: No fees."}</div>
+                </>
+              ) : (
+                <>
+                  <span className="text-nowrap">
+                    {"Fees: " +
+                      parseFloat(zenonAmount || "0") +
+                      " * " +
+                      (wrapFeePercentage * 100) / globalConstants.feeDenominator +
+                      "% = "}
+                  </span>
+                  <b className="ml-1 text-nowrap">
+                    {parseFloat(
+                      parseFloat(zenonAmount || "0") * (wrapFeePercentage / globalConstants.feeDenominator) + ""
+                    ).toFixed(2) +
+                      " " +
+                      zenonToken?.symbol}
+                  </b>
+                </>
+              )}
+            </div>
 
-        {isUnwrapDirection ? (
-          <div className="d-flex flex-wrap justify-content-start mt-1">
-            <img alt="fees-info" className="switch-arrow mr-1" src={referralCode ? infoIconBlue : infoIconRed}></img>
-            {referralCode ? (
-              <div>
-                <b className="text-qsr">BONUS:</b>
-                <span className="text-nowrap">{" You will get 1% because you are using a referral code"}</span>
+            {isUnwrapDirection ? (
+              <div className="d-flex flex-wrap justify-content-start mt-1">
+                <img
+                  alt="fees-info"
+                  className="switch-arrow mr-1"
+                  src={referralCode ? infoIconBlue : infoIconRed}></img>
+                {referralCode ? (
+                  <div>
+                    <b className="text-qsr">BONUS:</b>
+                    <span className="text-nowrap">{" You will get 1% because you are using a referral code"}</span>
+                  </div>
+                ) : (
+                  <a
+                    className="no-decoration text-white"
+                    href="https://twitter.com/hashtag/HyperGrowth"
+                    target="_blank"
+                    rel="noreferrer">
+                    <span className="text-nowrap text-attention-grabber p-relative">
+                      {"Click here to find a referral link and get 1% bonus "}
+                    </span>
+                  </a>
+                )}
               </div>
             ) : (
-              <a
-                className="no-decoration text-white"
-                href="https://twitter.com/hashtag/HyperGrowth"
-                target="_blank"
-                rel="noreferrer">
-                <span className="text-nowrap text-attention-grabber p-relative">
-                  {"Click here to find a referral link and get 1% bonus "}
-                </span>
-              </a>
+              <></>
             )}
-          </div>
-        ) : (
-          <></>
+          </>
         )}
 
         <div className="d-flex flex-wrap justify-content-start mt-1">

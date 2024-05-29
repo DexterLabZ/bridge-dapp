@@ -14,8 +14,12 @@ import { storeGlobalConstants } from "../../../services/redux/globalConstantsSli
 import { storeReferralCode } from "../../../services/redux/referralSlice";
 import { storeErcInfo, storeZenonInfo } from "../../../services/redux/walletSlice";
 import {
+  checkIfBridgeCanProcessRequests,
   checkMetamaskAvailability,
   checkSyriusAvailability,
+  curateExternalNetworksForSupernova,
+  curateExternalTokensForSupernova,
+  curateInternalTokensForSupernova,
   getExternalTokensDetails,
   getInternalTokensDetails,
   getLiquidityPairsDetails,
@@ -40,11 +44,13 @@ import ethLogo from "./../../../assets/networks/eth.svg";
 import walletConnectLogo from "./../../../assets/logos/walletConnect.svg";
 import bnbNetworkIcon from "./../../../assets/networks/bnb.svg";
 import znnNetworkIcon from "./../../../assets/networks/zenon.svg";
+import supernovaNetworkIcon from "./../../../assets/networks/supernova.png";
 import ethPurpleIcon from "./../../../assets/tokens/eth-purple.svg";
 import qsrTokenIcon from "./../../../assets/tokens/qsr.svg";
 import wqsrTokenIcon from "./../../../assets/tokens/wqsr.svg";
 import wznnTokenIcon from "./../../../assets/tokens/wznn.svg";
 import znnTokenIcon from "./../../../assets/tokens/znn.svg";
+import xZnnTokenIcon from "./../../../assets/tokens/xznn.png";
 import "./extensionConnect.scss";
 import { externalNetworkProviderTypes } from "../../../services/hooks/externalNetwork-provider/externalNetworkContext";
 import useExternalNetwork from "../../../services/hooks/externalNetwork-provider/useExternalNetwork";
@@ -170,6 +176,32 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
         }
       }
 
+      const isBridgeProcessingTransactions = await checkIfBridgeCanProcessRequests(zenon);
+      if (!isBridgeProcessingTransactions?.canProcessWrapRequests) {
+        toast("Bridge might be down and unable to process Wrap requests! Please be patient.", {
+          position: "bottom-center",
+          autoClose: false,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: false,
+          draggable: true,
+          type: "error",
+          theme: "dark",
+        });
+      }
+      if (!isBridgeProcessingTransactions?.canProcessUnwrapRequests) {
+        toast("Bridge might be down and unable to process Unwrap transactions! Please be patient.", {
+          position: "bottom-center",
+          autoClose: false,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: false,
+          draggable: true,
+          type: "error",
+          theme: "dark",
+        });
+      }
+
       checkForAffiliationCodeFromNode(zenon);
 
       setSyriusAddress(zenonInfo.address);
@@ -209,11 +241,13 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
       );
       console.log("JSON.stringify(zenonWalletInfo.balanceInfoMap)", JSON.stringify(zenonWalletInfo.balanceInfoMap));
 
-      updatedConstants = await updateGlobalConstantsWithLiquidityInfo(
-        zenon,
-        updatedConstants,
-        Primitives.Address.parse(zenonInfo.address)
-      );
+      if (!globalConstants.isSupernovaNetwork) {
+        updatedConstants = await updateGlobalConstantsWithLiquidityInfo(
+          zenon,
+          updatedConstants,
+          Primitives.Address.parse(zenonInfo.address)
+        );
+      }
 
       dispatch(storeZenonInfo(JSONbig.stringify(zenonWalletInfo)));
       setIsSyriusConnected(true);
@@ -300,6 +334,8 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
         currentToken = globalConstants.externalAvailableTokens.find(
           (tok: any) => tok.isAvailable && externalNetworkChainId === tok.network.chainId
         );
+        console.log("globalConstants.externalAvailableTokens", globalConstants.externalAvailableTokens);
+        console.log("externalNetworkChainId", externalNetworkChainId);
 
         // ToDo create contract with selected external token (make wznn ABI as default but get it from internalAvTok)
         console.log("new Contract", currentToken.address, globalConstants.wznnAbi, provider);
@@ -326,50 +362,59 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
         console.log("updatedExternalTokens", updatedExternalTokens);
         console.log("updatedTokenPairs", updatedTokenPairs);
 
-        const externalLiquidityTokens = await getExternalTokensDetails(
-          globalConstants.liquidityExternalTokens,
-          provider
-        );
-        let updatedLiquidityTokenPairs = updateTokenPairsWithNewExternalTokens(
-          globalConstants.liquidityTokenPairs,
-          externalLiquidityTokens
-        );
-        console.log("externalLiquidityTokens", externalLiquidityTokens);
-        console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
+        if (!globalConstants.isSupernovaNetwork) {
+          const externalLiquidityTokens = await getExternalTokensDetails(
+            globalConstants.liquidityExternalTokens,
+            provider
+          );
+          let updatedLiquidityTokenPairs = updateTokenPairsWithNewExternalTokens(
+            globalConstants.liquidityTokenPairs,
+            externalLiquidityTokens
+          );
+          console.log("externalLiquidityTokens", externalLiquidityTokens);
+          console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
 
-        // We do this because even if it's called internal tokens, they are still erc-20 tokens
-        const internalLiquidityTokens = await getExternalTokensDetails(
-          globalConstants.liquidityInternalTokens,
-          provider
-        );
-        updatedLiquidityTokenPairs = updateTokenPairsWithNewInternalTokens(
-          globalConstants.liquidityTokenPairs,
-          internalLiquidityTokens
-        );
-        console.log("internalLiquidityTokens", internalLiquidityTokens);
-        console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
+          // We do this because even if it's called internal tokens, they are still erc-20 tokens
+          const internalLiquidityTokens = await getExternalTokensDetails(
+            globalConstants.liquidityInternalTokens,
+            provider
+          );
+          updatedLiquidityTokenPairs = updateTokenPairsWithNewInternalTokens(
+            globalConstants.liquidityTokenPairs,
+            internalLiquidityTokens
+          );
+          console.log("internalLiquidityTokens", internalLiquidityTokens);
+          console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
 
-        const liquidityTokenPairs: any = await getLiquidityPairsDetails(updatedLiquidityTokenPairs, provider);
-        console.log("getLiquidityPairsDetails", liquidityTokenPairs);
+          const liquidityTokenPairs: any = await getLiquidityPairsDetails(updatedLiquidityTokenPairs, provider);
+          console.log("getLiquidityPairsDetails", liquidityTokenPairs);
 
-        const availableExternalLiquidityTokens = updateExternalLiquidityTokensBasedOnTokenPairs(
-          externalLiquidityTokens,
-          liquidityTokenPairs
-        );
-        const availableInternalLiquidityTokens = updateInternalLiquidityTokensBasedOnTokenPairs(
-          internalLiquidityTokens,
-          liquidityTokenPairs
-        );
+          const availableExternalLiquidityTokens = updateExternalLiquidityTokensBasedOnTokenPairs(
+            externalLiquidityTokens,
+            liquidityTokenPairs
+          );
+          const availableInternalLiquidityTokens = updateInternalLiquidityTokensBasedOnTokenPairs(
+            internalLiquidityTokens,
+            liquidityTokenPairs
+          );
+          updatedConstants = {
+            ...globalConstants,
+            internalAvailableTokens: updatedInternalTokens,
+            externalAvailableTokens: updatedExternalTokens,
+            tokenPairs: updatedTokenPairs,
+            liquidityExternalTokens: availableExternalLiquidityTokens,
+            liquidityInternalTokens: availableInternalLiquidityTokens,
+            liquidityTokenPairs: liquidityTokenPairs,
+          };
+        } else {
+          updatedConstants = {
+            ...globalConstants,
+            internalAvailableTokens: updatedInternalTokens,
+            externalAvailableTokens: updatedExternalTokens,
+            tokenPairs: updatedTokenPairs,
+          };
+        }
 
-        updatedConstants = {
-          ...globalConstants,
-          internalAvailableTokens: updatedInternalTokens,
-          externalAvailableTokens: updatedExternalTokens,
-          tokenPairs: updatedTokenPairs,
-          liquidityExternalTokens: availableExternalLiquidityTokens,
-          liquidityInternalTokens: availableInternalLiquidityTokens,
-          liquidityTokenPairs: liquidityTokenPairs,
-        };
         await externalNetworkClient.init(externalNetworkProviderTypes.metamask);
         await externalNetworkClient.connect(externalNetworkProviderTypes.metamask);
 
@@ -476,50 +521,59 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
           console.log("updatedExternalTokens", updatedExternalTokens);
           console.log("updatedTokenPairs", updatedTokenPairs);
 
-          const externalLiquidityTokens = await getExternalTokensDetails(
-            globalConstants.liquidityExternalTokens,
-            provider
-          );
-          let updatedLiquidityTokenPairs = updateTokenPairsWithNewExternalTokens(
-            globalConstants.liquidityTokenPairs,
-            externalLiquidityTokens
-          );
-          console.log("externalLiquidityTokens", externalLiquidityTokens);
-          console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
+          if (!globalConstants.isSupernovaNetwork) {
+            const externalLiquidityTokens = await getExternalTokensDetails(
+              globalConstants.liquidityExternalTokens,
+              provider
+            );
+            let updatedLiquidityTokenPairs = updateTokenPairsWithNewExternalTokens(
+              globalConstants.liquidityTokenPairs,
+              externalLiquidityTokens
+            );
+            console.log("externalLiquidityTokens", externalLiquidityTokens);
+            console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
 
-          // We do this because even if it's called internal tokens, they are still erc-20 tokens
-          const internalLiquidityTokens = await getExternalTokensDetails(
-            globalConstants.liquidityInternalTokens,
-            provider
-          );
-          updatedLiquidityTokenPairs = updateTokenPairsWithNewInternalTokens(
-            globalConstants.liquidityTokenPairs,
-            internalLiquidityTokens
-          );
-          console.log("internalLiquidityTokens", internalLiquidityTokens);
-          console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
+            // We do this because even if it's called internal tokens, they are still erc-20 tokens
+            const internalLiquidityTokens = await getExternalTokensDetails(
+              globalConstants.liquidityInternalTokens,
+              provider
+            );
+            updatedLiquidityTokenPairs = updateTokenPairsWithNewInternalTokens(
+              globalConstants.liquidityTokenPairs,
+              internalLiquidityTokens
+            );
+            console.log("internalLiquidityTokens", internalLiquidityTokens);
+            console.log("updatedLiquidityTokenPairs", updatedLiquidityTokenPairs);
 
-          const liquidityTokenPairs: any = await getLiquidityPairsDetails(updatedLiquidityTokenPairs, provider);
-          console.log("getLiquidityPairsDetails", liquidityTokenPairs);
+            const liquidityTokenPairs: any = await getLiquidityPairsDetails(updatedLiquidityTokenPairs, provider);
+            console.log("getLiquidityPairsDetails", liquidityTokenPairs);
 
-          const availableExternalLiquidityTokens = updateExternalLiquidityTokensBasedOnTokenPairs(
-            externalLiquidityTokens,
-            liquidityTokenPairs
-          );
-          const availableInternalLiquidityTokens = updateInternalLiquidityTokensBasedOnTokenPairs(
-            internalLiquidityTokens,
-            liquidityTokenPairs
-          );
+            const availableExternalLiquidityTokens = updateExternalLiquidityTokensBasedOnTokenPairs(
+              externalLiquidityTokens,
+              liquidityTokenPairs
+            );
+            const availableInternalLiquidityTokens = updateInternalLiquidityTokensBasedOnTokenPairs(
+              internalLiquidityTokens,
+              liquidityTokenPairs
+            );
 
-          updatedConstants = {
-            ...globalConstants,
-            internalAvailableTokens: updatedInternalTokens,
-            externalAvailableTokens: updatedExternalTokens,
-            tokenPairs: updatedTokenPairs,
-            liquidityExternalTokens: availableExternalLiquidityTokens,
-            liquidityInternalTokens: availableInternalLiquidityTokens,
-            liquidityTokenPairs: liquidityTokenPairs,
-          };
+            updatedConstants = {
+              ...globalConstants,
+              internalAvailableTokens: updatedInternalTokens,
+              externalAvailableTokens: updatedExternalTokens,
+              tokenPairs: updatedTokenPairs,
+              liquidityExternalTokens: availableExternalLiquidityTokens,
+              liquidityInternalTokens: availableInternalLiquidityTokens,
+              liquidityTokenPairs: liquidityTokenPairs,
+            };
+          } else {
+            updatedConstants = {
+              ...globalConstants,
+              internalAvailableTokens: updatedInternalTokens,
+              externalAvailableTokens: updatedExternalTokens,
+              tokenPairs: updatedTokenPairs,
+            };
+          }
         }
       }
 
@@ -804,6 +858,21 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
       throw Error("Bridge is currently unavailable!");
     }
 
+    if (getBridgeInfo.allowKeyGen) {
+      const showSpinner = handleSpinner(
+        <>
+          <div className="text-bold text-center mb-5 mt-4 warning p-3 small-border-radius">
+            Bridge is currently performing KeyGen! <br></br>Please try again later
+          </div>
+        </>,
+        "extension-approval-spinner-root"
+      );
+
+      showSpinner(true);
+      console.error("Bridge is currently performing KeyGen!");
+      throw Error("Bridge is currently performing KeyGen!");
+    }
+
     const getOrchestratorInfo = await zenon.embedded.bridge.getOrchestratorInfo();
     console.log("getOrchestratorInfo", getOrchestratorInfo);
     updatedConstants.estimatedMomentumTimeInSeconds = getOrchestratorInfo.estimatedMomentumTime;
@@ -922,6 +991,45 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
       ];
     }
 
+    // If supernova - mainNet
+    if (updatedConstants?.isSupernovaMainNet) {
+      externalAvailableNetworks = [
+        {
+          name: "Supernova",
+          chainId: updatedConstants?.supernovaChainId,
+          icon: supernovaNetworkIcon,
+          isAvailable: false,
+          color: "#F637A7",
+        },
+        {
+          name: "ETH",
+          chainId: 1,
+          icon: ethPurpleIcon,
+          isAvailable: false,
+          color: "#627EEA",
+        },
+      ];
+    }
+    // If supernova testnet
+    if (updatedConstants?.isSupernovaTestNet) {
+      externalAvailableNetworks = [
+        {
+          name: "Supernova",
+          chainId: updatedConstants?.supernovaChainId,
+          icon: supernovaNetworkIcon,
+          isAvailable: false,
+          color: "#F637A7",
+        },
+        {
+          name: "Sepolia",
+          chainId: 11155111,
+          icon: ethPurpleIcon,
+          isAvailable: false,
+          color: "#627EEA",
+        },
+      ];
+    }
+
     let internalAvailableTokens: simpleTokenType[] = [
       {
         icon: znnTokenIcon,
@@ -975,35 +1083,52 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
 
     let externalAvailableTokens: simpleTokenType[] = [
       {
-        icon: wznnTokenIcon,
-        symbol: "wZNN",
-        name: "Wrapped Zenon",
+        icon: xZnnTokenIcon,
+        symbol: globalConstants?.xZnnTokenInfo?.symbol,
+        name: globalConstants?.xZnnTokenInfo?.name,
         //
         // TODO: update addresses in constants when changing between testNet and mainNet
         // Such that we have icons for the tokens
         // isAvailable: true if they are found on the network
-        address: globalConstants.bscWznnTokenInfo.address,
-        // BSC network
+        address: globalConstants?.xZnnTokenInfo?.address,
+        // BSC network or Supernova network
         network: externalAvailableNetworks[0],
         balance: "0",
-        decimals: globalConstants.bscWznnTokenInfo.decimals,
+        decimals: globalConstants?.xZnnTokenInfo?.decimals,
         isAvailable: false,
         availableSoon: false,
         isCommonToken: false,
       },
-      {
-        icon: wqsrTokenIcon,
-        symbol: "wQSR",
-        name: "Wrapped Quasar",
-        address: globalConstants.bscWqsrTokenInfo.address,
-        // BSC network
-        network: externalAvailableNetworks[0],
-        balance: "0",
-        decimals: globalConstants.bscWqsrTokenInfo.decimals,
-        isAvailable: false,
-        availableSoon: false,
-        isCommonToken: true,
-      },
+      // {
+      //   icon: wznnTokenIcon,
+      //   symbol: "wZNN",
+      //   name: "Wrapped Zenon",
+      //   //
+      //   // TODO: update addresses in constants when changing between testNet and mainNet
+      //   // Such that we have icons for the tokens
+      //   // isAvailable: true if they are found on the network
+      //   address: globalConstants.bscWznnTokenInfo.address,
+      //   // BSC network
+      //   network: externalAvailableNetworks[0],
+      //   balance: "0",
+      //   decimals: globalConstants.bscWznnTokenInfo.decimals,
+      //   isAvailable: false,
+      //   availableSoon: false,
+      //   isCommonToken: false,
+      // },
+      // {
+      //   icon: wqsrTokenIcon,
+      //   symbol: "wQSR",
+      //   name: "Wrapped Quasar",
+      //   address: globalConstants.bscWqsrTokenInfo.address,
+      //   // BSC network
+      //   network: externalAvailableNetworks[0],
+      //   balance: "0",
+      //   decimals: globalConstants.bscWqsrTokenInfo.decimals,
+      //   isAvailable: false,
+      //   availableSoon: false,
+      //   isCommonToken: true,
+      // },
       {
         icon: wznnTokenIcon,
         symbol: "wZNN",
@@ -1120,25 +1245,80 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
       }
     });
     console.log("externalAvailableNetworks", externalAvailableNetworks);
+    // externalAvailableNetworks = curateExternalNetworksForSupernova(externalAvailableNetworks);
+    // console.log("curatedExternalAvailableNetworks", externalAvailableNetworks);
+
+    // const addPairChainIdToTokenList = (
+    //   tokenList: simpleTokenType[],
+    //   networkOfPairedToken: simpleNetworkType | undefined
+    // ) => {
+    //   const returnedList = tokenList.map((tok: any) => {
+    //     console.log("addPairChainIdToTokenList");
+    //     console.log("networkOfPairedToken", networkOfPairedToken);
+    //     console.log("tokenList", tokenList);
+    //     if (!networkOfPairedToken) return undefined;
+
+    //     if (!tok?.chainIdsOfPairedTokens?.length) {
+    //       tok.chainIdsOfPairedTokens = [networkOfPairedToken?.chainId || 0];
+    //     } else {
+    //       tok.chainIdsOfPairedTokens.push(networkOfPairedToken?.chainId || 0);
+    //     }
+    //     return tok;
+    //   });
+    //   return returnedList.filter((v) => v !== undefined);
+    // };
+
+    const addPairChainIdToTokenList = (
+      tokenList: simpleTokenType[],
+      originalTokenAddress: string,
+      pairNetwork: number
+    ) => {
+      console.log("addPairChainIdToTokenList");
+      console.log("tokenList", tokenList);
+      console.log("JSON.stringify(tokenList)", JSON.stringify(tokenList));
+      console.log("originalTokenAddress", originalTokenAddress);
+      console.log("pairNetwork", pairNetwork);
+      const returnedList = tokenList.map((tok: any) => {
+        if (tok?.address?.toLowerCase() == originalTokenAddress?.toLowerCase()) {
+          if (!tok?.chainIdsOfPairedTokens?.length) {
+            tok.chainIdsOfPairedTokens = [pairNetwork];
+          } else {
+            tok.chainIdsOfPairedTokens.push(pairNetwork);
+          }
+        }
+        return tok;
+      });
+      console.log("returnedList", returnedList);
+      console.log("JSON.stringify(returnedList)", JSON.stringify(returnedList));
+      return returnedList;
+    };
 
     const mergeTokenToList = (
       tokenList: simpleTokenType[],
       networkList: simpleNetworkType[],
       tokenAddress: any,
-      network: simpleNetworkType
+      network: simpleNetworkType | undefined,
+      // networkOfPairedToken: simpleNetworkType | undefined,
+      isExternal = false
     ) => {
       let isTokenLocallyDefined = false;
-      const returnedList = tokenList.map((tok: any) => {
-        if (!tok?.chainIdsOfPairedTokens?.length) {
-          tok.chainIdsOfPairedTokens = [network.chainId];
-        } else {
-          tok.chainIdsOfPairedTokens.push(network.chainId);
-        }
+      console.log("tokenList", tokenList);
+      console.log("networkList", networkList);
+      console.log("tokenAddress", tokenAddress);
+      console.log("network", network);
+      if (!network) return tokenList;
 
-        if (tok.address.toLowerCase() == tokenAddress.toLowerCase() && tok.network.chainId == network.chainId) {
+      const returnedList = tokenList.map((tok: any) => {
+        // if (!tok?.chainIdsOfPairedTokens?.length) {
+        //   tok.chainIdsOfPairedTokens = [networkOfPairedToken?.chainId || 0];
+        // } else {
+        //   tok.chainIdsOfPairedTokens.push(networkOfPairedToken?.chainId || 0);
+        // }
+        console.log("TOKTOK, tok", tok);
+        if (tok.address.toLowerCase() == tokenAddress.toLowerCase() && tok.network?.chainId == network?.chainId) {
           isTokenLocallyDefined = true;
           tok.isAvailable = true;
-          tok.network = networkList.find((net) => net.chainId === network.chainId);
+          tok.network = networkList.find((net) => net?.chainId === network?.chainId);
         }
         return tok;
       });
@@ -1146,15 +1326,26 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
         returnedList.push({
           address: tokenAddress,
           isAvailable: true,
-          network: networkList.find((net) => net.chainId === network.chainId),
+          network: networkList.find((net) => net?.chainId === network?.chainId),
         });
       }
+
+      // if (isExternal) {
+      //   returnedList = curateExternalTokensForSupernova(returnedList);
+      //   console.log("curatedReturnedList", returnedList);
+      // } else {
+      //   returnedList = curateInternalTokensForSupernova(returnedList);
+      //   console.log("curatedReturnedList", returnedList);
+      // }
       return returnedList;
     };
 
     //
     // Bridge (Swap)
     //
+    console.log("internalAvailableTokens", JSON.stringify(internalAvailableTokens));
+    console.log("externalAvailableTokens", JSON.stringify(externalAvailableTokens));
+
     updatedConstants.tokenPairs = [];
     getAllNetworks.list.forEach((network: any) => {
       network.tokenPairs.forEach((pair: any) => {
@@ -1162,13 +1353,16 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
           internalAvailableTokens,
           internalAvailableNetworks,
           pair.tokenStandard,
-          internalAvailableNetworks[0]
+          // internalAvailableNetworks[0],
+          internalAvailableNetworks.find((net) => net.chainId === network.chainId) || internalAvailableNetworks[0],
+          false
         );
         externalAvailableTokens = mergeTokenToList(
           externalAvailableTokens,
           externalAvailableNetworks,
           pair.tokenAddress,
-          externalAvailableNetworks.find((net) => net.chainId === network.chainId) || externalAvailableNetworks[0]
+          externalAvailableNetworks.find((net) => net.chainId === network.chainId),
+          true
         );
 
         console.log("first_externalAvailableTokens", JSON.stringify(externalAvailableTokens));
@@ -1197,6 +1391,33 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
       });
     });
 
+    getAllNetworks.list.forEach((network: any) => {
+      network.tokenPairs.forEach((pair: any) => {
+        // internalAvailableTokens = addPairChainIdToTokenList(
+        //   internalAvailableTokens,
+        //   externalAvailableTokens.find((tok) => tok?.address?.toLowerCase() === pair.tokenAddress?.toLowerCase())
+        //     ?.network
+        // );
+        // externalAvailableTokens = addPairChainIdToTokenList(
+        //   externalAvailableTokens,
+        //   internalAvailableTokens.find((tok) => tok?.address?.toLowerCase() === pair.tokenStandard?.toLowerCase())
+        //     ?.network
+        // );
+        internalAvailableTokens = addPairChainIdToTokenList(
+          internalAvailableTokens,
+          pair.tokenStandard,
+          externalAvailableTokens.find((tok) => tok?.address?.toLowerCase() === pair.tokenAddress?.toLowerCase())
+            ?.network?.chainId || 0
+        );
+        externalAvailableTokens = addPairChainIdToTokenList(
+          externalAvailableTokens,
+          pair.tokenAddress,
+          internalAvailableTokens.find((tok) => tok?.address?.toLowerCase() === pair.tokenStandard?.toLowerCase())
+            ?.network?.chainId || 0
+        );
+      });
+    });
+
     //
     // Liquidity
     //
@@ -1222,9 +1443,9 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
     updatedConstants.liquidityInternalTokens = [];
 
     updatedConstants.internalAvailableNetworks.push(...internalAvailableNetworks);
-    updatedConstants.externalAvailableNetworks.push(...externalAvailableNetworks);
-    updatedConstants.internalAvailableTokens.push(...internalAvailableTokens);
-    updatedConstants.externalAvailableTokens.push(...externalAvailableTokens);
+    updatedConstants.externalAvailableNetworks.push(...curateExternalNetworksForSupernova(externalAvailableNetworks));
+    updatedConstants.internalAvailableTokens.push(...curateInternalTokensForSupernova(internalAvailableTokens));
+    updatedConstants.externalAvailableTokens.push(...curateExternalTokensForSupernova(externalAvailableTokens));
 
     updatedConstants.liquidityExternalNetworks.push(...liquidityExternalNetworks);
     updatedConstants.liquidityInternalNetworks.push(...liquidityInternalNetworks);
@@ -1342,55 +1563,59 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
 
   return (
     <div className="pl-3 pr-3 mt-4">
-      <div className="d-flex justify-content-left align-items-center">
-        <a
-          className="no-decoration d-flex justify-content-start align-items-center text-sm"
-          href="https://twitter.com/hashtag/HyperGrowth"
-          target="_blank"
-          rel="noreferrer">
-          <img alt="fees-info" className="mr-1" src={infoIcon}></img>
-          <div className="d-flex justify-items-center align-items-center">
-            <div className="tooltip clickable-info text-bold pt-1 pb-1">
-              {isReferralCodeApplied ? (
-                <>
-                  {`Click here to see more referral links`}
-                  <div className="tooltip-text background-clip-fix">
-                    You successfully used a referral code to get 1% bonus cashback
-                    <br></br>
-                    for every unwrap from wZNN to ZNN and wQSR to QSR
-                  </div>
-                </>
-              ) : (
-                <>
-                  {`Click here to find a referral link and get 1% bonus`}
-                  <div className="tooltip-text background-clip-fix">
-                    Use referral code to get 1% bonus cashback for
-                    <br></br>
-                    every unwrap from wZNN to ZNN and wQSR to QSR
-                  </div>
-                </>
-              )}
+      {globalConstants?.isSupernovaNetwork ? (
+        <></>
+      ) : (
+        <div className="d-flex justify-content-left align-items-center">
+          <a
+            className="no-decoration d-flex justify-content-start align-items-center text-sm"
+            href="https://twitter.com/hashtag/HyperGrowth"
+            target="_blank"
+            rel="noreferrer">
+            <img alt="fees-info" className="mr-1" src={infoIcon}></img>
+            <div className="d-flex justify-items-center align-items-center">
+              <div className="tooltip clickable-info text-bold pt-1 pb-1">
+                {isReferralCodeApplied ? (
+                  <>
+                    {`Click here to see more referral links`}
+                    <div className="tooltip-text background-clip-fix">
+                      You successfully used a referral code to get 1% bonus cashback
+                      <br></br>
+                      for every unwrap from wZNN to ZNN and wQSR to QSR
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {`Click here to find a referral link and get 1% bonus`}
+                    <div className="tooltip-text background-clip-fix">
+                      Use referral code to get 1% bonus cashback for
+                      <br></br>
+                      every unwrap from wZNN to ZNN and wQSR to QSR
+                    </div>
+                  </>
+                )}
+              </div>
+              <img
+                alt="step-logo"
+                className="ml-1"
+                style={{ maxWidth: "32px", maxHeight: "32px" }}
+                src={twitterLogo}></img>
             </div>
-            <img
-              alt="step-logo"
-              className="ml-1"
-              style={{ maxWidth: "32px", maxHeight: "32px" }}
-              src={twitterLogo}></img>
-          </div>
-        </a>
+          </a>
 
-        <a
-          className="no-decoration d-flex justify-content-start align-items-center text-sm"
-          href="https://forum.zenon.org/t/perpetual-ecosystem-growth/1417/17"
-          target="_blank"
-          rel="noreferrer">
-          <div className={`button secondary text-white ml-2 text-sm tooltip d-flex align-items-center`}>
-            {/* <img alt="fees-info" className="mr-2" src={infoIcon}></img> */}
-            About referral
-            <span className="tooltip-text">Find out more about the referral program.</span>
-          </div>
-        </a>
-      </div>
+          <a
+            className="no-decoration d-flex justify-content-start align-items-center text-sm"
+            href="https://forum.zenon.org/t/perpetual-ecosystem-growth/1417/17"
+            target="_blank"
+            rel="noreferrer">
+            <div className={`button secondary text-white ml-2 text-sm tooltip d-flex align-items-center`}>
+              {/* <img alt="fees-info" className="mr-2" src={infoIcon}></img> */}
+              About referral
+              <span className="tooltip-text">Find out more about the referral program.</span>
+            </div>
+          </a>
+        </div>
+      )}
 
       <div className={`extension-item mb-5 mt-4`}>
         <div className={`step-counter ${isSyriusConnected && "completed"}`}>1</div>

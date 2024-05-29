@@ -304,7 +304,13 @@ const WrapRequestItemComponent: FC<{
                       className={`button thin-button primary tooltip text-nowrap`}
                       onClick={() => onRedeem(requestItem)}>
                       Request 1/2
-                      <span className="tooltip-text">Wrapping requires 2 steps</span>
+                      {globalConstants.isSupernovaNetwork ? (
+                        <span className="tooltip-text">
+                          {`If you don't have gas just be patient and the auto-redeemer will redeem it for you`}
+                        </span>
+                      ) : (
+                        <span className="tooltip-text">Wrapping requires 2 steps</span>
+                      )}
                     </div>
                   );
                 }
@@ -335,7 +341,13 @@ const WrapRequestItemComponent: FC<{
                       className={`button thin-button primary tooltip text-nowrap`}
                       onClick={() => onRedeem(requestItem)}>
                       Redeem 2/2
-                      <span className="tooltip-text">Wrapping requires 2 steps</span>
+                      {globalConstants.isSupernovaNetwork ? (
+                        <span className="tooltip-text">
+                          {`If you don't have gas just be patient and the auto-redeemer will redeem it for you.`}
+                        </span>
+                      ) : (
+                        <span className="tooltip-text">Wrapping requires 2 steps</span>
+                      )}
                     </div>
                   );
                 }

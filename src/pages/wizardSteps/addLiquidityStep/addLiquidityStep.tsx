@@ -355,8 +355,10 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
         rawBalance: ethers.BigNumber.from("0"),
       };
 
+      // ToDo: Maybe replace this verification with currentToken.isNativeCoin and add it to
+      // the getBalance() parameters
       if (currentErcToken.symbol == "ETH" && currentErcToken.address == "") {
-        const rawErcBalance = await externalNetworkClient.getBalance(null, null, provider);
+        const rawErcBalance = await externalNetworkClient.getBalance(null, null, true, provider);
 
         console.log("rawErcBalance - ", currentErcToken.symbol, ":", rawErcBalance);
         ercInfo.balance = ethers.utils.formatUnits(rawErcBalance, currentErcToken.decimals);
@@ -366,6 +368,7 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
         const rawErcBalance = await externalNetworkClient.getBalance(
           currentErcToken.address,
           updatedConstants.wznnAbi,
+          currentErcToken?.isNativeCoin,
           provider
         );
 
@@ -379,6 +382,7 @@ const AddLiquidityStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) =>
       const rawWznnBalance = await externalNetworkClient.getBalance(
         currentZenonToken.address,
         updatedConstants.wznnAbi,
+        currentZenonToken?.isNativeCoin,
         provider
       );
 

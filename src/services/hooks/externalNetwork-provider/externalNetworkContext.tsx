@@ -445,6 +445,7 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
   const getBalance = async (
     tokenAddress?: string,
     tokenAbi?: string,
+    isNativeCoin = false,
     _provider: anyProviderType | null = provider,
     _providerType: externalNetworkProviderTypes | null = providerType,
     maxRetries: number = maxRequestRetries
@@ -457,7 +458,8 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
             _provider as ethers.providers.JsonRpcProvider,
             walletInfo.address,
             tokenAddress,
-            tokenAbi
+            tokenAbi,
+            isNativeCoin
           );
           console.log("balance", balance);
           return balance;
@@ -467,7 +469,8 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
             _provider as ethers.providers.Web3Provider,
             walletInfo.address,
             tokenAddress,
-            tokenAbi
+            tokenAbi,
+            isNativeCoin
           );
           console.log("Balance", balance);
 
@@ -484,8 +487,9 @@ export const ExternalNetworkProvider: FC<{ children: any }> = ({ children }) => 
         console.log("Retrying request");
         // Retry
         if (maxRetries > 0) {
-          return await getBalance(tokenAddress, tokenAbi, _provider, _providerType, maxRetries - 1);
-        } else throw Error(`Unable to make request after ${maxRequestRetries} retries. Error: ${handledError.message}`);
+          return await getBalance(tokenAddress, tokenAbi, isNativeCoin, _provider, _providerType, maxRetries - 1);
+        } else
+          throw Error(`Unable to make request after ,${maxRequestRetries} retries. Error: ${handledError.message}`);
       } else throw Error(`Error: ${handledError.message}`);
     }
   };

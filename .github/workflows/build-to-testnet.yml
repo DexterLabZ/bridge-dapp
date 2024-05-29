@@ -5,9 +5,9 @@ name: Build and deploy to testnet
 
 on:
   push:
-    branches: ["main"]
+    branches: ["x-chain-testnet"]
   pull_request:
-    branches: ["main"]
+    branches: ["x-chain-testnet"]
   workflow_dispatch:
 
 jobs:
@@ -42,7 +42,7 @@ jobs:
           done < .env
 
       - run: npm ci
-      - run: npm run build-test --if-present
+      - run: npm run build-supernova-test --if-present
         env:
           CI: false
       - name: Deploy to testnet
@@ -52,8 +52,8 @@ jobs:
           branch: main
           git-config-name: github-actions[bot]
           git-config-email: github-action[bot]@users.noreply.github.com
-          repository-name: DexterLabZ/bridge.testnet.zenon.community
-          commit-message: Testnet release
+          repository-name: DexterLabZ/bridge.supernova-testnet.zenon.community
+          commit-message: Supernova Testnet release
           clean: true
           single-commit: true
           force: true

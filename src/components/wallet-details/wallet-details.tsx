@@ -16,6 +16,7 @@ const WalletDetails: FC = () => {
   const [zenonAddress, setZenonAddress] = useState("");
   const [ercAddress, setErcAddress] = useState("");
   const dispatch = useDispatch();
+  const globalConstants = useSelector((state: any) => state.globalConstants);
 
   useEffect(() => {
     console.log("walletDetails - wallet changed");
@@ -187,24 +188,34 @@ const WalletDetails: FC = () => {
         </div>
       )}
 
-      {referralInfo.referralCode ? (
-        <div className="tooltip d-flex align-items-center mt-2 cursor-pointer">
-          Referral code set
-          <div className="referred-dot ml-1"></div>
-          <span className="tooltip-text">You will get 1% back for every wZNN or wQSR unwrap</span>
-        </div>
+      {globalConstants?.isSupernovaNetwork ? (
+        <></>
       ) : (
-        <a className="no-decoration" href="https://twitter.com/hashtag/HyperGrowth" target="_blank" rel="noreferrer">
-          <div className="tooltip d-flex align-items-center mt-2 cursor-pointer text-attention-grabber">
-            Get bonus cashback
-            <div className="not-connected-dot pulsating-red ml-1"></div>
-            <span className="tooltip-text background-clip-fix">
-              Use referral code to get 1% bonus cashback for
-              <br></br>
-              every unwrap from wZNN to ZNN and wQSR to QSR
-            </span>
-          </div>
-        </a>
+        <>
+          {referralInfo.referralCode ? (
+            <div className="tooltip d-flex align-items-center mt-2 cursor-pointer">
+              Referral code set
+              <div className="referred-dot ml-1"></div>
+              <span className="tooltip-text">You will get 1% back for every wZNN or wQSR unwrap</span>
+            </div>
+          ) : (
+            <a
+              className="no-decoration"
+              href="https://twitter.com/hashtag/HyperGrowth"
+              target="_blank"
+              rel="noreferrer">
+              <div className="tooltip d-flex align-items-center mt-2 cursor-pointer text-attention-grabber">
+                Get bonus cashback
+                <div className="not-connected-dot pulsating-red ml-1"></div>
+                <span className="tooltip-text background-clip-fix">
+                  Use referral code to get 1% bonus cashback for
+                  <br></br>
+                  every unwrap from wZNN to ZNN and wQSR to QSR
+                </span>
+              </div>
+            </a>
+          )}
+        </>
       )}
     </div>
   );

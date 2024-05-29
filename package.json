@@ -35,7 +35,7 @@
     "web-vitals": "^2.1.4",
     "web3": "^1.7.5",
     "web3modal": "^1.9.12",
-    "znn-ts-sdk": "^0.1.1"
+    "znn-ts-sdk": "0.1.2"
   },
   "scripts": {
     "clean-restart": "npm ci && npm run start-dev",
@@ -44,11 +44,17 @@
     "start-dev": "cross-env REACT_APP_NETWORK_ENV=development react-scripts start",
     "start-staging": "cross-env REACT_APP_NETWORK_ENV=staging react-scripts start",
     "start-prod": "cross-env REACT_APP_NETWORK_ENV=production react-scripts start",
+    "start-supernova-test": "cross-env REACT_APP_NETWORK_ENV=supernova-test react-scripts start",
+    "start-supernova-staging": "cross-env REACT_APP_NETWORK_ENV=supernova-staging react-scripts start",
+    "start-supernova-prod": "cross-env REACT_APP_NETWORK_ENV=supernova-production react-scripts start",
     "build": "react-scripts build",
     "build-test": "cross-env REACT_APP_NETWORK_ENV=test react-scripts build",
     "build-dev": "cross-env REACT_APP_NETWORK_ENV=development react-scripts build",
     "build-staging": "cross-env REACT_APP_NETWORK_ENV=staging react-scripts build",
     "build-prod": "cross-env REACT_APP_NETWORK_ENV=production react-scripts build",
+    "build-supernova-test": "cross-env REACT_APP_NETWORK_ENV=supernova-test react-scripts build",
+    "build-supernova-staging": "cross-env REACT_APP_NETWORK_ENV=supernova-staging react-scripts build",
+    "build-supernova-prod": "cross-env REACT_APP_NETWORK_ENV=supernova-production react-scripts build",
     "encode-env": "node encodeEnv.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

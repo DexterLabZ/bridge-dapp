@@ -11,6 +11,9 @@ const constants = {
   isMainNet: true,
   isDevNet: false,
   isTestNet: false,
+  isSupernovaTestNet: false,
+  isSupernovaMainNet: false,
+  supernovaChainId: parseInt(process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_MAINNET_CHAIN_ID || "0"),
   feeDenominator: 10000,
 
   maxLogIndex: 4000000000,
@@ -52,6 +55,15 @@ const constants = {
     symbol: "wZNN",
     decimals: 8,
     address: "0xb2e96a63479C2Edd2FD62b382c89D5CA79f572d3",
+  },
+  xZnnTokenInfo: {
+    isNativeCoin: true,
+    symbol: "XZNN",
+    name: "xZenon",
+    decimals: 18,
+    address:
+      process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_MAINNET_ETH_XZNN_ADDRESS ||
+      "0x0000000000000000000000000000000000000000",
   },
   bscWqsrTokenInfo: {
     symbol: "wQSR",
@@ -236,7 +248,10 @@ const testConstants = {
   isMainNet: false,
   isDevNet: false,
   isTestNet: true,
+  isSupernovaTestNet: false,
+  isSupernovaMainNet: false,
 
+  supernovaChainId: parseInt(process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_TESTNET_CHAIN_ID || "0"),
   defaultInternalChainId: 3,
   defaultExternalChainId: 11155111,
 
@@ -376,7 +391,10 @@ const developmentConstants = {
   isMainNet: false,
   isDevNet: true,
   isTestNet: false,
+  isSupernovaTestNet: false,
+  isSupernovaMainNet: false,
 
+  supernovaChainId: parseInt(process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_DEVNET_CHAIN_ID || "0"),
   defaultInternalChainId: 3,
   defaultExternalChainId: 11155111,
 
@@ -508,6 +526,73 @@ const developmentConstants = {
   },
 };
 
+//
+// ExtensionChain TEST-NET ENV CONSTANTS
+//
+const supernovaTestNetConstants = {
+  ...constants,
+  isMainNet: false,
+  isDevNet: false,
+  isTestNet: false,
+
+  isSupernovaTestNet: true,
+  isSupernovaMainNet: false,
+  //
+  // This flag tells if it's supernova network, regardless if it's devnet, testnet, mainnet
+  // It's here so we only have to make one verification in the rest of the app
+  //
+  isSupernovaNetwork: true,
+
+  supernovaChainId: parseInt(process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_TESTNET_CHAIN_ID || "0"),
+  defaultInternalChainId: 3,
+  defaultExternalChainId: parseInt(process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_TESTNET_CHAIN_ID || "0"),
+
+  defaultNodeToConnect: "http://167.235.233.238:8545",
+  officialBridgeCommunityUrl: "https://bridge.supernova.zenon.community",
+
+  xZnnTokenInfo: {
+    isNativeCoin: true,
+    symbol: "XZNN-Test",
+    name: "xZenon-Test",
+    decimals: 18,
+    address:
+      process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_TESTNET_ETH_XZNN_ADDRESS ||
+      "0x0000000000000000000000000000000000000000",
+  },
+
+  // Internal tokens
+  // znnEthLpTokenInfo: {
+  //   symbol: "ZNNETHLP",
+  //   decimals: 18,
+  //   address:
+  //     process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_TESTNET_ZNN_ETH_LP_ADDRESS || "zts000000000000000000000000",
+  // },
+  // qsrEthLpTokenInfo: {
+  //   symbol: "QSRETHLP",
+  //   decimals: 18,
+  //   address:
+  //     process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_TESTNET_QSR_ETH_LP_ADDRESS || "zts000000000000000000000000",
+  // },
+
+  // Liquidity networks
+  defaultLiquidityExternalNetworkDetails: {
+    ETH: {
+      name: "Supernova-Testnet-ETH",
+      chainId: 74506,
+      // contractAddress is also known as bridgeAddress
+      contractAddress:
+        process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_TESTNET_LIQUIDITY_EXTERNAL_NETWORK_ETH_ADDRESS ||
+        "0x0000000000000000000000000000000000000000",
+    },
+  },
+
+  GTM_ID: "GTM-XXXXXX",
+  TWITTER_EVENT: {
+    PIXEL_ID: "xxxxx",
+    EVENT_ID: "xx-xxxxx-xxxxxx",
+  },
+};
+
 let exportedConstants = constants;
 
 console.log("process.env.NODE_ENV", process.env.NODE_ENV);
@@ -517,5 +602,15 @@ if (process.env.REACT_APP_NETWORK_ENV === "production" || process.env.REACT_APP_
   exportedConstants = constants;
 if (process.env.REACT_APP_NETWORK_ENV === "development") exportedConstants = developmentConstants;
 if (process.env.REACT_APP_NETWORK_ENV === "test") exportedConstants = testConstants;
+
+//
+// Supernova
+//
+if (
+  process.env.REACT_APP_NETWORK_ENV === "supernova-production" ||
+  process.env.REACT_APP_NETWORK_ENV === "supernova-staging"
+)
+  exportedConstants = supernovaTestNetConstants;
+if (process.env.REACT_APP_NETWORK_ENV === "supernova-test") exportedConstants = supernovaTestNetConstants;
 
 export default exportedConstants;

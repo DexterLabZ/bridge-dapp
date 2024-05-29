@@ -12,13 +12,14 @@ import { SpinnerContext } from "../../../services/hooks/spinner/spinnerContext";
 import useInternalNetwork from "../../../services/hooks/internalNetwork-provider/useInternalNetwork";
 import { clearActiveUnwrapRequest, storeSuccessInfo } from "../../../services/redux/requestsSlice";
 import { storeCurrentWizardFlowStep, swapFlowSteps } from "../../../services/redux/wizardStatusSlice";
-import { simpleTokenType } from "../swapStep/swapStep";
+import { simpleNetworkType, simpleTokenType } from "../swapStep/swapStep";
 import newSwapSvg from "./../../../assets/icons/swap.svg";
 import discordLogo from "./../../../assets/logos/discord-logo.svg";
 import forumLogo from "./../../../assets/logos/forum-logo.svg";
 import telegramLogo from "./../../../assets/logos/telegram.svg";
 import twitterLogo from "./../../../assets/logos/twitter.svg";
 import useExternalNetwork from "../../../services/hooks/externalNetwork-provider/useExternalNetwork";
+import { curateUnwrapRequestsForSupernova, getUnwrapRequestsAndEmulatePagination } from "../../../utils/utils";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
@@ -73,12 +74,32 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
       const toAddress = zenonInfo?.address;
 
       console.log("toAddress", toAddress);
+      console.log("_currentPage", _currentPage);
+      console.log("_itemsPerPage", _itemsPerPage);
       let getAllUnwrapTokenRequestsByToAddress = {
         count: 0,
         list: [],
       };
       if (toAddress) {
-        getAllUnwrapTokenRequestsByToAddress = await zenon.embedded.bridge.getAllUnwrapTokenRequestsByToAddress(
+        // if (globalConstants?.isSupernovaNetwork) {
+        //   getAllUnwrapTokenRequestsByToAddress =
+        //     await zenon.embedded.bridge.getAllUnwrapTokenRequestsByToAddressNetworkClassAndChainId(
+        //       toAddress,
+        //       globalConstants?.externalAvailableNetworks.find((n: simpleNetworkType) => n.isAvailable)?.networkClass,
+        //       parseInt(globalConstants?.supernovaChainId?.toString()),
+        //       _currentPage,
+        //       _itemsPerPage
+        //     );
+        // } else {
+        // getAllUnwrapTokenRequestsByToAddress = await zenon.embedded.bridge.getAllUnwrapTokenRequestsByToAddress(
+        //   toAddress,
+        //   _currentPage,
+        //   _itemsPerPage
+        // );
+        // }
+
+        getAllUnwrapTokenRequestsByToAddress = await getUnwrapRequestsAndEmulatePagination(
+          zenon,
           toAddress,
           _currentPage,
           _itemsPerPage
@@ -117,7 +138,8 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
       saveUnwrapRequestsToLocalStorage(mergedUnwrapRequests, oldRequests);
       console.log("mergedUnwrapRequests", mergedUnwrapRequests);
 
-      setRequestItems(mergedUnwrapRequests);
+      const curatedForSupernova = curateUnwrapRequestsForSupernova(mergedUnwrapRequests);
+      setRequestItems(curatedForSupernova);
     } catch (err) {
       console.error(err);
     } finally {
@@ -404,7 +426,8 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
 
     saveUnwrapRequestsToLocalStorage(currentRequests);
     setRequestItems((currValues: UnwrapRequestItem[]) => {
-      return currValues.map((item: UnwrapRequestItem) => {
+      const curatedForSupernova = curateUnwrapRequestsForSupernova(currValues);
+      return curatedForSupernova.map((item: UnwrapRequestItem) => {
         if (item?.transactionHash == unwrapRequest?.transactionHash) {
           item = unwrapRequest;
         }
