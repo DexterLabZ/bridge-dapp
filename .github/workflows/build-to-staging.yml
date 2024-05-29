@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     environment:
-      name: test
+      name: staging
 
     strategy:
       matrix:
@@ -42,18 +42,18 @@ jobs:
           done < .env
 
       - run: npm ci
-      - run: npm run build-test --if-present
+      - run: npm run build-staging --if-present
         env:
           CI: false
-      - name: Deploy to testnet
+      - name: Deploy to staging
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           token: ${{ secrets.STAGING_TOKEN }}
           branch: main
           git-config-name: github-actions[bot]
           git-config-email: github-action[bot]@users.noreply.github.com
-          repository-name: DexterLabZ/bridge.testnet.zenon.community
-          commit-message: Testnet release
+          repository-name: DexterLabZ/bridge.staging.zenon.community
+          commit-message: Staging release
           clean: true
           single-commit: true
           force: true
