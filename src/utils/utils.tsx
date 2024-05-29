@@ -869,3 +869,44 @@ export const getUnwrapRequestsAndEmulatePagination = async (
     };
   }
 };
+
+export const checkIfBridgeCanProcessRequests = async (zenon: any) => {
+  const currentMomentumHeight = (await zenon.ledger.getFrontierMomentum())?.height;
+  console.log("currentMomentumHeight", currentMomentumHeight);
+
+  let allBlocks = await zenon.ledger.getBlocksByPage("z1qxemdeddedxdrydgexxxxxxxxxxxxxxxmqgr0d", 0, 100);
+
+  allBlocks = allBlocks.toJson();
+  console.log("allBlocks", allBlocks);
+
+  const unwrapRequests = allBlocks?.list?.filter((block: any) => {
+    if (block?.pairedAccountBlock?.data?.startsWith("tgaUAQ")) return true;
+  });
+  console.log("unwrapRequests", unwrapRequests);
+
+  let canProcessUnwrapRequests = false;
+
+  unwrapRequests.map((req: any) => {
+    const momentumAcknowledgedHeight = req?.momentumAcknowledged?.height;
+    if (currentMomentumHeight - momentumAcknowledgedHeight < 8640) {
+      canProcessUnwrapRequests = true;
+    }
+  });
+
+  const wrapRequests = allBlocks?.list?.filter((block: any) => {
+    if (block?.pairedAccountBlock?.data?.startsWith("1LsRw")) return true;
+  });
+  console.log("wrapRequests", wrapRequests);
+  let canProcessWrapRequests = false;
+  wrapRequests.map((req: any) => {
+    const momentumAcknowledgedHeight = req?.momentumAcknowledged?.height;
+    if (currentMomentumHeight - momentumAcknowledgedHeight < 8640) {
+      canProcessWrapRequests = true;
+    }
+  });
+
+  return {
+    canProcessWrapRequests: canProcessWrapRequests,
+    canProcessUnwrapRequests: canProcessUnwrapRequests,
+  };
+};

@@ -14,6 +14,7 @@ import { storeGlobalConstants } from "../../../services/redux/globalConstantsSli
 import { storeReferralCode } from "../../../services/redux/referralSlice";
 import { storeErcInfo, storeZenonInfo } from "../../../services/redux/walletSlice";
 import {
+  checkIfBridgeCanProcessRequests,
   checkMetamaskAvailability,
   checkSyriusAvailability,
   curateExternalNetworksForSupernova,
@@ -173,6 +174,32 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
           console.log("zenonInfo", zenonInfo);
           await internalNetworkClient.connectToNode(zenonInfo.nodeUrl);
         }
+      }
+
+      const isBridgeProcessingTransactions = await checkIfBridgeCanProcessRequests(zenon);
+      if (!isBridgeProcessingTransactions?.canProcessWrapRequests) {
+        toast("Bridge might be down and unable to process Wrap requests! Please be patient.", {
+          position: "bottom-center",
+          autoClose: false,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: false,
+          draggable: true,
+          type: "error",
+          theme: "dark",
+        });
+      }
+      if (!isBridgeProcessingTransactions?.canProcessUnwrapRequests) {
+        toast("Bridge might be down and unable to process Unwrap transactions! Please be patient.", {
+          position: "bottom-center",
+          autoClose: false,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: false,
+          draggable: true,
+          type: "error",
+          theme: "dark",
+        });
       }
 
       checkForAffiliationCodeFromNode(zenon);
@@ -829,6 +856,21 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
       showSpinner(true);
       console.error("Bridge is halted!");
       throw Error("Bridge is currently unavailable!");
+    }
+
+    if (getBridgeInfo.allowKeyGen) {
+      const showSpinner = handleSpinner(
+        <>
+          <div className="text-bold text-center mb-5 mt-4 warning p-3 small-border-radius">
+            Bridge is currently performing KeyGen! <br></br>Please try again later
+          </div>
+        </>,
+        "extension-approval-spinner-root"
+      );
+
+      showSpinner(true);
+      console.error("Bridge is currently performing KeyGen!");
+      throw Error("Bridge is currently performing KeyGen!");
     }
 
     const getOrchestratorInfo = await zenon.embedded.bridge.getOrchestratorInfo();
