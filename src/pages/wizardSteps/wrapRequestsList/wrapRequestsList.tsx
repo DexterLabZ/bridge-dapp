@@ -492,7 +492,16 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
       signature[signature.length - 1] = signature[signature.length - 1] + 27;
       const newSig = signature.toString("hex");
 
-      console.log("Redeem params", wrapRequest.toAddress, tokenAddress, amount, "0x" + id, "0x" + newSig);
+      //
+      // Update redeemDelay of request
+      //
+      const redeemDelay = ((await contract.tokensInfo(wrapRequest.tokenAddress))?.redeemDelay || 1) + 1;
+      console.log("__wrap__redeemDelay", redeemDelay);
+      const estimatedBlockTimeInSeconds = await contract.estimatedBlockTime();
+      console.log("__wrap__estimatedBlockTimeInSeconds", estimatedBlockTimeInSeconds);
+
+      (wrapRequest.redeemDelayInSeconds = redeemDelay * estimatedBlockTimeInSeconds.toNumber()),
+        console.log("Redeem params", wrapRequest.toAddress, tokenAddress, amount, "0x" + id, "0x" + newSig);
       console.log("contract", contract);
       // const redeemResponse = await signedContract.redeem(
       //   wrapRequest.toAddress,
