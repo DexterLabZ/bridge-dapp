@@ -230,13 +230,13 @@ const constants = {
     },
   ],
 
-  GTM_ID: "GTM-TC768WT",
+  GTM_ID: "",
   /**
    * * @mehowbrainz twitter developer account
    */
   TWITTER_EVENT: {
-    PIXEL_ID: "o3khw",
-    EVENT_ID: "tw-o3khw-oi8v5",
+    PIXEL_ID: "",
+    EVENT_ID: "",
   },
 };
 
