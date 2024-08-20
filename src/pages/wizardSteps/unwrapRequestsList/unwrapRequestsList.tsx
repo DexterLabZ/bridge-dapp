@@ -335,6 +335,19 @@ const UnwrapRequestsList = ({ onStepSubmit = () => {} }) => {
 
         const hash = accountBlock?.hash.toString();
 
+        //
+        // Update redeemDelay of request
+        //
+        const redeemDelay = globalConstants.tokenPairs.find(
+          (pair: any) =>
+            pair.internalToken.address?.toLowerCase() == unwrapRequest.toToken?.address?.toLowerCase() &&
+            pair.externalToken.address?.toLowerCase() == unwrapRequest.fromToken?.address?.toLowerCase()
+        )?.unwrapRedeemDelay;
+        console.log("__unwrap__redeemDelay", redeemDelay);
+        const redeemDelayInSeconds = redeemDelay * globalConstants.estimatedMomentumTimeInSeconds;
+        console.log("__unwrap__redeemDelayInSeconds", redeemDelayInSeconds);
+        unwrapRequest.redeemDelayInSeconds = redeemDelayInSeconds;
+
         if (unwrapRequest.status == unwrapRequestStatus.Redeemable) {
           unwrapRequest.status = unwrapRequestStatus.Redeemed;
           unwrapRequest.isActiveRequest = false;

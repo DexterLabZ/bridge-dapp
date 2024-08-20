@@ -23,6 +23,7 @@ import { storeErcInfo, storeZenonInfo } from "../../../services/redux/walletSlic
 import { flowTypes, swapFlowSteps } from "../../../services/redux/wizardStatusSlice";
 import {
   addBigNumberStrings,
+  bigNumberStringToFixedDecimals,
   divideBigNumberStrings,
   findInObject,
   getExternalTokensDetails,
@@ -810,9 +811,17 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
 
     if (alsoUpdatePair) {
       if (_isUnwrapDirection) {
-        updateErcAmount(addFee(amount, _isUnwrapDirection) + "", false, _isUnwrapDirection);
+        updateErcAmount(
+          bigNumberStringToFixedDecimals(addFee(amount, _isUnwrapDirection) + "", ercToken.decimals),
+          false,
+          _isUnwrapDirection
+        );
       } else {
-        updateErcAmount(subtractFee(amount, _isUnwrapDirection) + "", false, _isUnwrapDirection);
+        updateErcAmount(
+          bigNumberStringToFixedDecimals(subtractFee(amount, _isUnwrapDirection) + "", ercToken.decimals),
+          false,
+          _isUnwrapDirection
+        );
       }
     }
   };
@@ -825,42 +834,77 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
 
     if (alsoUpdatePair) {
       if (_isUnwrapDirection) {
-        updateZenonAmount(subtractFee(amount, _isUnwrapDirection) + "", false, _isUnwrapDirection);
+        updateZenonAmount(
+          bigNumberStringToFixedDecimals(subtractFee(amount, _isUnwrapDirection) + "", zenonToken.decimals),
+          false,
+          _isUnwrapDirection
+        );
       } else {
-        updateZenonAmount(addFee(amount, _isUnwrapDirection) + "", false, _isUnwrapDirection);
+        updateZenonAmount(
+          bigNumberStringToFixedDecimals(addFee(amount, _isUnwrapDirection) + "", zenonToken.decimals),
+          false,
+          _isUnwrapDirection
+        );
       }
     }
   };
 
   const addFee = (amount: string, _isUnwrapDirection: boolean) => {
+    console.log("addFee - _isUnwrapDirection", _isUnwrapDirection);
+    console.log("wrapFeePercentage.toString()", wrapFeePercentage.toString());
+    console.log("tokenParity.toString()", tokenParity.toString());
+    console.log("globalConstants.feeDenominator.toString()", globalConstants.feeDenominator.toString());
+    console.log("amount.toString()", amount.toString());
+
     if (_isUnwrapDirection) {
-      return addBigNumberStrings([
-        multiplyBigNumberStrings([amount.toString(), tokenParity.toString()]),
+      // return addBigNumberStrings([
+      //   multiplyBigNumberStrings([amount.toString(), tokenParity.toString()]),
+      //   multiplyBigNumberStrings([
+      //     amount.toString(),
+      //     tokenParity.toString(),
+      //     divideBigNumberStrings([unwrapFeePercentage.toString(), globalConstants.feeDenominator.toString()]),
+      //   ]),
+      // ]);
+      return divideBigNumberStrings([
         multiplyBigNumberStrings([
           amount.toString(),
           tokenParity.toString(),
-          divideBigNumberStrings([unwrapFeePercentage.toString(), globalConstants.feeDenominator.toString()]),
+          globalConstants.feeDenominator.toString(),
         ]),
+        subtractBigNumberStrings([globalConstants.feeDenominator.toString(), unwrapFeePercentage.toString()]),
       ]);
     } else {
-      return addBigNumberStrings([
-        multiplyBigNumberStrings([amount.toString(), tokenParity.toString()]),
+      // return addBigNumberStrings([
+      //   multiplyBigNumberStrings([amount.toString(), tokenParity.toString()]),
+      //   multiplyBigNumberStrings([
+      //     amount.toString(),
+      //     tokenParity.toString(),
+      //     divideBigNumberStrings([wrapFeePercentage.toString(), globalConstants.feeDenominator.toString()]),
+      //   ]),
+      // ]);
+
+      return divideBigNumberStrings([
         multiplyBigNumberStrings([
-          amount.toString(),
-          tokenParity.toString(),
-          divideBigNumberStrings([wrapFeePercentage.toString(), globalConstants.feeDenominator.toString()]),
+          divideBigNumberStrings([amount.toString(), tokenParity.toString()]),
+          globalConstants.feeDenominator.toString(),
         ]),
+        subtractBigNumberStrings([globalConstants.feeDenominator.toString(), wrapFeePercentage.toString()]),
       ]);
     }
   };
 
   const subtractFee = (amount: string, _isUnwrapDirection: boolean) => {
+    console.log("subtractFee - _isUnwrapDirection", _isUnwrapDirection);
+    console.log("wrapFeePercentage.toString()", wrapFeePercentage.toString());
+    console.log("tokenParity.toString()", tokenParity.toString());
+    console.log("globalConstants.feeDenominator.toString()", globalConstants.feeDenominator.toString());
+    console.log("amount.toString()", amount.toString());
+
     if (_isUnwrapDirection) {
       return subtractBigNumberStrings([
-        multiplyBigNumberStrings([amount.toString(), tokenParity.toString()]),
+        divideBigNumberStrings([amount.toString(), tokenParity.toString()]),
         multiplyBigNumberStrings([
-          amount.toString(),
-          tokenParity.toString(),
+          divideBigNumberStrings([amount.toString(), tokenParity.toString()]),
           divideBigNumberStrings([unwrapFeePercentage.toString(), globalConstants.feeDenominator.toString()]),
         ]),
       ]);

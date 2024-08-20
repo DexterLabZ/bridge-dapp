@@ -524,6 +524,15 @@ export const divideBigNumberStrings = (terms: string[], maxDecimals = 18) => {
   }
 };
 
+export const toFixed = (num: string, fixed: number) => {
+  const re = new RegExp("^-?\\d+(?:.\\d{0," + (fixed || -1) + "})?");
+  return num.match(re)?.[0] || num;
+};
+
+export const bigNumberStringToFixedDecimals = (term: string, maxDecimals = 18) => {
+  return toFixed(term, maxDecimals);
+};
+
 export const mangleReferralCode = (code: string) => {
   const key = "UjFpyVLBUHC";
   const mangled: string = mangle(code, key);
