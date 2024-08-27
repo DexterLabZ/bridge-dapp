@@ -327,6 +327,7 @@ const ExtensionConnect = ({ onStepSubmit = (where: string) => {}, isLiquidityFlo
 
       if (providerType == externalNetworkProviderTypes.metamask) {
         const externalNetworkDetails = await getMetamaskAddress();
+        console.log("externalNetworkDetails", externalNetworkDetails);
         externalNetworkAddress = externalNetworkDetails.address;
         externalNetworkChainId = externalNetworkDetails.chainId;
         provider = externalNetworkDetails.provider;

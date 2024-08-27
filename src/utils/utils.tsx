@@ -158,6 +158,7 @@ export const getExternalTokensDetails = async (
         newTok = replaceSupernovaWrappedTokenWithNativeToken(newTok);
 
         console.log("updatedTok", newTok);
+        console.log("JSON.stringify(updatedTok)", JSON.stringify(newTok));
       }
       return newTok;
     })
@@ -624,6 +625,7 @@ export const replaceSupernovaWrappedTokenWithNativeToken = (wrappedToken: simple
   console.log("supernovaChainId", (constants as any)?.supernovaChainId);
   console.log("isSupernovaNetwork", (constants as any)?.isSupernovaNetwork);
   console.log("replaceSupernovaWrappedTokenWithNativeToken", wrappedToken);
+  console.log("JSON.stringify(wrappedToken)", JSON.stringify(wrappedToken));
   const xZnnTokenInfo = (constants as any)?.xZnnTokenInfo;
   if ((constants as any)?.isSupernovaNetwork) {
     if (wrappedToken?.address.toLowerCase() == xZnnTokenInfo?.address?.toLowerCase()) {
@@ -840,10 +842,10 @@ export const getUnwrapRequestsAndEmulatePagination = async (
     console.log("supernovaChainId", (constants as any)?.supernovaChainId);
 
     const onSupernova = allRequests.filter(
-      (item: any) => item.chainId.toString() === (constants as any)?.supernovaChainId
+      (item: any) => item.chainId.toString() == (constants as any)?.supernovaChainId
     );
     const notOnSupernova = allRequests.filter(
-      (item: any) => item.chainId.toString() !== (constants as any)?.supernovaChainId
+      (item: any) => item.chainId.toString() != (constants as any)?.supernovaChainId
     );
 
     console.log("onSupernova", onSupernova);

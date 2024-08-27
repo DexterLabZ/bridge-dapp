@@ -511,10 +511,15 @@ const WrapRequestsList = ({ onStepSubmit = () => {} }) => {
       //   "0x" + newSig
       // );
 
-      const redeemTransactionParams = [wrapRequest.toAddress, tokenAddress, amount, "0x" + id, "0x" + newSig];
-      console.log("redeemTransactionParams", redeemTransactionParams);
+      let redeemTransactionParams = [wrapRequest.toAddress, tokenAddress, amount, "0x" + id, "0x" + newSig];
+      let functionToBeCalled = "redeem";
 
-      const functionToBeCalled = globalConstants.isSupernovaNetwork ? "redeemNative" : "redeem";
+      if (globalConstants.isSupernovaNetwork) {
+        redeemTransactionParams = [wrapRequest.toAddress, amount, "0x" + id, "0x" + newSig];
+        functionToBeCalled = "redeemNative";
+      }
+
+      console.log("redeemTransactionParams", redeemTransactionParams);
       console.log("functionToBeCalled", functionToBeCalled);
 
       const redeemResponse = await externalNetworkClient.callContract(

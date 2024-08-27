@@ -1219,7 +1219,7 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
         const referralCode = referralInfo?.referralCode;
         let concatenatedAddresses = zenonAddress;
 
-        if (referralCode) {
+        if (referralCode && !globalConstants.isSupernovaNetwork) {
           concatenatedAddresses = concatenatedAddresses + "&" + referralCode;
           console.log("Using: ", referralCode);
         }
@@ -1230,7 +1230,8 @@ const SwapStep: FC<{ onStepSubmit: () => void }> = ({ onStepSubmit }) => {
 
         if (globalConstants.isSupernovaNetwork) {
           swapParameters = [
-            ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals)),
+            // Already in the msg.value
+            // ethers.utils.parseUnits(ercAmount, ethers.BigNumber.from(ercTokenCopy.decimals)),
             concatenatedAddresses,
           ];
           swapResponse = await externalNetworkClient.callContract(

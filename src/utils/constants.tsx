@@ -578,7 +578,74 @@ const supernovaTestNetConstants = {
   defaultLiquidityExternalNetworkDetails: {
     ETH: {
       name: "Supernova-Testnet-ETH",
-      chainId: 74506,
+      chainId: parseInt(process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_TESTNET_CHAIN_ID || "0"),
+      // contractAddress is also known as bridgeAddress
+      contractAddress:
+        process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_TESTNET_LIQUIDITY_EXTERNAL_NETWORK_ETH_ADDRESS ||
+        "0x0000000000000000000000000000000000000000",
+    },
+  },
+
+  GTM_ID: "GTM-XXXXXX",
+  TWITTER_EVENT: {
+    PIXEL_ID: "xxxxx",
+    EVENT_ID: "xx-xxxxx-xxxxxx",
+  },
+};
+
+//
+// ExtensionChain MAIN-NET ENV CONSTANTS
+//
+const supernovaMainNetConstants = {
+  ...constants,
+  isMainNet: false,
+  isDevNet: false,
+  isTestNet: false,
+
+  isSupernovaTestNet: false,
+  isSupernovaMainNet: true,
+  //
+  // This flag tells if it's supernova network, regardless if it's devnet, testnet, mainnet
+  // It's here so we only have to make one verification in the rest of the app
+  //
+  isSupernovaNetwork: true,
+
+  supernovaChainId: parseInt(process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_MAINNET_CHAIN_ID || "0"),
+  defaultInternalChainId: 3,
+  defaultExternalChainId: parseInt(process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_MAINNET_CHAIN_ID || "0"),
+
+  defaultNodeToConnect: "http://167.235.233.238:8545",
+  officialBridgeCommunityUrl: "https://bridge.supernova.zenon.community",
+
+  xZnnTokenInfo: {
+    isNativeCoin: true,
+    symbol: "XZNN-Main",
+    name: "xZenon-Main",
+    decimals: 18,
+    address:
+      process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_MAINNET_ETH_XZNN_ADDRESS ||
+      "0x0000000000000000000000000000000000000000",
+  },
+
+  // Internal tokens
+  // znnEthLpTokenInfo: {
+  //   symbol: "ZNNETHLP",
+  //   decimals: 18,
+  //   address:
+  //     process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_TESTNET_ZNN_ETH_LP_ADDRESS || "zts000000000000000000000000",
+  // },
+  // qsrEthLpTokenInfo: {
+  //   symbol: "QSRETHLP",
+  //   decimals: 18,
+  //   address:
+  //     process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_TESTNET_QSR_ETH_LP_ADDRESS || "zts000000000000000000000000",
+  // },
+
+  // Liquidity networks
+  defaultLiquidityExternalNetworkDetails: {
+    ETH: {
+      name: "Supernova-Mainnet-ETH",
+      chainId: parseInt(process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_MAINNET_CHAIN_ID || "0"),
       // contractAddress is also known as bridgeAddress
       contractAddress:
         process.env.REACT_APP_PUBLIC_CONSTANTS_SUPERNOVA_TESTNET_LIQUIDITY_EXTERNAL_NETWORK_ETH_ADDRESS ||
@@ -610,7 +677,7 @@ if (
   process.env.REACT_APP_NETWORK_ENV === "supernova-production" ||
   process.env.REACT_APP_NETWORK_ENV === "supernova-staging"
 )
-  exportedConstants = supernovaTestNetConstants;
+  exportedConstants = supernovaMainNetConstants;
 if (process.env.REACT_APP_NETWORK_ENV === "supernova-test") exportedConstants = supernovaTestNetConstants;
 
 export default exportedConstants;
